@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BusOps — Live Fleet Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0a0c0f;
+    --panel:     #111318;
+    --border:    #1e2128;
+    --accent:    #c01c1c;
+    --accent2:   #e8b84b;
+    --text:      #e8eaf0;
+    --muted:     #5a5f6e;
+    --green:     #2db87a;
+    --amber:     #e8b84b;
+    --red:       #e84b4b;
+    --mono:      'DM Mono', monospace;
+    --sans:      'Syne', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: rgba(10,12,15,0.95);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.5px;
+    clip-path: polygon(0 0, 85% 0, 100% 15%, 100% 100%, 15% 100%, 0 85%);
+  }
+
+  .logo-text {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .live-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  .clock {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    gap: 1px;
+    padding: 0 40px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat {
+    flex: 1;
+    padding: 16px 20px;
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .stat-value.green { color: var(--green); }
+  .stat-value.amber { color: var(--amber); }
+  .stat-value.red   { color: var(--red);   }
+
+  /* Main grid */
+  .main {
+    padding: 32px 40px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-family: var(--mono);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Bus grid */
+  .bus-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 2px;
+  }
+
+  /* Bus card */
+  .bus-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+    animation: cardIn 0.4s ease both;
+  }
+
+  .bus-card:hover { border-color: #2e3240; }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Route badge strip at top */
+  .card-strip {
+    height: 4px;
+    background: var(--accent);
+  }
+
+  .card-strip.on-time  { background: var(--green); }
+  .card-strip.late     { background: var(--red); }
+  .card-strip.idle     { background: var(--border); }
+
+  .card-body {
+    padding: 18px 20px;
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .route-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    height: 30px;
+    padding: 0 10px;
+    background: var(--accent);
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 500;
+    clip-path: polygon(0 0, 90% 0, 100% 30%, 100% 100%, 10% 100%, 0 70%);
+  }
+
+  .driver-info {
+    text-align: right;
+  }
+
+  .driver-name {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  .destination {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+  }
+
+  /* Current stop */
+  .current-stop-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .current-stop-name {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    margin-bottom: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Stop progress bar */
+  .progress-wrap {
+    margin-bottom: 14px;
+  }
+
+  .progress-track {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+
+  .progress-fill.on-time { background: var(--green); }
+  .progress-fill.late    { background: var(--red); }
+
+  .progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+  }
+
+  /* Next stops */
+  .next-stops {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .next-stop-chip {
+    flex: 1;
+    padding: 7px 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .next-stop-chip .chip-label {
+    font-size: 8px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 3px;
+    color: #363a45;
+  }
+
+  .next-stop-chip .chip-name {
+    color: #8a8f9e;
+  }
+
+  /* Delay badge */
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .delay-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .delay-badge.on-time { color: var(--green); }
+  .delay-badge.late    { color: var(--red); }
+  .delay-badge.idle    { color: var(--muted); }
+
+  .delay-icon {
+    font-size: 10px;
+    opacity: 0.8;
+  }
+
+  .doors-status {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .doors-status.open   { color: var(--amber); }
+  .doors-status.closed { color: var(--muted); }
+
+  /* Updated time */
+  .updated-at {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: #2e3240;
+    letter-spacing: 0.5px;
+  }
+
+  /* Empty state */
+  .empty-state {
+    grid-column: 1 / -1;
+    padding: 80px 40px;
+    text-align: center;
+  }
+
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.2;
+  }
+
+  .empty-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .empty-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #2e3240;
+    letter-spacing: 1px;
+  }
+
+
+  /* Stale overlay */
+  .stale-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10,12,15,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .bus-card.stale .stale-overlay { opacity: 1; }
+
+  @media (max-width: 768px) {
+    header, .stats-bar, .config-bar, .main { padding-left: 16px; padding-right: 16px; }
+    .stats-bar { overflow-x: auto; }
+    .stat { min-width: 100px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">BS</div>
+    <div class="logo-text">Bus<span>Ops</span></div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      Live Feed
+    </div>
+    <div class="clock" id="headerClock">--:--:--</div>
+  </div>
+</header>
+
+
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-value" id="statTotal">—</div>
+    <div class="stat-label">Buses Active</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value green" id="statOnTime">—</div>
+    <div class="stat-label">On Time</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value red" id="statLate">—</div>
+    <div class="stat-label">Delayed</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value amber" id="statDoors">—</div>
+    <div class="stat-label">Doors Open</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value" id="statUpdated">—</div>
+    <div class="stat-label">Last Update</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="section-header">
+    <span class="section-title">Fleet Status</span>
+    <div class="section-line"></div>
+    <span class="section-title" id="refreshCountdown">auto-refresh 5s</span>
+  </div>
+  <div class="bus-grid" id="busGrid">
+    <!-- cards injected by JS -->
+  </div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────
+const apiUrl = 'https://stp.zawistowski-szym.workers.dev/api/buses';
+let refreshMs  = 5000;
+let lastData   = null;
+let countdown  = refreshMs / 1000;
+
+// ── Clock ─────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('headerClock').textContent =
+    now.toTimeString().slice(0,8);
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── Countdown ─────────────────────────────────────────────────
+setInterval(() => {
+  countdown = Math.max(0, countdown - 1);
+  document.getElementById('refreshCountdown').textContent =
+    `auto-refresh ${countdown}s`;
+  if (countdown === 0) countdown = refreshMs / 1000;
+}, 1000);
+
+
+// ── Fetch ─────────────────────────────────────────────────────
+async function fetchAndRender() {
+  try {
+    const resp = await fetch(apiUrl, { cache: 'no-store' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    renderFromData(data);
+  } catch(e) {
+    if (lastData) renderFromData(lastData);  // keep last good render
+  }
+}
+
+// Auto-refresh
+setInterval(fetchAndRender, refreshMs);
+
+// ── Render ────────────────────────────────────────────────────
+function renderFromData(data) {
+  lastData = data;
+  const buses = data.buses || (Array.isArray(data) ? data : []);
+  renderBuses(buses);
+  updateStats(buses, data.timestamp);
+}
+
+function delayClass(delaySeconds) {
+  if (delaySeconds == null) return 'idle';
+  if (delaySeconds <= 30)   return 'on-time';
+  return 'late';
+}
+
+function delayLabel(delaySeconds) {
+  if (delaySeconds == null) return '— no schedule';
+  const abs = Math.abs(Math.round(delaySeconds));
+  const m = Math.floor(abs / 60), s = abs % 60;
+  const timeStr = m > 0 ? `${m}m ${s}s` : `${s}s`;
+  if (delaySeconds < -10) return `▲ ${timeStr} early`;
+  if (delaySeconds <= 30) return `● on time`;
+  return `▼ ${timeStr} late`;
+}
+
+function progressPct(stopIndex, totalStops) {
+  if (!totalStops || totalStops <= 1) return 0;
+  return Math.round(((stopIndex - 1) / (totalStops - 1)) * 100);
+}
+
+function secondsAgo(unixTime) {
+  if (!unixTime) return '';
+  const diff = Math.round(Date.now() / 1000) - unixTime;
+  if (diff < 5)  return 'just now';
+  if (diff < 60) return `${diff}s ago`;
+  return `${Math.floor(diff/60)}m ago`;
+}
+
+function renderBuses(buses) {
+  const grid = document.getElementById('busGrid');
+
+  if (!buses || buses.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🚌</div>
+        <div class="empty-title">No buses en route</div>
+        <div class="empty-sub">Waiting for drivers to set a route in-game</div>
+      </div>`;
+    return;
+  }
+
+  // Preserve existing cards to avoid full re-render flicker
+  const existing = {};
+  grid.querySelectorAll('.bus-card[data-driver]').forEach(el => {
+    existing[el.dataset.driver] = el;
+  });
+
+  const newDrivers = new Set(buses.map(b => b.driverName));
+
+  // Remove cards for gone buses
+  Object.keys(existing).forEach(name => {
+    if (!newDrivers.has(name)) existing[name].remove();
+  });
+
+  buses.forEach((bus, i) => {
+    const dc      = delayClass(bus.delaySeconds);
+    const pct     = progressPct(bus.stopIndex, bus.totalStops);
+    const stale   = bus.updatedAt && (Date.now()/1000 - bus.updatedAt) > 300;
+
+    const html = `
+      <div class="card-strip ${dc}"></div>
+      <div class="card-body">
+        <div class="card-top">
+          <div>
+            <div class="route-badge">${escHtml(bus.routeNum || '?')}</div>
+          </div>
+          <div class="driver-info">
+            <div class="driver-name">${escHtml(bus.driverName)}</div>
+            <div class="destination" title="${escHtml(bus.destination)}">→ ${escHtml(bus.destination || '—')}</div>
+          </div>
+        </div>
+
+        <div class="current-stop-label">Next Stop</div>
+        <div class="current-stop-name" title="${escHtml(bus.currentStop)}">${escHtml(bus.currentStop || 'Awaiting route…')}</div>
+
+        <div class="progress-wrap">
+          <div class="progress-track">
+            <div class="progress-fill ${dc}" style="width:${pct}%"></div>
+          </div>
+          <div class="progress-labels">
+            <span>Stop ${bus.stopIndex || 0} of ${bus.totalStops || 0}</span>
+            <span>${pct}%</span>
+          </div>
+        </div>
+
+        <div class="next-stops">
+          <div class="next-stop-chip">
+            <span class="chip-label">+1</span>
+            <span class="chip-name">${escHtml(bus.nextStop || '—')}</span>
+          </div>
+          <div class="next-stop-chip">
+            <span class="chip-label">+2</span>
+            <span class="chip-name">${escHtml(bus.stopAfterNext || '—')}</span>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <div class="delay-badge ${dc}">
+            <span class="delay-icon">◎</span>
+            ${delayLabel(bus.delaySeconds)}
+          </div>
+          <div class="doors-status ${bus.doorsOpen ? 'open' : 'closed'}">
+            ${bus.doorsOpen ? '⊞ Doors open' : '⊟ Doors closed'}
+          </div>
+          <div class="updated-at">${secondsAgo(bus.updatedAt)}</div>
+        </div>
+      </div>
+      <div class="stale-overlay">STALE</div>`;
+
+    if (existing[bus.driverName]) {
+      existing[bus.driverName].innerHTML = html;
+      existing[bus.driverName].style.animationDelay = '0s';
+      existing[bus.driverName].classList.toggle('stale', !!stale);
+    } else {
+      const card = document.createElement('div');
+      card.className = 'bus-card' + (stale ? ' stale' : '');
+      card.dataset.driver = bus.driverName;
+      card.style.animationDelay = (i * 0.06) + 's';
+      card.innerHTML = html;
+      grid.appendChild(card);
+    }
+  });
+}
+
+function updateStats(buses, timestamp) {
+  const total   = buses.length;
+  const onTime  = buses.filter(b => delayClass(b.delaySeconds) === 'on-time').length;
+  const late    = buses.filter(b => delayClass(b.delaySeconds) === 'late').length;
+  const doors   = buses.filter(b => b.doorsOpen).length;
+  const updated = timestamp ? secondsAgo(timestamp) : '—';
+
+  document.getElementById('statTotal').textContent   = total;
+  document.getElementById('statOnTime').textContent  = onTime;
+  document.getElementById('statLate').textContent    = late;
+  document.getElementById('statDoors').textContent   = doors;
+  document.getElementById('statUpdated').textContent = updated;
+}
+
+function escHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Demo data ─────────────────────────────────────────────────
+function renderDemoData() {
+  const now = Math.floor(Date.now() / 1000);
+  renderFromData({
+    timestamp: now,
+    buses: [
+      {
+        driverName: 'MalpaFrancuska',
+        routeNum: '39',
+        destination: 'Morningside Heights',
+        currentStop: 'Neilson Road',
+        nextStop: 'Blackbird Gate',
+        stopAfterNext: 'Central Station',
+        stopIndex: 4,
+        totalStops: 11,
+        doorsOpen: false,
+        delaySeconds: 45,
+        updatedAt: now - 8,
+      },
+      {
+        driverName: 'KazimierzBus',
+        routeNum: '12',
+        destination: 'North Terminal',
+        currentStop: 'Park Avenue',
+        nextStop: 'City Hall',
+        stopAfterNext: 'River Bridge',
+        stopIndex: 2,
+        totalStops: 8,
+        doorsOpen: true,
+        delaySeconds: 10,
+        updatedAt: now - 2,
+      },
+      {
+        driverName: 'ZofiaDrives',
+        routeNum: '7A',
+        destination: 'Airport Express',
+        currentStop: 'Awaiting route…',
+        nextStop: '',
+        stopAfterNext: '',
+        stopIndex: 0,
+        totalStops: 0,
+        doorsOpen: false,
+        delaySeconds: null,
+        updatedAt: now - 60,
+      },
+    ]
+  });
+}
+
+// Auto-connect on load
+fetchAndRender();
+</script>
+</body>
+</html>
