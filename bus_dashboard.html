@@ -4,300 +4,948 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>STP — System Monitorowania Ruchu</title>
-
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-
 <style>
 :root {
-  --navy:#0b0f1a;
-  --navy-2:#111827;
-  --navy-3:#1a2236;
-  --border:#1e2d47;
-  --text:#d6dce8;
-  --text-2:#8899b4;
-  --text-3:#4d607d;
-  --white:#f0f4fc;
-  --blue:#2a6dd9;
-  --green:#0fa86a;
-  --yellow:#d4960a;
-  --red:#c0282a;
-  --mono:'IBM Plex Mono', monospace;
-  --sans:'IBM Plex Sans', sans-serif;
+  --navy:      #0b0f1a;
+  --navy-2:    #111827;
+  --navy-3:    #1a2236;
+  --navy-4:    #232d42;
+  --border:    #1e2d47;
+  --border-2:  #263449;
+  --text:      #d6dce8;
+  --text-2:    #8899b4;
+  --text-3:    #4d607d;
+  --white:     #f0f4fc;
+  --blue:      #2a6dd9;
+  --blue-l:    #3d82f0;
+  --green:     #0fa86a;
+  --green-l:   #17d187;
+  --yellow:    #d4960a;
+  --yellow-l:  #f5b31a;
+  --red:       #c0282a;
+  --red-l:     #e8393b;
+  --grey:      #3a4555;
+  --grey-l:    #5a6a7e;
+  --mono:      'IBM Plex Mono', monospace;
+  --sans:      'IBM Plex Sans', sans-serif;
 }
 
-*{box-sizing:border-box;margin:0;padding:0}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-body{
-  font-family:var(--sans);
-  background:var(--navy);
-  color:var(--text);
-  font-size:13px;
+html, body {
+  height: 100%;
+  background: var(--navy);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
-header{
-  height:56px;
-  background:var(--navy-2);
-  border-bottom:1px solid var(--border);
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 20px;
+/* ── Subtle grid background ── */
+body {
+  background-image:
+    linear-gradient(rgba(42,109,217,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(42,109,217,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
-h1{
-  font-size:13px;
-  letter-spacing:1px;
-  color:var(--text-2);
-  text-transform:uppercase;
+/* ── HEADER ── */
+header {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 56px;
+  background: var(--navy-2);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 200;
 }
 
-.status{
-  font-family:var(--mono);
-  font-size:12px;
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+  height: 100%;
+  border-right: 1px solid var(--border);
+  min-width: 260px;
 }
 
-.table-wrap{
-  height:calc(100vh - 56px);
-  overflow:auto;
+.logo-emblem {
+  width: 32px; height: 32px;
+  background: var(--blue);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--white);
+  letter-spacing: 0px;
+  flex-shrink: 0;
 }
 
-table{
-  width:100%;
-  border-collapse:collapse;
+.logo-text-wrap { display: flex; flex-direction: column; gap: 1px; }
+
+.logo-abbr {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--white);
+  letter-spacing: 2px;
 }
 
-th, td{
-  padding:12px 16px;
-  border-bottom:1px solid var(--border);
+.logo-full {
+  font-size: 9px;
+  color: var(--text-2);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-th{
-  text-align:left;
-  font-family:var(--mono);
-  font-size:10px;
-  letter-spacing:1px;
-  color:var(--text-3);
-  text-transform:uppercase;
+.header-title {
+  padding: 0 28px;
+  flex: 1;
 }
 
-tbody tr{
-  cursor:pointer;
-  transition:background .15s;
+.header-title h1 {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
-tbody tr:hover{
-  background:rgba(42,109,217,.05);
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 100%;
+  margin-left: auto;
 }
 
-.cell-route{
-  font-family:var(--mono);
-  font-size:14px;
-  color:var(--white);
+.header-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  height: 100%;
+  border-left: 1px solid var(--border);
+  gap: 3px;
 }
 
-/* ===== DETAILS PANEL ===== */
-
-.details-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.5);
-  opacity:0;
-  pointer-events:none;
-  transition:.2s;
-  z-index:10;
+.header-cell-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--text-3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
 }
 
-.details-overlay.active{
-  opacity:1;
-  pointer-events:auto;
+.header-cell-value {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--white);
+  letter-spacing: 1px;
 }
 
-.details-panel{
-  position:fixed;
-  top:0;
-  right:-400px;
-  width:380px;
-  height:100%;
-  background:var(--navy-2);
-  border-left:1px solid var(--border);
-  transition:right .25s ease;
-  z-index:20;
-  display:flex;
-  flex-direction:column;
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.details-panel.active{
-  right:0;
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: blink 2.5s ease-in-out infinite;
 }
 
-.details-header{
-  padding:20px;
-  border-bottom:1px solid var(--border);
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+.status-dot.offline { background: var(--red); box-shadow: 0 0 6px var(--red); animation: none; }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
 }
 
-.details-line{
-  font-family:var(--mono);
-  font-size:20px;
-  color:var(--white);
+.status-text {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--green-l);
+  letter-spacing: 2px;
 }
 
-.details-dest{
-  font-size:13px;
-  color:var(--text-2);
+.status-text.offline { color: var(--red-l); }
+
+/* ── STATS BAR ── */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
-.details-body{
-  padding:20px;
-  display:flex;
-  flex-direction:column;
-  gap:16px;
+.stat-cell {
+  background: var(--navy-2);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-.details-label{
-  font-family:var(--mono);
-  font-size:9px;
-  color:var(--text-3);
-  text-transform:uppercase;
+.stat-icon {
+  width: 36px; height: 36px;
+  border: 1px solid var(--border-2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  color: var(--text-2);
+  flex-shrink: 0;
+  background: var(--navy-3);
 }
 
-.details-value{
-  font-size:13px;
-  color:var(--text);
+.stat-data { display: flex; flex-direction: column; gap: 2px; }
+
+.stat-value {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--white);
 }
 
-.details-close{
-  background:none;
-  border:1px solid var(--border);
-  color:var(--text-2);
-  padding:5px 10px;
-  cursor:pointer;
+.stat-label {
+  font-size: 10px;
+  color: var(--text-3);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
 }
 
-.details-close:hover{
-  border-color:var(--blue);
-  color:var(--white);
+/* ── LAYOUT ── */
+.layout {
+  display: flex;
+  height: calc(100vh - 56px - 65px);
+  overflow: hidden;
 }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--navy-2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.sidebar-section {
+  border-bottom: 1px solid var(--border);
+  padding: 16px;
+}
+
+.sidebar-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-3);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.filter-input {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--navy-3);
+  border: 1px solid var(--border-2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.filter-input:focus { border-color: var(--blue); }
+.filter-input::placeholder { color: var(--text-3); }
+
+.filter-group { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.12s;
+  user-select: none;
+}
+
+.filter-option:hover { background: var(--navy-3); border-color: var(--border); }
+.filter-option.active { background: var(--navy-3); border-color: var(--blue); }
+
+.filter-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.filter-option-label {
+  font-size: 11px;
+  color: var(--text-2);
+  flex: 1;
+}
+
+.filter-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-3);
+  background: var(--navy-4);
+  padding: 1px 6px;
+}
+
+/* ── MAIN TABLE AREA ── */
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.table-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--navy-2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.table-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-3);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.table-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-3);
+}
+
+.table-wrap {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+thead {
+  position: sticky; top: 0; z-index: 10;
+}
+
+thead tr {
+  background: var(--navy-3);
+  border-bottom: 2px solid var(--border-2);
+}
+
+th {
+  padding: 10px 16px;
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--text-3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  border-right: 1px solid var(--border);
+  transition: color 0.12s;
+}
+
+th:last-child { border-right: none; }
+th:hover { color: var(--text); }
+th.sorted { color: var(--blue-l); }
+
+th .sort-arrow { margin-left: 4px; opacity: 0.5; }
+th.sorted .sort-arrow { opacity: 1; }
+
+td {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid rgba(30,45,71,0.5);
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.1s;
+}
+
+td:last-child { border-right: none; }
+
+tbody tr {
+  transition: background 0.1s;
+  animation: rowIn 0.3s ease both;
+}
+
+@keyframes rowIn {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+tbody tr:hover td { background: rgba(42,109,217,0.04); }
+
+/* Row status colours */
+tbody tr.row-green td  { border-left: 2px solid var(--green); }
+tbody tr.row-yellow td { border-left: 2px solid var(--yellow); }
+tbody tr.row-red td    { border-left: 2px solid var(--red); }
+tbody tr.row-grey td   { border-left: 2px solid var(--grey); opacity: 0.55; }
+
+.cell-route {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--white);
+}
+
+.cell-dest {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.cell-stop {
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.cell-time {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-2);
+  text-align: right;
+}
+
+.cell-time.actual { color: var(--text); }
+
+.delay-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.delay-chip.on-time { color: var(--green-l); background: rgba(15,168,106,0.1); }
+.delay-chip.slight  { color: var(--yellow-l); background: rgba(212,150,10,0.1); }
+.delay-chip.late    { color: var(--red-l); background: rgba(192,40,42,0.1); }
+.delay-chip.tech    { color: var(--grey-l); background: rgba(58,69,85,0.2); }
+
+.status-chip {
+  display: inline-block;
+  padding: 3px 8px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+
+.status-chip.w-trasie  { color: var(--blue-l);   border-color: var(--blue);   background: rgba(42,109,217,0.08); }
+.status-chip.zjazd     { color: var(--grey-l);   border-color: var(--grey);   background: rgba(58,69,85,0.15); }
+.status-chip.drzwi     { color: var(--yellow-l); border-color: var(--yellow); background: rgba(212,150,10,0.1); }
+
+/* ── EMPTY STATE ── */
+.empty-row td {
+  text-align: center;
+  padding: 60px;
+  color: var(--text-3);
+  font-size: 12px;
+  letter-spacing: 1px;
+  border-left: none !important;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--navy-2); }
+::-webkit-scrollbar-thumb { background: var(--border-2); }
+::-webkit-scrollbar-thumb:hover { background: var(--navy-4); }
+
+/* ── FOOTER ── */
+footer {
+  height: 28px;
+  background: var(--navy-2);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 24px;
+  position: fixed; bottom: 0; left: 0; right: 0;
+}
+
+.footer-item {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-item span { color: var(--text-2); }
+
+/* Column widths */
+th:nth-child(1), td:nth-child(1) { width: 72px; }
+th:nth-child(2), td:nth-child(2) { width: auto; }
+th:nth-child(3), td:nth-child(3) { width: 200px; }
+th:nth-child(4), td:nth-child(4) { width: 110px; text-align: right; }
+th:nth-child(5), td:nth-child(5) { width: 110px; text-align: right; }
+th:nth-child(6), td:nth-child(6) { width: 130px; }
+th:nth-child(7), td:nth-child(7) { width: 120px; }
+
 </style>
 </head>
 <body>
 
+<!-- HEADER -->
 <header>
-  <h1>STP — System Monitorowania Ruchu</h1>
-  <div class="status" id="status">ONLINE</div>
+  <div class="header-logo">
+    <div class="logo-emblem">STP</div>
+    <div class="logo-text-wrap">
+      <div class="logo-abbr">STP</div>
+      <div class="logo-full">Skuszawyjiński Transport Publiczny</div>
+    </div>
+  </div>
+  <div class="header-title">
+    <h1>System Monitorowania Ruchu</h1>
+  </div>
+  <div class="header-right">
+    <div class="header-cell">
+      <div class="header-cell-label">Status</div>
+      <div class="status-indicator">
+        <div class="status-dot" id="statusDot"></div>
+        <div class="status-text" id="statusText">ONLINE</div>
+      </div>
+    </div>
+    <div class="header-cell">
+      <div class="header-cell-label">Godzina systemowa</div>
+      <div class="header-cell-value" id="sysClock">--:--:--</div>
+    </div>
+  </div>
 </header>
 
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-<th>Linia</th>
-<th>Kierunek</th>
-<th>Następny przystanek</th>
-<th>Opóźnienie</th>
-</tr>
-</thead>
-<tbody id="tableBody">
-<tr><td colspan="4">Ładowanie danych...</td></tr>
-</tbody>
-</table>
-</div>
-
-<!-- DETAILS -->
-<div class="details-overlay" id="overlay" onclick="closeDetails()"></div>
-
-<aside class="details-panel" id="panel">
-<div class="details-header">
-  <div>
-    <div class="details-line" id="dRoute">—</div>
-    <div class="details-dest" id="dDest">—</div>
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat-cell">
+    <div class="stat-icon">⬡</div>
+    <div class="stat-data">
+      <div class="stat-value" id="statActive">—</div>
+      <div class="stat-label">Pojazdy w ruchu</div>
+    </div>
   </div>
-  <button class="details-close" onclick="closeDetails()">✕</button>
-</div>
-
-<div class="details-body">
-  <div>
-    <div class="details-label">Kierowca</div>
-    <div class="details-value" id="dDriver">—</div>
+  <div class="stat-cell">
+    <div class="stat-icon">⊘</div>
+    <div class="stat-data">
+      <div class="stat-value" id="statAvgDelay">—</div>
+      <div class="stat-label">Śr. opóźnienie</div>
+    </div>
   </div>
-
-  <div>
-    <div class="details-label">Status</div>
-    <div class="details-value" id="dStatus">—</div>
+  <div class="stat-cell">
+    <div class="stat-icon">↓</div>
+    <div class="stat-data">
+      <div class="stat-value" id="statWorstLine">—</div>
+      <div class="stat-label">Najbardziej opóźniona linia</div>
+    </div>
   </div>
-
-  <div>
-    <div class="details-label">Następny przystanek</div>
-    <div class="details-value" id="dStop">—</div>
-  </div>
-
-  <div>
-    <div class="details-label">Opóźnienie (sekundy)</div>
-    <div class="details-value" id="dDelay">—</div>
+  <div class="stat-cell">
+    <div class="stat-icon">↑</div>
+    <div class="stat-data">
+      <div class="stat-value" id="statBestLine">—</div>
+      <div class="stat-label">Najbardziej punktualna linia</div>
+    </div>
   </div>
 </div>
-</aside>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Szukaj</div>
+      <input class="filter-input" id="searchLine" type="text" placeholder="Nr linii…">
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Status</div>
+      <div class="filter-group" id="statusFilters">
+        <div class="filter-option active" data-filter="status" data-value="all" onclick="toggleFilter(this)">
+          <div class="filter-dot" style="background:var(--blue-l)"></div>
+          <span class="filter-option-label">Wszystkie</span>
+          <span class="filter-count" id="countAll">0</span>
+        </div>
+        <div class="filter-option" data-filter="status" data-value="w-trasie" onclick="toggleFilter(this)">
+          <div class="filter-dot" style="background:var(--blue-l)"></div>
+          <span class="filter-option-label">W trasie</span>
+          <span class="filter-count" id="countActive">0</span>
+        </div>
+        <div class="filter-option" data-filter="status" data-value="zjazd" onclick="toggleFilter(this)">
+          <div class="filter-dot" style="background:var(--grey-l)"></div>
+          <span class="filter-option-label">Zjazd techniczny</span>
+          <span class="filter-count" id="countTech">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Opóźnienie</div>
+      <div class="filter-group" id="delayFilters">
+        <div class="filter-option active" data-filter="delay" data-value="all" onclick="toggleFilter(this)">
+          <div class="filter-dot" style="background:var(--text-2)"></div>
+          <span class="filter-option-label">Wszystkie</span>
+          <span class="filter-count" id="countDelayAll">0</span>
+        </div>
+        <div class="filter-option" data-filter="delay" data-value="on-time" onclick="toggleFilter(this)">
+          <div class="filter-dot" style="background:var(--green)"></div>
+          <span class="filter-option-label">Punktualny</span>
+          <span class="filter-count" id="countOnTime">0</span>
+        </div>
+        <div class="filter-option" data-filter="delay" data-value="slight" onclick="toggleFilter(this)">
+          <div class="filter-dot" style="background:var(--yellow)"></div>
+          <span class="filter-option-label">3–5 min opóźnienia</span>
+          <span class="filter-count" id="countSlight">0</span>
+        </div>
+        <div class="filter-option" data-filter="delay" data-value="late" onclick="toggleFilter(this)">
+          <div class="filter-dot" style="background:var(--red)"></div>
+          <span class="filter-option-label">Powyżej 5 min</span>
+          <span class="filter-count" id="countLate">0</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-area">
+    <div class="table-header-bar">
+      <div class="table-title">Aktywne pojazdy</div>
+      <div class="table-meta" id="tableMeta">Ostatnia aktualizacja: —</div>
+    </div>
+    <div class="table-wrap">
+      <table id="vehicleTable">
+        <thead>
+          <tr>
+            <th onclick="sortBy('routeNum')" class="sorted">Linia <span class="sort-arrow" id="arrow-routeNum">↑</span></th>
+            <th onclick="sortBy('destination')">Kierunek <span class="sort-arrow" id="arrow-destination"></span></th>
+            <th onclick="sortBy('currentStop')">Następny przystanek <span class="sort-arrow" id="arrow-currentStop"></span></th>
+            <th onclick="sortBy('scheduledTime')" style="text-align:right">Planowany <span class="sort-arrow" id="arrow-scheduledTime"></span></th>
+            <th onclick="sortBy('actualTime')" style="text-align:right">Rzeczywisty <span class="sort-arrow" id="arrow-actualTime"></span></th>
+            <th onclick="sortBy('delaySeconds')">Opóźnienie <span class="sort-arrow" id="arrow-delaySeconds"></span></th>
+            <th onclick="sortBy('statusClass')">Status <span class="sort-arrow" id="arrow-statusClass"></span></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr class="empty-row"><td colspan="7">Oczekiwanie na dane…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-item">Źródło danych: <span>stp.zawistowski-szym.workers.dev</span></div>
+  <div class="footer-item">Odświeżanie: <span>co 15s</span></div>
+  <div class="footer-item" id="footerCount">Pojazdy: <span>—</span></div>
+  <div class="footer-item" style="margin-left:auto">STP Centrum Zarządzania Ruchem &nbsp;·&nbsp; <span id="footerYear"></span></div>
+</footer>
 
 <script>
-const API_URL = "https://stp.zawistowski-szym.workers.dev/api/buses";
-let buses = [];
+const API_URL     = 'https://stp.zawistowski-szym.workers.dev/api/buses';
+const REFRESH_MS  = 15000;
 
-async function fetchData(){
-  try{
-    const res = await fetch(API_URL);
-    const data = await res.json();
-    buses = data.buses || [];
+let allBuses      = [];
+let sortCol       = 'routeNum';
+let sortAsc       = true;
+let filterStatus  = 'all';
+let filterDelay   = 'all';
+let searchTerm    = '';
+let lastTimestamp = 0;
+
+document.getElementById('footerYear').textContent = new Date().getFullYear();
+
+// ── Clock ─────────────────────────────────────────────────────
+function tickClock() {
+  document.getElementById('sysClock').textContent =
+    new Date().toTimeString().slice(0, 8);
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+// ── Fetch ─────────────────────────────────────────────────────
+async function fetchData() {
+  try {
+    const resp = await fetch(API_URL, { cache: 'no-store' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+
+    setOnline(true);
+    allBuses     = data.buses || [];
+    lastTimestamp = data.timestamp || Math.floor(Date.now() / 1000);
+
+    document.getElementById('tableMeta').textContent =
+      'Ostatnia aktualizacja: ' + new Date().toTimeString().slice(0, 8);
+
+    updateStats();
+    updateCounts();
     renderTable();
-    document.getElementById("status").textContent="ONLINE";
-  }catch{
-    document.getElementById("status").textContent="OFFLINE";
+  } catch(e) {
+    setOnline(false);
   }
 }
 
-function renderTable(){
-  const tbody = document.getElementById("tableBody");
-  if(!buses.length){
-    tbody.innerHTML="<tr><td colspan='4'>Brak pojazdów</td></tr>";
+function setOnline(online) {
+  const dot  = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  dot.className  = 'status-dot' + (online ? '' : ' offline');
+  text.className = 'status-text' + (online ? '' : ' offline');
+  text.textContent = online ? 'ONLINE' : 'OFFLINE';
+}
+
+// ── Derived fields ────────────────────────────────────────────
+function busStatus(bus) {
+  if (!bus.routeNum || bus.currentStop === 'Awaiting route…' ||
+      bus.currentStop === 'Oczekiwanie na trasę...' || !bus.currentStop) {
+    return 'zjazd';
+  }
+  if (bus.doorsOpen) return 'drzwi';
+  return 'w-trasie';
+}
+
+function delayClass(sec) {
+  if (sec == null) return 'tech';
+  const m = sec / 60;
+  if (m <= 1)  return 'on-time';
+  if (m <= 5)  return 'slight';
+  return 'late';
+}
+
+function delayLabel(sec) {
+  if (sec == null) return '—';
+  const abs = Math.abs(Math.round(sec));
+  const m = Math.floor(abs / 60), s = abs % 60;
+  const t = m > 0 ? `${m} min ${s > 0 ? s + ' s' : ''}`.trim() : `${s} s`;
+  if (sec < -60) return `▲ ${t} wcześniej`;
+  if (sec <= 60) return '● Na czasie';
+  return `▼ +${t}`;
+}
+
+function fmtTime(unixSec) {
+  if (!unixSec) return '—';
+  const d = new Date(unixSec * 1000);
+  return d.toTimeString().slice(0, 5);
+}
+
+function scheduledTime(bus) {
+  if (!bus.scheduledTimes || !bus.stopIndex) return null;
+  return bus.scheduledTimes[bus.stopIndex - 1] || null;
+}
+
+function actualTime(bus) {
+  const sched = scheduledTime(bus);
+  if (!sched || bus.delaySeconds == null) return null;
+  return sched + Math.round(bus.delaySeconds);
+}
+
+function enrichBus(bus) {
+  return {
+    ...bus,
+    statusClass:   busStatus(bus),
+    delayCategory: delayClass(bus.delaySeconds),
+    scheduledTime: scheduledTime(bus),
+    actualTime:    actualTime(bus),
+  };
+}
+
+// ── Stats ─────────────────────────────────────────────────────
+function updateStats() {
+  const enriched = allBuses.map(enrichBus);
+  const active   = enriched.filter(b => b.statusClass !== 'zjazd');
+
+  document.getElementById('statActive').textContent = active.length || '0';
+
+  const withDelay = active.filter(b => b.delaySeconds != null);
+  if (withDelay.length) {
+    const avg = withDelay.reduce((s, b) => s + b.delaySeconds, 0) / withDelay.length;
+    const m = Math.floor(Math.abs(avg) / 60);
+    const s = Math.round(Math.abs(avg) % 60);
+    document.getElementById('statAvgDelay').textContent =
+      avg < 0 ? `▲${m}m${s}s` : `+${m}m${s}s`;
+  } else {
+    document.getElementById('statAvgDelay').textContent = '—';
+  }
+
+  // Worst line (most delayed)
+  const sorted = [...active].filter(b => b.delaySeconds != null)
+    .sort((a, b) => b.delaySeconds - a.delaySeconds);
+  document.getElementById('statWorstLine').textContent =
+    sorted.length ? (sorted[0].routeNum || '—') : '—';
+
+  // Best line (least delayed / earliest)
+  document.getElementById('statBestLine').textContent =
+    sorted.length ? (sorted[sorted.length - 1].routeNum || '—') : '—';
+
+  // Footer count
+  document.getElementById('footerCount').innerHTML =
+    `Pojazdy: <span>${enriched.length}</span>`;
+}
+
+// ── Sidebar counts ────────────────────────────────────────────
+function updateCounts() {
+  const e = allBuses.map(enrichBus);
+  document.getElementById('countAll').textContent       = e.length;
+  document.getElementById('countActive').textContent    = e.filter(b => b.statusClass === 'w-trasie' || b.statusClass === 'drzwi').length;
+  document.getElementById('countTech').textContent      = e.filter(b => b.statusClass === 'zjazd').length;
+  document.getElementById('countDelayAll').textContent  = e.length;
+  document.getElementById('countOnTime').textContent    = e.filter(b => b.delayCategory === 'on-time').length;
+  document.getElementById('countSlight').textContent    = e.filter(b => b.delayCategory === 'slight').length;
+  document.getElementById('countLate').textContent      = e.filter(b => b.delayCategory === 'late').length;
+}
+
+// ── Filter & sort ─────────────────────────────────────────────
+function getFiltered() {
+  let rows = allBuses.map(enrichBus);
+
+  if (searchTerm) {
+    const t = searchTerm.toLowerCase();
+    rows = rows.filter(b => (b.routeNum || '').toLowerCase().includes(t));
+  }
+
+  if (filterStatus !== 'all') {
+    rows = rows.filter(b => b.statusClass === filterStatus);
+  }
+
+  if (filterDelay !== 'all') {
+    rows = rows.filter(b => b.delayCategory === filterDelay);
+  }
+
+  rows.sort((a, b) => {
+    let av = a[sortCol] ?? '';
+    let bv = b[sortCol] ?? '';
+    if (typeof av === 'string') av = av.toLowerCase();
+    if (typeof bv === 'string') bv = bv.toLowerCase();
+    if (av < bv) return sortAsc ? -1 : 1;
+    if (av > bv) return sortAsc ?  1 : -1;
+    return 0;
+  });
+
+  return rows;
+}
+
+// ── Render table ──────────────────────────────────────────────
+function renderTable() {
+  const rows  = getFiltered();
+  const tbody = document.getElementById('tableBody');
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="7">Brak pojazdów spełniających kryteria filtrów</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = buses.map((b,i)=>`
-    <tr onclick="openDetails(${i})">
-      <td class="cell-route">${b.routeNum || "—"}</td>
-      <td>${b.destination || "—"}</td>
-      <td>${b.currentStop || "—"}</td>
-      <td>${b.delaySeconds ?? "0"} s</td>
-    </tr>
-  `).join("");
+  const statusLabel = { 'w-trasie': 'W trasie', 'zjazd': 'Zjazd tech.', 'drzwi': 'Drzwi otwarte' };
+
+  tbody.innerHTML = rows.map((bus, i) => {
+    const rowClass = {
+      'on-time': 'row-green',
+      'slight':  'row-yellow',
+      'late':    'row-red',
+      'tech':    'row-grey',
+    }[bus.delayCategory] || 'row-grey';
+
+    const sched  = fmtTime(bus.scheduledTime);
+    const actual = fmtTime(bus.actualTime);
+
+    return `<tr class="${rowClass}" style="animation-delay:${i * 0.03}s">
+      <td><span class="cell-route">${esc(bus.routeNum || '?')}</span></td>
+      <td><span class="cell-dest">${esc(bus.destination || '—')}</span></td>
+      <td><span class="cell-stop">${esc(bus.currentStop || '—')}</span></td>
+      <td class="cell-time">${sched}</td>
+      <td class="cell-time actual">${actual}</td>
+      <td><span class="delay-chip ${bus.delayCategory}">${delayLabel(bus.delaySeconds)}</span></td>
+      <td><span class="status-chip ${bus.statusClass}">${statusLabel[bus.statusClass] || bus.statusClass}</span></td>
+    </tr>`;
+  }).join('');
 }
 
-function openDetails(index){
-  const b = buses[index];
-  document.getElementById("dRoute").textContent = "Linia "+(b.routeNum||"—");
-  document.getElementById("dDest").textContent = b.destination||"—";
-  document.getElementById("dDriver").textContent = b.driverName||"—";
-  document.getElementById("dStatus").textContent = b.doorsOpen ? "Drzwi otwarte" : "W trasie";
-  document.getElementById("dStop").textContent = b.currentStop||"—";
-  document.getElementById("dDelay").textContent = (b.delaySeconds ?? 0)+" s";
-
-  document.getElementById("panel").classList.add("active");
-  document.getElementById("overlay").classList.add("active");
+// ── Sort ──────────────────────────────────────────────────────
+function sortBy(col) {
+  if (sortCol === col) {
+    sortAsc = !sortAsc;
+  } else {
+    sortCol = col;
+    sortAsc = true;
+    document.querySelectorAll('th').forEach(th => th.classList.remove('sorted'));
+    document.querySelectorAll('.sort-arrow').forEach(a => a.textContent = '');
+  }
+  document.querySelectorAll('th').forEach(th => {
+    if (th.getAttribute('onclick') === `sortBy('${col}')`) {
+      th.classList.add('sorted');
+      th.querySelector('.sort-arrow').textContent = sortAsc ? '↑' : '↓';
+    }
+  });
+  renderTable();
 }
 
-function closeDetails(){
-  document.getElementById("panel").classList.remove("active");
-  document.getElementById("overlay").classList.remove("active");
+// ── Filter ────────────────────────────────────────────────────
+function toggleFilter(el) {
+  const type = el.dataset.filter;
+  const val  = el.dataset.value;
+  document.querySelectorAll(`[data-filter="${type}"]`).forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  if (type === 'status') filterStatus = val;
+  if (type === 'delay')  filterDelay  = val;
+  renderTable();
 }
 
-document.addEventListener("keydown",e=>{
-  if(e.key==="Escape") closeDetails();
+document.getElementById('searchLine').addEventListener('input', e => {
+  searchTerm = e.target.value.trim();
+  renderTable();
 });
 
-fetchData();
-setInterval(fetchData,15000);
-</script>
+// ── Helpers ───────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 
+// ── Init ──────────────────────────────────────────────────────
+fetchData();
+setInterval(fetchData, REFRESH_MS);
+</script>
 </body>
 </html>
