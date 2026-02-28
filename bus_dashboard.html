@@ -502,6 +502,16 @@ function setOnline(on) {
 // ── Helpers ───────────────────────────────────────────────────
 const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
+// Lua JSONEncode may produce {"1":t1,"2":t2} instead of [t1,t2]
+// Normalise to a proper 0-based JS array every time we access scheduledTimes
+function normTimes(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  // It's an object with string keys "1","2",... — convert to array
+  const keys = Object.keys(raw).map(Number).sort((a,b)=>a-b);
+  return keys.map(k => raw[String(k)]);
+}
+
 function fmtTime(unixSec) {
   if (!unixSec) return '—';
   return new Date(unixSec * 1000).toTimeString().slice(0,5);
@@ -534,7 +544,8 @@ function delayLabel(sec) {
 
 function scheduledTime(bus) {
   if (!bus.scheduledTimes || !bus.stopIndex) return null;
-  return bus.scheduledTimes[bus.stopIndex - 1] || null;
+  const times = normTimes(bus.scheduledTimes);
+  return times[bus.stopIndex - 1] || null;
 }
 
 function actualTime(bus) {
@@ -685,7 +696,8 @@ function renderTimetable() {
       if (i === idx) cls = 'current';
 
       // Calculate scheduled and actual time for each stop
-      const sched = bus.scheduledTimes && bus.scheduledTimes[i] ? bus.scheduledTimes[i] : null;
+      const _times = normTimes(bus.scheduledTimes);
+      const sched = _times[i] || null;
       const actual = sched ? sched + Math.round(delay) : null;
       const timeStr = actual ? fmtTime(actual) : (sched ? fmtTime(sched) : '');
 
@@ -773,7 +785,7 @@ function findConnections(from, to) {
   const busRoutes = activeBuses.map(bus => ({
     bus,
     stops: bus.allStops,
-    times: bus.scheduledTimes || [],
+    times: normTimes(bus.scheduledTimes),
     delay: bus.delaySeconds || 0,
   }));
 
