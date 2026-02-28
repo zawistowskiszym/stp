@@ -7,664 +7,252 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --navy:      #0b0f1a;
-  --navy-2:    #111827;
-  --navy-3:    #1a2236;
-  --navy-4:    #232d42;
-  --border:    #1e2d47;
-  --border-2:  #263449;
-  --text:      #d6dce8;
-  --text-2:    #8899b4;
-  --text-3:    #4d607d;
-  --white:     #f0f4fc;
-  --blue:      #2a6dd9;
-  --blue-l:    #3d82f0;
-  --green:     #0fa86a;
-  --green-l:   #17d187;
-  --yellow:    #d4960a;
-  --yellow-l:  #f5b31a;
-  --red:       #c0282a;
-  --red-l:     #e8393b;
-  --grey:      #3a4555;
-  --grey-l:    #5a6a7e;
-  --mono:      'IBM Plex Mono', monospace;
-  --sans:      'IBM Plex Sans', sans-serif;
+  --navy:    #0b0f1a;
+  --navy-2:  #111827;
+  --navy-3:  #1a2236;
+  --navy-4:  #232d42;
+  --border:  #1e2d47;
+  --border-2:#263449;
+  --text:    #d6dce8;
+  --text-2:  #8899b4;
+  --text-3:  #4d607d;
+  --white:   #f0f4fc;
+  --blue:    #2a6dd9;
+  --blue-l:  #3d82f0;
+  --green:   #0fa86a;
+  --green-l: #17d187;
+  --yellow:  #d4960a;
+  --yellow-l:#f5b31a;
+  --red:     #c0282a;
+  --red-l:   #e8393b;
+  --grey:    #3a4555;
+  --grey-l:  #5a6a7e;
+  --mono:    'IBM Plex Mono', monospace;
+  --sans:    'IBM Plex Sans', sans-serif;
 }
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html, body {
-  height: 100%;
-  background: var(--navy);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-/* ── Subtle grid background ── */
-body {
-  background-image:
-    linear-gradient(rgba(42,109,217,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(42,109,217,0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--navy);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.5}
+body{background-image:linear-gradient(rgba(42,109,217,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(42,109,217,.03) 1px,transparent 1px);background-size:40px 40px}
 
 /* ── HEADER ── */
-header {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  height: 56px;
-  background: var(--navy-2);
-  border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; z-index: 200;
-}
+header{display:flex;align-items:center;height:56px;background:var(--navy-2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200}
+.header-logo{display:flex;align-items:center;gap:12px;padding:0 24px;height:100%;border-right:1px solid var(--border);min-width:260px}
+.logo-emblem{width:32px;height:32px;background:var(--blue);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--white);flex-shrink:0}
+.logo-text-wrap{display:flex;flex-direction:column;gap:1px}
+.logo-abbr{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--white);letter-spacing:2px}
+.logo-full{font-size:9px;color:var(--text-2);letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+.header-title{padding:0 28px;flex:1}
+.header-title h1{font-size:13px;font-weight:500;color:var(--text-2);letter-spacing:1px;text-transform:uppercase}
+.header-right{display:flex;align-items:center;height:100%;margin-left:auto}
+.header-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;height:100%;border-left:1px solid var(--border);gap:3px}
+.header-cell-label{font-family:var(--mono);font-size:8px;color:var(--text-3);letter-spacing:1.5px;text-transform:uppercase}
+.header-cell-value{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--white);letter-spacing:1px}
+.status-indicator{display:flex;align-items:center;gap:8px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 2.5s ease-in-out infinite}
+.status-dot.offline{background:var(--red);box-shadow:0 0 6px var(--red);animation:none}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
+.status-text{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--green-l);letter-spacing:2px}
+.status-text.offline{color:var(--red-l)}
 
-.header-logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 24px;
-  height: 100%;
-  border-right: 1px solid var(--border);
-  min-width: 260px;
-}
-
-.logo-emblem {
-  width: 32px; height: 32px;
-  background: var(--blue);
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--white);
-  letter-spacing: 0px;
-  flex-shrink: 0;
-}
-
-.logo-text-wrap { display: flex; flex-direction: column; gap: 1px; }
-
-.logo-abbr {
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--white);
-  letter-spacing: 2px;
-}
-
-.logo-full {
-  font-size: 9px;
-  color: var(--text-2);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.header-title {
-  padding: 0 28px;
-  flex: 1;
-}
-
-.header-title h1 {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-2);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  height: 100%;
-  margin-left: auto;
-}
-
-.header-cell {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0 24px;
-  height: 100%;
-  border-left: 1px solid var(--border);
-  gap: 3px;
-}
-
-.header-cell-label {
-  font-family: var(--mono);
-  font-size: 8px;
-  color: var(--text-3);
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-}
-
-.header-cell-value {
-  font-family: var(--mono);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--white);
-  letter-spacing: 1px;
-}
-
-.status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.status-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 6px var(--green);
-  animation: blink 2.5s ease-in-out infinite;
-}
-
-.status-dot.offline { background: var(--red); box-shadow: 0 0 6px var(--red); animation: none; }
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.5; }
-}
-
-.status-text {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--green-l);
-  letter-spacing: 2px;
-}
-
-.status-text.offline { color: var(--red-l); }
+/* ── TAB NAV ── */
+.tab-nav{display:flex;background:var(--navy-2);border-bottom:1px solid var(--border)}
+.tab-btn{padding:0 28px;height:42px;display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-3);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.tab-btn:hover{color:var(--text-2)}
+.tab-btn.active{color:var(--blue-l);border-bottom-color:var(--blue)}
+.tab-icon{font-size:12px}
 
 /* ── STATS BAR ── */
-.stats-bar {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: var(--border);
-  border-bottom: 1px solid var(--border);
-}
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
+.stat-cell{background:var(--navy-2);padding:14px 24px;display:flex;align-items:center;gap:16px}
+.stat-icon{width:36px;height:36px;border:1px solid var(--border-2);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-2);flex-shrink:0;background:var(--navy-3)}
+.stat-data{display:flex;flex-direction:column;gap:2px}
+.stat-value{font-family:var(--mono);font-size:22px;font-weight:500;line-height:1;color:var(--white)}
+.stat-label{font-size:10px;color:var(--text-3);letter-spacing:.8px;text-transform:uppercase}
 
-.stat-cell {
-  background: var(--navy-2);
-  padding: 14px 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
+/* ── VIEWS ── */
+.view{display:none}
+.view.active{display:flex;flex-direction:column}
 
-.stat-icon {
-  width: 36px; height: 36px;
-  border: 1px solid var(--border-2);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px;
-  color: var(--text-2);
-  flex-shrink: 0;
-  background: var(--navy-3);
-}
+/* ── FLEET VIEW layout ── */
+.layout{display:flex;height:calc(100vh - 56px - 42px - 65px - 28px);overflow:hidden}
+.sidebar{width:240px;flex-shrink:0;background:var(--navy-2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+.sidebar-section{border-bottom:1px solid var(--border);padding:16px}
+.sidebar-title{font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.sidebar-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.filter-input{width:100%;padding:8px 10px;background:var(--navy-3);border:1px solid var(--border-2);color:var(--text);font-family:var(--mono);font-size:11px;outline:none;transition:border-color .15s}
+.filter-input:focus{border-color:var(--blue)}
+.filter-input::placeholder{color:var(--text-3)}
+.filter-group{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.filter-option{display:flex;align-items:center;gap:10px;padding:7px 10px;cursor:pointer;border:1px solid transparent;transition:all .12s;user-select:none}
+.filter-option:hover{background:var(--navy-3);border-color:var(--border)}
+.filter-option.active{background:var(--navy-3);border-color:var(--blue)}
+.filter-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.filter-option-label{font-size:11px;color:var(--text-2);flex:1}
+.filter-count{font-family:var(--mono);font-size:10px;color:var(--text-3);background:var(--navy-4);padding:1px 6px}
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.table-header-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--navy-2);border-bottom:1px solid var(--border);flex-shrink:0}
+.table-title{font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:2px;text-transform:uppercase}
+.table-meta{font-family:var(--mono);font-size:10px;color:var(--text-3)}
+.table-wrap{flex:1;overflow-y:auto;overflow-x:auto}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+thead{position:sticky;top:0;z-index:10}
+thead tr{background:var(--navy-3);border-bottom:2px solid var(--border-2)}
+th{padding:10px 16px;text-align:left;font-family:var(--mono);font-size:9px;font-weight:500;color:var(--text-3);letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;cursor:pointer;user-select:none;border-right:1px solid var(--border);transition:color .12s}
+th:last-child{border-right:none}
+th:hover{color:var(--text)}
+th.sorted{color:var(--blue-l)}
+.sort-arrow{margin-left:4px;opacity:.5}
+th.sorted .sort-arrow{opacity:1}
+td{padding:11px 16px;border-bottom:1px solid var(--border);border-right:1px solid rgba(30,45,71,.5);vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .1s}
+td:last-child{border-right:none}
+tbody tr{transition:background .1s;animation:rowIn .3s ease both}
+@keyframes rowIn{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:translateX(0)}}
+tbody tr:hover td{background:rgba(42,109,217,.04)}
+tbody tr.row-green td{border-left:2px solid var(--green)}
+tbody tr.row-yellow td{border-left:2px solid var(--yellow)}
+tbody tr.row-red td{border-left:2px solid var(--red)}
+tbody tr.row-grey td{border-left:2px solid var(--grey);opacity:.55}
+.cell-route{font-family:var(--mono);font-weight:500;font-size:14px;color:var(--white)}
+.cell-dest,.cell-stop{font-size:12px}
+.cell-time{font-family:var(--mono);font-size:12px;color:var(--text-2);text-align:right}
+.cell-time.actual{color:var(--text)}
+.delay-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.5px}
+.delay-chip.on-time{color:var(--green-l);background:rgba(15,168,106,.1)}
+.delay-chip.slight{color:var(--yellow-l);background:rgba(212,150,10,.1)}
+.delay-chip.late{color:var(--red-l);background:rgba(192,40,42,.1)}
+.delay-chip.tech{color:var(--grey-l);background:rgba(58,69,85,.2)}
+.status-chip{display:inline-block;padding:3px 8px;font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;border:1px solid}
+.status-chip.w-trasie{color:var(--blue-l);border-color:var(--blue);background:rgba(42,109,217,.08)}
+.status-chip.zjazd{color:var(--grey-l);border-color:var(--grey);background:rgba(58,69,85,.15)}
+.status-chip.drzwi{color:var(--yellow-l);border-color:var(--yellow);background:rgba(212,150,10,.1)}
+.empty-row td{text-align:center;padding:60px;color:var(--text-3);font-size:12px;letter-spacing:1px;border-left:none!important}
 
-.stat-data { display: flex; flex-direction: column; gap: 2px; }
+/* ── TIMETABLE VIEW ── */
+#viewTimetable{padding:24px 32px;overflow-y:auto;height:calc(100vh - 56px - 42px - 65px - 28px)}
+.tt-line-selector{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+.tt-line-btn{padding:6px 16px;background:var(--navy-3);border:1px solid var(--border-2);color:var(--text-2);font-family:var(--mono);font-size:12px;cursor:pointer;transition:all .15s}
+.tt-line-btn:hover{border-color:var(--blue);color:var(--text)}
+.tt-line-btn.active{background:var(--blue);border-color:var(--blue);color:var(--white)}
+.tt-none{color:var(--text-3);font-family:var(--mono);font-size:11px;letter-spacing:1px}
+.tt-card{background:var(--navy-2);border:1px solid var(--border);margin-bottom:16px}
+.tt-card-header{display:flex;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--navy-3)}
+.tt-route-badge{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--white);min-width:48px}
+.tt-dest{font-size:13px;color:var(--text-2);flex:1}
+.tt-driver{font-family:var(--mono);font-size:10px;color:var(--text-3)}
+.tt-delay-badge{font-family:var(--mono);font-size:10px;padding:3px 8px}
+.tt-stops{overflow-x:auto}
+.tt-stops-inner{display:flex;align-items:flex-start;padding:20px;gap:0;min-width:max-content}
+.tt-stop{display:flex;flex-direction:column;align-items:center;position:relative;min-width:120px}
+.tt-stop:not(:last-child)::after{content:'';position:absolute;top:12px;left:50%;width:100%;height:2px;background:var(--border-2)}
+.tt-stop.passed::after{background:var(--blue)}
+.tt-stop-dot{width:24px;height:24px;border-radius:50%;border:2px solid var(--border-2);background:var(--navy);z-index:1;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--text-3);transition:all .2s}
+.tt-stop.passed .tt-stop-dot{border-color:var(--blue);background:var(--blue);color:var(--white)}
+.tt-stop.current .tt-stop-dot{border-color:var(--green-l);background:var(--green);color:var(--white);box-shadow:0 0 8px var(--green)}
+.tt-stop-name{font-size:10px;color:var(--text-3);text-align:center;margin-top:8px;max-width:110px;word-break:break-word;white-space:normal;line-height:1.3}
+.tt-stop.current .tt-stop-name{color:var(--green-l)}
+.tt-stop.passed .tt-stop-name{color:var(--text-2)}
+.tt-stop-time{font-family:var(--mono);font-size:9px;color:var(--text-3);margin-top:3px}
+.tt-stop.current .tt-stop-time{color:var(--green-l)}
 
-.stat-value {
-  font-family: var(--mono);
-  font-size: 22px;
-  font-weight: 500;
-  line-height: 1;
-  color: var(--white);
-}
-
-.stat-label {
-  font-size: 10px;
-  color: var(--text-3);
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-}
-
-/* ── LAYOUT ── */
-.layout {
-  display: flex;
-  height: calc(100vh - 56px - 65px);
-  overflow: hidden;
-  /* height overridden to auto on mobile via media query */
-}
-
-/* ── SIDEBAR ── */
-.sidebar {
-  width: 240px;
-  flex-shrink: 0;
-  background: var(--navy-2);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-}
-
-.sidebar-section {
-  border-bottom: 1px solid var(--border);
-  padding: 16px;
-}
-
-.sidebar-title {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--text-3);
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sidebar-title::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-
-.filter-input {
-  width: 100%;
-  padding: 8px 10px;
-  background: var(--navy-3);
-  border: 1px solid var(--border-2);
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 11px;
-  outline: none;
-  transition: border-color 0.15s;
-}
-
-.filter-input:focus { border-color: var(--blue); }
-.filter-input::placeholder { color: var(--text-3); }
-
-.filter-group { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-
-.filter-option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 10px;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.12s;
-  user-select: none;
-}
-
-.filter-option:hover { background: var(--navy-3); border-color: var(--border); }
-.filter-option.active { background: var(--navy-3); border-color: var(--blue); }
-
-.filter-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.filter-option-label {
-  font-size: 11px;
-  color: var(--text-2);
-  flex: 1;
-}
-
-.filter-count {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-3);
-  background: var(--navy-4);
-  padding: 1px 6px;
-}
-
-/* ── MAIN TABLE AREA ── */
-.main-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.table-header-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 20px;
-  background: var(--navy-2);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.table-title {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-3);
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-
-.table-meta {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-3);
-}
-
-.table-wrap {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-
-thead {
-  position: sticky; top: 0; z-index: 10;
-}
-
-thead tr {
-  background: var(--navy-3);
-  border-bottom: 2px solid var(--border-2);
-}
-
-th {
-  padding: 10px 16px;
-  text-align: left;
-  font-family: var(--mono);
-  font-size: 9px;
-  font-weight: 500;
-  color: var(--text-3);
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  white-space: nowrap;
-  cursor: pointer;
-  user-select: none;
-  border-right: 1px solid var(--border);
-  transition: color 0.12s;
-}
-
-th:last-child { border-right: none; }
-th:hover { color: var(--text); }
-th.sorted { color: var(--blue-l); }
-
-th .sort-arrow { margin-left: 4px; opacity: 0.5; }
-th.sorted .sort-arrow { opacity: 1; }
-
-td {
-  padding: 11px 16px;
-  border-bottom: 1px solid var(--border);
-  border-right: 1px solid rgba(30,45,71,0.5);
-  vertical-align: middle;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: background 0.1s;
-}
-
-td:last-child { border-right: none; }
-
-tbody tr {
-  transition: background 0.1s;
-  animation: rowIn 0.3s ease both;
-}
-
-@keyframes rowIn {
-  from { opacity: 0; transform: translateX(-4px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-tbody tr:hover td { background: rgba(42,109,217,0.04); }
-
-/* Row status colours */
-tbody tr.row-green td  { border-left: 2px solid var(--green); }
-tbody tr.row-yellow td { border-left: 2px solid var(--yellow); }
-tbody tr.row-red td    { border-left: 2px solid var(--red); }
-tbody tr.row-grey td   { border-left: 2px solid var(--grey); opacity: 0.55; }
-
-.cell-route {
-  font-family: var(--mono);
-  font-weight: 500;
-  font-size: 14px;
-  color: var(--white);
-}
-
-.cell-dest {
-  color: var(--text);
-  font-size: 12px;
-}
-
-.cell-stop {
-  color: var(--text-2);
-  font-size: 12px;
-}
-
-.cell-time {
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--text-2);
-  text-align: right;
-}
-
-.cell-time.actual { color: var(--text); }
-
-.delay-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 8px;
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-}
-
-.delay-chip.on-time { color: var(--green-l); background: rgba(15,168,106,0.1); }
-.delay-chip.slight  { color: var(--yellow-l); background: rgba(212,150,10,0.1); }
-.delay-chip.late    { color: var(--red-l); background: rgba(192,40,42,0.1); }
-.delay-chip.tech    { color: var(--grey-l); background: rgba(58,69,85,0.2); }
-
-.status-chip {
-  display: inline-block;
-  padding: 3px 8px;
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  border: 1px solid;
-}
-
-.status-chip.w-trasie  { color: var(--blue-l);   border-color: var(--blue);   background: rgba(42,109,217,0.08); }
-.status-chip.zjazd     { color: var(--grey-l);   border-color: var(--grey);   background: rgba(58,69,85,0.15); }
-.status-chip.drzwi     { color: var(--yellow-l); border-color: var(--yellow); background: rgba(212,150,10,0.1); }
-
-/* ── EMPTY STATE ── */
-.empty-row td {
-  text-align: center;
-  padding: 60px;
-  color: var(--text-3);
-  font-size: 12px;
-  letter-spacing: 1px;
-  border-left: none !important;
-}
-
-/* ── SCROLLBAR ── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--navy-2); }
-::-webkit-scrollbar-thumb { background: var(--border-2); }
-::-webkit-scrollbar-thumb:hover { background: var(--navy-4); }
+/* ── CONNECTIONS VIEW ── */
+#viewConnections{padding:24px 32px;overflow-y:auto;height:calc(100vh - 56px - 42px - 65px - 28px)}
+.conn-search-panel{background:var(--navy-2);border:1px solid var(--border);padding:24px;margin-bottom:24px}
+.conn-search-title{font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}
+.conn-fields{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end}
+.conn-field label{display:block;font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+.conn-select,.conn-input-text{width:100%;padding:10px 12px;background:var(--navy-3);border:1px solid var(--border-2);color:var(--text);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .15s;appearance:none}
+.conn-select:focus,.conn-input-text:focus{border-color:var(--blue)}
+.conn-btn{padding:10px 24px;background:var(--blue);border:none;color:var(--white);font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:opacity .15s;white-space:nowrap}
+.conn-btn:hover{opacity:.85}
+.conn-results-title{font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.conn-results-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.conn-none{color:var(--text-3);font-family:var(--mono);font-size:11px;letter-spacing:1px;padding:32px 0;text-align:center}
+.conn-card{background:var(--navy-2);border:1px solid var(--border);margin-bottom:12px;overflow:hidden;animation:rowIn .3s ease both}
+.conn-card-header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--navy-3);border-bottom:1px solid var(--border)}
+.conn-card-type{font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:1.5px;text-transform:uppercase}
+.conn-card-time{font-family:var(--mono);font-size:12px;color:var(--text-2);margin-left:auto}
+.conn-legs{padding:0}
+.conn-leg{display:flex;align-items:stretch;padding:14px 16px;border-bottom:1px solid var(--border);gap:14px}
+.conn-leg:last-child{border-bottom:none}
+.conn-leg-line{display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0;width:28px}
+.conn-leg-badge{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--white);background:var(--blue);padding:2px 6px;text-align:center;min-width:28px}
+.conn-leg-spine{flex:1;width:2px;background:var(--border-2);margin:4px 0}
+.conn-leg-body{flex:1;display:flex;flex-direction:column;gap:6px}
+.conn-leg-row{display:flex;align-items:baseline;gap:8px}
+.conn-leg-stop{font-size:13px;color:var(--text);flex:1}
+.conn-leg-time{font-family:var(--mono);font-size:11px;color:var(--text-2)}
+.conn-leg-arrow{font-size:10px;color:var(--text-3);padding:2px 0}
+.conn-leg-info{font-size:11px;color:var(--text-3)}
+.conn-transfer{display:flex;align-items:center;gap:8px;padding:8px 16px;background:rgba(212,150,10,.05);border-bottom:1px solid var(--border)}
+.conn-transfer-label{font-family:var(--mono);font-size:9px;color:var(--yellow-l);letter-spacing:1px;text-transform:uppercase}
+.conn-transfer-time{font-family:var(--mono);font-size:10px;color:var(--text-3);margin-left:auto}
 
 /* ── FOOTER ── */
-footer {
-  height: 28px;
-  background: var(--navy-2);
-  border-top: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  gap: 24px;
-  position: fixed; bottom: 0; left: 0; right: 0;
-}
+footer{height:28px;background:var(--navy-2);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:24px;position:fixed;bottom:0;left:0;right:0}
+.footer-item{font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.footer-item span{color:var(--text-2)}
 
-.footer-item {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--text-3);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.footer-item span { color: var(--text-2); }
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--navy-2)}
+::-webkit-scrollbar-thumb{background:var(--border-2)}
 
 /* Column widths */
-th:nth-child(1), td:nth-child(1) { width: 72px; }
-th:nth-child(2), td:nth-child(2) { width: auto; }
-th:nth-child(3), td:nth-child(3) { width: 200px; }
-th:nth-child(4), td:nth-child(4) { width: 110px; text-align: right; }
-th:nth-child(5), td:nth-child(5) { width: 110px; text-align: right; }
-th:nth-child(6), td:nth-child(6) { width: 130px; }
-th:nth-child(7), td:nth-child(7) { width: 120px; }
+th:nth-child(1),td:nth-child(1){width:72px}
+th:nth-child(2),td:nth-child(2){width:auto}
+th:nth-child(3),td:nth-child(3){width:200px}
+th:nth-child(4),td:nth-child(4){width:110px;text-align:right}
+th:nth-child(5),td:nth-child(5){width:110px;text-align:right}
+th:nth-child(6),td:nth-child(6){width:130px}
+th:nth-child(7),td:nth-child(7){width:120px}
 
-
-/* ══════════════════════════════════════
-   MOBILE
-══════════════════════════════════════ */
-@media (max-width: 768px) {
-
-  /* Header: stack logo + hide title, compact right */
-  header { height: auto; flex-wrap: wrap; }
-
-  .header-logo {
-    min-width: unset;
-    padding: 10px 16px;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    width: 100%;
-  }
-
-  .logo-full { display: none; }
-
-  .header-title { display: none; }
-
-  .header-right {
-    width: 100%;
-    justify-content: space-between;
-    margin-left: 0;
-    border-top: 1px solid var(--border);
-  }
-
-  .header-cell {
-    flex: 1;
-    padding: 8px 12px;
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: 8px;
-    border-left: none;
-    border-right: 1px solid var(--border);
-  }
-
-  .header-cell:last-child { border-right: none; }
-  .header-cell-label { display: none; }
-  .header-cell-value { font-size: 12px; }
-
-  /* Stats: 2x2 grid */
-  .stats-bar { grid-template-columns: repeat(2, 1fr); }
-  .stat-cell { padding: 10px 14px; gap: 10px; }
-  .stat-icon { width: 28px; height: 28px; font-size: 12px; }
-  .stat-value { font-size: 18px; }
-  .stat-label { font-size: 9px; }
-
-  /* Layout: stack sidebar above table */
-  .layout {
-    flex-direction: column;
-    height: auto;
-    overflow: visible;
-  }
-
-  /* Sidebar: horizontal scrolling pill filters, no fixed width */
-  .sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    flex-direction: column;
-    overflow: visible;
-  }
-
-  .sidebar-section { padding: 10px 12px; }
-
-  .sidebar-section:first-child { display: block; }
-
-  /* Hide status/delay label sections on mobile, keep search */
-  .sidebar-section:not(:first-child) .sidebar-title { margin-bottom: 6px; }
-
-  .filter-group {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 6px;
-  }
-
-  .filter-option {
-    padding: 5px 10px;
-    gap: 6px;
-    flex: 0 0 auto;
-  }
-
-  .filter-count { display: none; }
-
-  /* Main area: full width, natural height */
-  .main-area { overflow: visible; }
-
-  .table-header-bar { padding: 10px 12px; }
-
-  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-  /* Table: hide less important columns on mobile */
-  table { table-layout: auto; min-width: 480px; }
-
-  /* Hide planned/actual time columns — too narrow */
-  th:nth-child(4), td:nth-child(4),
-  th:nth-child(5), td:nth-child(5) { display: none; }
-
-  th, td { padding: 9px 10px; font-size: 11px; }
-
-  .cell-route { font-size: 13px; }
-  .cell-dest, .cell-stop { font-size: 11px; }
-  .delay-chip { font-size: 9px; padding: 2px 6px; }
-  .status-chip { font-size: 8px; padding: 2px 6px; }
-
-  /* Footer: single line, scrollable */
-  footer {
-    flex-wrap: wrap;
-    height: auto;
-    padding: 8px 12px;
-    gap: 8px;
-    padding-bottom: 12px;
-  }
-
-  .footer-item { font-size: 8px; }
-  .footer-item:last-child { margin-left: 0; width: 100%; }
+/* ── MOBILE ── */
+@media(max-width:768px){
+  header{height:auto;flex-wrap:wrap}
+  .header-logo{min-width:unset;padding:10px 16px;border-right:none;border-bottom:1px solid var(--border);width:100%}
+  .logo-full{display:none}
+  .header-title{display:none}
+  .header-right{width:100%;justify-content:space-between;margin-left:0;border-top:1px solid var(--border)}
+  .header-cell{flex:1;padding:8px 12px;flex-direction:row;justify-content:flex-start;gap:8px;border-left:none;border-right:1px solid var(--border)}
+  .header-cell:last-child{border-right:none}
+  .header-cell-label{display:none}
+  .header-cell-value{font-size:12px}
+  .tab-btn{padding:0 14px;font-size:9px;gap:4px}
+  .tab-icon{display:none}
+  .stats-bar{grid-template-columns:repeat(2,1fr)}
+  .stat-cell{padding:10px 14px;gap:10px}
+  .stat-icon{width:28px;height:28px;font-size:12px}
+  .stat-value{font-size:18px}
+  .stat-label{font-size:9px}
+  .layout{flex-direction:column;height:auto;overflow:visible}
+  .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border);flex-direction:column;overflow:visible}
+  .sidebar-section{padding:10px 12px}
+  .filter-group{flex-direction:row;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .filter-option{padding:5px 10px;gap:6px;flex:0 0 auto}
+  .filter-count{display:none}
+  .main-area{overflow:visible}
+  .table-header-bar{padding:10px 12px}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{table-layout:auto;min-width:480px}
+  th:nth-child(4),td:nth-child(4),th:nth-child(5),td:nth-child(5){display:none}
+  th,td{padding:9px 10px;font-size:11px}
+  .cell-route{font-size:13px}
+  footer{flex-wrap:wrap;height:auto;padding:8px 12px;gap:8px;padding-bottom:12px}
+  .footer-item{font-size:8px}
+  .footer-item:last-child{margin-left:0;width:100%}
+  #viewTimetable,#viewConnections{padding:16px;height:auto}
+  .conn-fields{grid-template-columns:1fr;gap:10px}
+  .tt-stop{min-width:90px}
 }
-
-@media (max-width: 420px) {
-  .stats-bar { grid-template-columns: repeat(2, 1fr); }
-  .stat-value { font-size: 16px; }
-
-  /* On very small screens hide status column too */
-  th:nth-child(7), td:nth-child(7) { display: none; }
+@media(max-width:420px){
+  .stats-bar{grid-template-columns:repeat(2,1fr)}
+  .stat-value{font-size:16px}
+  th:nth-child(7),td:nth-child(7){display:none}
 }
-
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
 <header>
   <div class="header-logo">
     <div class="logo-emblem">STP</div>
@@ -673,9 +261,7 @@ th:nth-child(7), td:nth-child(7) { width: 120px; }
       <div class="logo-full">Skuszawyjiński Transport Publiczny</div>
     </div>
   </div>
-  <div class="header-title">
-    <h1>System Monitorowania Ruchu</h1>
-  </div>
+  <div class="header-title"><h1>System Monitorowania Ruchu</h1></div>
   <div class="header-right">
     <div class="header-cell">
       <div class="header-cell-label">Status</div>
@@ -691,7 +277,18 @@ th:nth-child(7), td:nth-child(7) { width: 120px; }
   </div>
 </header>
 
-<!-- STATS BAR -->
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('fleet')" id="tab-fleet">
+    <span class="tab-icon">⊟</span> Monitor floty
+  </button>
+  <button class="tab-btn" onclick="switchTab('timetable')" id="tab-timetable">
+    <span class="tab-icon">◫</span> Rozkład jazdy
+  </button>
+  <button class="tab-btn" onclick="switchTab('connections')" id="tab-connections">
+    <span class="tab-icon">⇄</span> Połączenia
+  </button>
+</nav>
+
 <div class="stats-bar">
   <div class="stat-cell">
     <div class="stat-icon">⬡</div>
@@ -711,132 +308,172 @@ th:nth-child(7), td:nth-child(7) { width: 120px; }
     <div class="stat-icon">↓</div>
     <div class="stat-data">
       <div class="stat-value" id="statWorstLine">—</div>
-      <div class="stat-label">Najbardziej opóźniona linia</div>
+      <div class="stat-label">Najbardziej opóźniona</div>
     </div>
   </div>
   <div class="stat-cell">
     <div class="stat-icon">↑</div>
     <div class="stat-data">
       <div class="stat-value" id="statBestLine">—</div>
-      <div class="stat-label">Najbardziej punktualna linia</div>
+      <div class="stat-label">Najbardziej punktualna</div>
     </div>
   </div>
 </div>
 
-<!-- LAYOUT -->
-<div class="layout">
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-section">
-      <div class="sidebar-title">Szukaj</div>
-      <input class="filter-input" id="searchLine" type="text" placeholder="Nr linii…">
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-title">Status</div>
-      <div class="filter-group" id="statusFilters">
-        <div class="filter-option active" data-filter="status" data-value="all" onclick="toggleFilter(this)">
-          <div class="filter-dot" style="background:var(--blue-l)"></div>
-          <span class="filter-option-label">Wszystkie</span>
-          <span class="filter-count" id="countAll">0</span>
-        </div>
-        <div class="filter-option" data-filter="status" data-value="w-trasie" onclick="toggleFilter(this)">
-          <div class="filter-dot" style="background:var(--blue-l)"></div>
-          <span class="filter-option-label">W trasie</span>
-          <span class="filter-count" id="countActive">0</span>
-        </div>
-        <div class="filter-option" data-filter="status" data-value="zjazd" onclick="toggleFilter(this)">
-          <div class="filter-dot" style="background:var(--grey-l)"></div>
-          <span class="filter-option-label">Zjazd techniczny</span>
-          <span class="filter-count" id="countTech">0</span>
+<!-- ══ FLEET VIEW ══ -->
+<div class="view active" id="viewFleet">
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Szukaj</div>
+        <input class="filter-input" id="searchLine" type="text" placeholder="Nr linii…">
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Status</div>
+        <div class="filter-group">
+          <div class="filter-option active" data-filter="status" data-value="all" onclick="toggleFilter(this)">
+            <div class="filter-dot" style="background:var(--blue-l)"></div>
+            <span class="filter-option-label">Wszystkie</span>
+            <span class="filter-count" id="countAll">0</span>
+          </div>
+          <div class="filter-option" data-filter="status" data-value="w-trasie" onclick="toggleFilter(this)">
+            <div class="filter-dot" style="background:var(--blue-l)"></div>
+            <span class="filter-option-label">W trasie</span>
+            <span class="filter-count" id="countActive">0</span>
+          </div>
+          <div class="filter-option" data-filter="status" data-value="zjazd" onclick="toggleFilter(this)">
+            <div class="filter-dot" style="background:var(--grey-l)"></div>
+            <span class="filter-option-label">Zjazd techniczny</span>
+            <span class="filter-count" id="countTech">0</span>
+          </div>
         </div>
       </div>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-title">Opóźnienie</div>
-      <div class="filter-group" id="delayFilters">
-        <div class="filter-option active" data-filter="delay" data-value="all" onclick="toggleFilter(this)">
-          <div class="filter-dot" style="background:var(--text-2)"></div>
-          <span class="filter-option-label">Wszystkie</span>
-          <span class="filter-count" id="countDelayAll">0</span>
-        </div>
-        <div class="filter-option" data-filter="delay" data-value="on-time" onclick="toggleFilter(this)">
-          <div class="filter-dot" style="background:var(--green)"></div>
-          <span class="filter-option-label">Punktualny</span>
-          <span class="filter-count" id="countOnTime">0</span>
-        </div>
-        <div class="filter-option" data-filter="delay" data-value="slight" onclick="toggleFilter(this)">
-          <div class="filter-dot" style="background:var(--yellow)"></div>
-          <span class="filter-option-label">3–5 min opóźnienia</span>
-          <span class="filter-count" id="countSlight">0</span>
-        </div>
-        <div class="filter-option" data-filter="delay" data-value="late" onclick="toggleFilter(this)">
-          <div class="filter-dot" style="background:var(--red)"></div>
-          <span class="filter-option-label">Powyżej 5 min</span>
-          <span class="filter-count" id="countLate">0</span>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Opóźnienie</div>
+        <div class="filter-group">
+          <div class="filter-option active" data-filter="delay" data-value="all" onclick="toggleFilter(this)">
+            <div class="filter-dot" style="background:var(--text-2)"></div>
+            <span class="filter-option-label">Wszystkie</span>
+            <span class="filter-count" id="countDelayAll">0</span>
+          </div>
+          <div class="filter-option" data-filter="delay" data-value="on-time" onclick="toggleFilter(this)">
+            <div class="filter-dot" style="background:var(--green)"></div>
+            <span class="filter-option-label">Punktualny</span>
+            <span class="filter-count" id="countOnTime">0</span>
+          </div>
+          <div class="filter-option" data-filter="delay" data-value="slight" onclick="toggleFilter(this)">
+            <div class="filter-dot" style="background:var(--yellow)"></div>
+            <span class="filter-option-label">3–5 min opóźnienia</span>
+            <span class="filter-count" id="countSlight">0</span>
+          </div>
+          <div class="filter-option" data-filter="delay" data-value="late" onclick="toggleFilter(this)">
+            <div class="filter-dot" style="background:var(--red)"></div>
+            <span class="filter-option-label">Powyżej 5 min</span>
+            <span class="filter-count" id="countLate">0</span>
+          </div>
         </div>
       </div>
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <div class="main-area">
-    <div class="table-header-bar">
-      <div class="table-title">Aktywne pojazdy</div>
-      <div class="table-meta" id="tableMeta">Ostatnia aktualizacja: —</div>
-    </div>
-    <div class="table-wrap">
-      <table id="vehicleTable">
-        <thead>
-          <tr>
-            <th onclick="sortBy('routeNum')" class="sorted">Linia <span class="sort-arrow" id="arrow-routeNum">↑</span></th>
-            <th onclick="sortBy('destination')">Kierunek <span class="sort-arrow" id="arrow-destination"></span></th>
-            <th onclick="sortBy('currentStop')">Następny przystanek <span class="sort-arrow" id="arrow-currentStop"></span></th>
-            <th onclick="sortBy('scheduledTime')" style="text-align:right">Planowany <span class="sort-arrow" id="arrow-scheduledTime"></span></th>
-            <th onclick="sortBy('actualTime')" style="text-align:right">Rzeczywisty <span class="sort-arrow" id="arrow-actualTime"></span></th>
-            <th onclick="sortBy('delaySeconds')">Opóźnienie <span class="sort-arrow" id="arrow-delaySeconds"></span></th>
-            <th onclick="sortBy('statusClass')">Status <span class="sort-arrow" id="arrow-statusClass"></span></th>
-          </tr>
-        </thead>
-        <tbody id="tableBody">
-          <tr class="empty-row"><td colspan="7">Oczekiwanie na dane…</td></tr>
-        </tbody>
-      </table>
+    </aside>
+    <div class="main-area">
+      <div class="table-header-bar">
+        <div class="table-title">Aktywne pojazdy</div>
+        <div class="table-meta" id="tableMeta">Ostatnia aktualizacja: —</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortBy('routeNum')" class="sorted">Linia <span class="sort-arrow" id="arrow-routeNum">↑</span></th>
+              <th onclick="sortBy('destination')">Kierunek <span class="sort-arrow" id="arrow-destination"></span></th>
+              <th onclick="sortBy('currentStop')">Następny przystanek <span class="sort-arrow" id="arrow-currentStop"></span></th>
+              <th onclick="sortBy('scheduledTime')" style="text-align:right">Planowany <span class="sort-arrow" id="arrow-scheduledTime"></span></th>
+              <th onclick="sortBy('actualTime')" style="text-align:right">Rzeczywisty <span class="sort-arrow" id="arrow-actualTime"></span></th>
+              <th onclick="sortBy('delaySeconds')">Opóźnienie <span class="sort-arrow" id="arrow-delaySeconds"></span></th>
+              <th onclick="sortBy('statusClass')">Status <span class="sort-arrow" id="arrow-statusClass"></span></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr class="empty-row"><td colspan="7">Oczekiwanie na dane…</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- FOOTER -->
+<!-- ══ TIMETABLE VIEW ══ -->
+<div class="view" id="viewTimetable">
+  <div class="sidebar-title" style="padding:0 0 8px;margin-bottom:16px;font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:2px;text-transform:uppercase">Wybierz linię</div>
+  <div class="tt-line-selector" id="ttLineBtns">
+    <span class="tt-none">Brak aktywnych pojazdów w systemie</span>
+  </div>
+  <div id="ttCards"></div>
+</div>
+
+<!-- ══ CONNECTIONS VIEW ══ -->
+<div class="view" id="viewConnections">
+  <div class="conn-search-panel">
+    <div class="conn-search-title">Wyszukaj połączenie</div>
+    <div class="conn-fields">
+      <div class="conn-field">
+        <label>Skąd</label>
+        <select class="conn-select" id="connFrom">
+          <option value="">— wybierz przystanek —</option>
+        </select>
+      </div>
+      <div class="conn-field">
+        <label>Dokąd</label>
+        <select class="conn-select" id="connTo">
+          <option value="">— wybierz przystanek —</option>
+        </select>
+      </div>
+      <button class="conn-btn" onclick="searchConnections()">Szukaj</button>
+    </div>
+  </div>
+  <div class="conn-results-title">Wyniki</div>
+  <div id="connResults">
+    <div class="conn-none">Wybierz przystanek początkowy i końcowy, aby wyszukać połączenia.</div>
+  </div>
+</div>
+
 <footer>
-  <div class="footer-item">Źródło danych: <span>stp.zawistowski-szym.workers.dev</span></div>
+  <div class="footer-item">Dane: <span>stp.zawistowski-szym.workers.dev</span></div>
   <div class="footer-item">Odświeżanie: <span>co 15s</span></div>
   <div class="footer-item" id="footerCount">Pojazdy: <span>—</span></div>
-  <div class="footer-item" style="margin-left:auto">STP Centrum Zarządzania Ruchem &nbsp;·&nbsp; <span id="footerYear"></span></div>
+  <div class="footer-item" style="margin-left:auto">STP CZR &nbsp;·&nbsp; <span id="footerYear"></span></div>
 </footer>
 
 <script>
-const API_URL     = 'https://stp.zawistowski-szym.workers.dev/api/buses';
-const REFRESH_MS  = 15000;
+const API_URL    = 'https://stp.zawistowski-szym.workers.dev/api/buses';
+const REFRESH_MS = 15000;
 
-let allBuses      = [];
-let sortCol       = 'routeNum';
-let sortAsc       = true;
-let filterStatus  = 'all';
-let filterDelay   = 'all';
-let searchTerm    = '';
-let lastTimestamp = 0;
+let allBuses     = [];
+let sortCol      = 'routeNum';
+let sortAsc      = true;
+let filterStatus = 'all';
+let filterDelay  = 'all';
+let searchTerm   = '';
+let activeTab    = 'fleet';
+let selectedTTLine = null;
 
 document.getElementById('footerYear').textContent = new Date().getFullYear();
 
 // ── Clock ─────────────────────────────────────────────────────
-function tickClock() {
-  document.getElementById('sysClock').textContent =
-    new Date().toTimeString().slice(0, 8);
+setInterval(() => {
+  document.getElementById('sysClock').textContent = new Date().toTimeString().slice(0,8);
+}, 1000);
+document.getElementById('sysClock').textContent = new Date().toTimeString().slice(0,8);
+
+// ── Tab switching ─────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (tab === 'timetable') renderTimetable();
+  if (tab === 'connections') renderConnectionStops();
 }
-setInterval(tickClock, 1000);
-tickClock();
 
 // ── Fetch ─────────────────────────────────────────────────────
 async function fetchData() {
@@ -844,62 +481,55 @@ async function fetchData() {
     const resp = await fetch(API_URL, { cache: 'no-store' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
-
     setOnline(true);
-    allBuses     = data.buses || [];
-    lastTimestamp = data.timestamp || Math.floor(Date.now() / 1000);
-
+    allBuses = data.buses || [];
     document.getElementById('tableMeta').textContent =
-      'Ostatnia aktualizacja: ' + new Date().toTimeString().slice(0, 8);
-
+      'Ostatnia aktualizacja: ' + new Date().toTimeString().slice(0,8);
     updateStats();
     updateCounts();
     renderTable();
-  } catch(e) {
-    setOnline(false);
-  }
+    if (activeTab === 'timetable')    renderTimetable();
+    if (activeTab === 'connections')  renderConnectionStops();
+  } catch(e) { setOnline(false); }
 }
 
-function setOnline(online) {
-  const dot  = document.getElementById('statusDot');
-  const text = document.getElementById('statusText');
-  dot.className  = 'status-dot' + (online ? '' : ' offline');
-  text.className = 'status-text' + (online ? '' : ' offline');
-  text.textContent = online ? 'ONLINE' : 'OFFLINE';
+function setOnline(on) {
+  document.getElementById('statusDot').className  = 'status-dot' + (on ? '' : ' offline');
+  document.getElementById('statusText').className = 'status-text' + (on ? '' : ' offline');
+  document.getElementById('statusText').textContent = on ? 'ONLINE' : 'OFFLINE';
 }
 
-// ── Derived fields ────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────
+const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function fmtTime(unixSec) {
+  if (!unixSec) return '—';
+  return new Date(unixSec * 1000).toTimeString().slice(0,5);
+}
+
 function busStatus(bus) {
-  if (!bus.routeNum || bus.currentStop === 'Awaiting route…' ||
-      bus.currentStop === 'Oczekiwanie na trasę...' || !bus.currentStop) {
-    return 'zjazd';
-  }
+  if (!bus.routeNum || !bus.currentStop ||
+      bus.currentStop === 'Oczekiwanie na trasę...' ||
+      bus.currentStop === 'Awaiting route…') return 'zjazd';
   if (bus.doorsOpen) return 'drzwi';
   return 'w-trasie';
 }
 
 function delayClass(sec) {
   if (sec == null) return 'tech';
-  const m = sec / 60;
-  if (m <= 1)  return 'on-time';
-  if (m <= 5)  return 'slight';
+  if (sec/60 <= 1) return 'on-time';
+  if (sec/60 <= 5) return 'slight';
   return 'late';
 }
 
 function delayLabel(sec) {
   if (sec == null) return '—';
   const abs = Math.abs(Math.round(sec));
-  const m = Math.floor(abs / 60), s = abs % 60;
-  const t = m > 0 ? `${m} min ${s > 0 ? s + ' s' : ''}`.trim() : `${s} s`;
+  const m = Math.floor(abs/60), s = abs%60;
+  const t = m > 0 ? `${m} min${s>0?' '+s+' s':''}` : `${s} s`;
   if (sec < -60) return `▲ ${t} wcześniej`;
-  if (sec <= 60) return '● Na czasie';
+  if (sec <=  60) return '● Na czasie';
   return `▼ +${t}`;
-}
-
-function fmtTime(unixSec) {
-  if (!unixSec) return '—';
-  const d = new Date(unixSec * 1000);
-  return d.toTimeString().slice(0, 5);
 }
 
 function scheduledTime(bus) {
@@ -908,14 +538,13 @@ function scheduledTime(bus) {
 }
 
 function actualTime(bus) {
-  const sched = scheduledTime(bus);
-  if (!sched || bus.delaySeconds == null) return null;
-  return sched + Math.round(bus.delaySeconds);
+  const s = scheduledTime(bus);
+  if (!s || bus.delaySeconds == null) return null;
+  return s + Math.round(bus.delaySeconds);
 }
 
 function enrichBus(bus) {
-  return {
-    ...bus,
+  return { ...bus,
     statusClass:   busStatus(bus),
     delayCategory: delayClass(bus.delaySeconds),
     scheduledTime: scheduledTime(bus),
@@ -925,124 +554,73 @@ function enrichBus(bus) {
 
 // ── Stats ─────────────────────────────────────────────────────
 function updateStats() {
-  const enriched = allBuses.map(enrichBus);
-  const active   = enriched.filter(b => b.statusClass !== 'zjazd');
-
+  const e = allBuses.map(enrichBus);
+  const active = e.filter(b => b.statusClass !== 'zjazd');
   document.getElementById('statActive').textContent = active.length || '0';
-
-  const withDelay = active.filter(b => b.delaySeconds != null);
-  if (withDelay.length) {
-    const avg = withDelay.reduce((s, b) => s + b.delaySeconds, 0) / withDelay.length;
-    const m = Math.floor(Math.abs(avg) / 60);
-    const s = Math.round(Math.abs(avg) % 60);
-    document.getElementById('statAvgDelay').textContent =
-      avg < 0 ? `▲${m}m${s}s` : `+${m}m${s}s`;
-  } else {
-    document.getElementById('statAvgDelay').textContent = '—';
-  }
-
-  // Worst line (most delayed)
-  const sorted = [...active].filter(b => b.delaySeconds != null)
-    .sort((a, b) => b.delaySeconds - a.delaySeconds);
-  document.getElementById('statWorstLine').textContent =
-    sorted.length ? (sorted[0].routeNum || '—') : '—';
-
-  // Best line (least delayed / earliest)
-  document.getElementById('statBestLine').textContent =
-    sorted.length ? (sorted[sorted.length - 1].routeNum || '—') : '—';
-
-  // Footer count
-  document.getElementById('footerCount').innerHTML =
-    `Pojazdy: <span>${enriched.length}</span>`;
+  const wd = active.filter(b => b.delaySeconds != null);
+  if (wd.length) {
+    const avg = wd.reduce((s,b) => s + b.delaySeconds, 0) / wd.length;
+    const m = Math.floor(Math.abs(avg)/60), s = Math.round(Math.abs(avg)%60);
+    document.getElementById('statAvgDelay').textContent = avg < 0 ? `▲${m}m${s}s` : `+${m}m${s}s`;
+  } else document.getElementById('statAvgDelay').textContent = '—';
+  const sorted = [...active].filter(b => b.delaySeconds != null).sort((a,b) => b.delaySeconds - a.delaySeconds);
+  document.getElementById('statWorstLine').textContent = sorted.length ? (sorted[0].routeNum || '—') : '—';
+  document.getElementById('statBestLine').textContent  = sorted.length ? (sorted[sorted.length-1].routeNum || '—') : '—';
+  document.getElementById('footerCount').innerHTML = `Pojazdy: <span>${e.length}</span>`;
 }
 
-// ── Sidebar counts ────────────────────────────────────────────
 function updateCounts() {
   const e = allBuses.map(enrichBus);
-  document.getElementById('countAll').textContent       = e.length;
-  document.getElementById('countActive').textContent    = e.filter(b => b.statusClass === 'w-trasie' || b.statusClass === 'drzwi').length;
-  document.getElementById('countTech').textContent      = e.filter(b => b.statusClass === 'zjazd').length;
-  document.getElementById('countDelayAll').textContent  = e.length;
-  document.getElementById('countOnTime').textContent    = e.filter(b => b.delayCategory === 'on-time').length;
-  document.getElementById('countSlight').textContent    = e.filter(b => b.delayCategory === 'slight').length;
-  document.getElementById('countLate').textContent      = e.filter(b => b.delayCategory === 'late').length;
+  document.getElementById('countAll').textContent      = e.length;
+  document.getElementById('countActive').textContent   = e.filter(b => b.statusClass==='w-trasie'||b.statusClass==='drzwi').length;
+  document.getElementById('countTech').textContent     = e.filter(b => b.statusClass==='zjazd').length;
+  document.getElementById('countDelayAll').textContent = e.length;
+  document.getElementById('countOnTime').textContent   = e.filter(b => b.delayCategory==='on-time').length;
+  document.getElementById('countSlight').textContent   = e.filter(b => b.delayCategory==='slight').length;
+  document.getElementById('countLate').textContent     = e.filter(b => b.delayCategory==='late').length;
 }
 
-// ── Filter & sort ─────────────────────────────────────────────
+// ── Fleet table ───────────────────────────────────────────────
 function getFiltered() {
   let rows = allBuses.map(enrichBus);
-
-  if (searchTerm) {
-    const t = searchTerm.toLowerCase();
-    rows = rows.filter(b => (b.routeNum || '').toLowerCase().includes(t));
-  }
-
-  if (filterStatus !== 'all') {
-    rows = rows.filter(b => b.statusClass === filterStatus);
-  }
-
-  if (filterDelay !== 'all') {
-    rows = rows.filter(b => b.delayCategory === filterDelay);
-  }
-
-  rows.sort((a, b) => {
-    let av = a[sortCol] ?? '';
-    let bv = b[sortCol] ?? '';
-    if (typeof av === 'string') av = av.toLowerCase();
-    if (typeof bv === 'string') bv = bv.toLowerCase();
-    if (av < bv) return sortAsc ? -1 : 1;
-    if (av > bv) return sortAsc ?  1 : -1;
-    return 0;
+  if (searchTerm) rows = rows.filter(b => (b.routeNum||'').toLowerCase().includes(searchTerm.toLowerCase()));
+  if (filterStatus !== 'all') rows = rows.filter(b => b.statusClass === filterStatus);
+  if (filterDelay  !== 'all') rows = rows.filter(b => b.delayCategory === filterDelay);
+  rows.sort((a,b) => {
+    let av = a[sortCol]??'', bv = b[sortCol]??'';
+    if (typeof av==='string') av=av.toLowerCase();
+    if (typeof bv==='string') bv=bv.toLowerCase();
+    return av<bv ? (sortAsc?-1:1) : av>bv ? (sortAsc?1:-1) : 0;
   });
-
   return rows;
 }
 
-// ── Render table ──────────────────────────────────────────────
 function renderTable() {
   const rows  = getFiltered();
   const tbody = document.getElementById('tableBody');
-
   if (!rows.length) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="7">Brak pojazdów spełniających kryteria filtrów</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="7">Brak pojazdów spełniających kryteria</td></tr>`;
     return;
   }
-
-  const statusLabel = { 'w-trasie': 'W trasie', 'zjazd': 'Zjazd tech.', 'drzwi': 'Drzwi otwarte' };
-
-  tbody.innerHTML = rows.map((bus, i) => {
-    const rowClass = {
-      'on-time': 'row-green',
-      'slight':  'row-yellow',
-      'late':    'row-red',
-      'tech':    'row-grey',
-    }[bus.delayCategory] || 'row-grey';
-
-    const sched  = fmtTime(bus.scheduledTime);
-    const actual = fmtTime(bus.actualTime);
-
-    return `<tr class="${rowClass}" style="animation-delay:${i * 0.03}s">
-      <td><span class="cell-route">${esc(bus.routeNum || '?')}</span></td>
-      <td><span class="cell-dest">${esc(bus.destination || '—')}</span></td>
-      <td><span class="cell-stop">${esc(bus.currentStop || '—')}</span></td>
-      <td class="cell-time">${sched}</td>
-      <td class="cell-time actual">${actual}</td>
+  const sl = { 'w-trasie':'W trasie','zjazd':'Zjazd tech.','drzwi':'Drzwi otwarte' };
+  tbody.innerHTML = rows.map((bus,i) => {
+    const rc = {'on-time':'row-green','slight':'row-yellow','late':'row-red','tech':'row-grey'}[bus.delayCategory]||'row-grey';
+    return `<tr class="${rc}" style="animation-delay:${i*.03}s">
+      <td><span class="cell-route">${esc(bus.routeNum||'?')}</span></td>
+      <td><span class="cell-dest">${esc(bus.destination||'—')}</span></td>
+      <td><span class="cell-stop">${esc(bus.currentStop||'—')}</span></td>
+      <td class="cell-time">${fmtTime(bus.scheduledTime)}</td>
+      <td class="cell-time actual">${fmtTime(bus.actualTime)}</td>
       <td><span class="delay-chip ${bus.delayCategory}">${delayLabel(bus.delaySeconds)}</span></td>
-      <td><span class="status-chip ${bus.statusClass}">${statusLabel[bus.statusClass] || bus.statusClass}</span></td>
+      <td><span class="status-chip ${bus.statusClass}">${sl[bus.statusClass]||bus.statusClass}</span></td>
     </tr>`;
   }).join('');
 }
 
-// ── Sort ──────────────────────────────────────────────────────
 function sortBy(col) {
-  if (sortCol === col) {
-    sortAsc = !sortAsc;
-  } else {
-    sortCol = col;
-    sortAsc = true;
-    document.querySelectorAll('th').forEach(th => th.classList.remove('sorted'));
-    document.querySelectorAll('.sort-arrow').forEach(a => a.textContent = '');
-  }
+  sortAsc = sortCol === col ? !sortAsc : true;
+  sortCol = col;
+  document.querySelectorAll('th').forEach(th => { th.classList.remove('sorted'); th.querySelector('.sort-arrow').textContent=''; });
   document.querySelectorAll('th').forEach(th => {
     if (th.getAttribute('onclick') === `sortBy('${col}')`) {
       th.classList.add('sorted');
@@ -1052,25 +630,284 @@ function sortBy(col) {
   renderTable();
 }
 
-// ── Filter ────────────────────────────────────────────────────
 function toggleFilter(el) {
-  const type = el.dataset.filter;
-  const val  = el.dataset.value;
+  const type = el.dataset.filter, val = el.dataset.value;
   document.querySelectorAll(`[data-filter="${type}"]`).forEach(e => e.classList.remove('active'));
   el.classList.add('active');
-  if (type === 'status') filterStatus = val;
-  if (type === 'delay')  filterDelay  = val;
+  if (type==='status') filterStatus = val;
+  if (type==='delay')  filterDelay  = val;
   renderTable();
 }
 
 document.getElementById('searchLine').addEventListener('input', e => {
-  searchTerm = e.target.value.trim();
-  renderTable();
+  searchTerm = e.target.value.trim(); renderTable();
 });
 
-// ── Helpers ───────────────────────────────────────────────────
-function esc(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// ══ TIMETABLE ════════════════════════════════════════════════
+function renderTimetable() {
+  const active = allBuses.filter(b => busStatus(b) !== 'zjazd' && b.allStops && b.allStops.length);
+  const btnEl  = document.getElementById('ttLineBtns');
+  const cardsEl = document.getElementById('ttCards');
+
+  if (!active.length) {
+    btnEl.innerHTML  = '<span class="tt-none">Brak aktywnych pojazdów w systemie</span>';
+    cardsEl.innerHTML = '';
+    selectedTTLine = null;
+    return;
+  }
+
+  // Unique lines
+  const lines = [...new Set(active.map(b => b.routeNum))].sort();
+  if (!selectedTTLine || !lines.includes(selectedTTLine)) selectedTTLine = lines[0];
+
+  btnEl.innerHTML = lines.map(l =>
+    `<button class="tt-line-btn${l===selectedTTLine?' active':''}" onclick="selectTTLine('${esc(l)}')">${esc(l)}</button>`
+  ).join('');
+
+  const buses = active.filter(b => b.routeNum === selectedTTLine);
+
+  cardsEl.innerHTML = buses.map(bus => {
+    const stops = bus.allStops || [];
+    const idx   = (bus.stopIndex || 1) - 1; // 0-based current stop index
+    const delay = bus.delaySeconds || 0;
+
+    const delayBadgeClass = delayClass(bus.delaySeconds);
+    const delayBadgeStyle = {
+      'on-time': 'color:var(--green-l);background:rgba(15,168,106,.1)',
+      'slight':  'color:var(--yellow-l);background:rgba(212,150,10,.1)',
+      'late':    'color:var(--red-l);background:rgba(192,40,42,.1)',
+      'tech':    'color:var(--grey-l);background:rgba(58,69,85,.2)',
+    }[delayBadgeClass];
+
+    const stopsHtml = stops.map((stop, i) => {
+      let cls = '';
+      if (i < idx)  cls = 'passed';
+      if (i === idx) cls = 'current';
+
+      // Calculate scheduled and actual time for each stop
+      const sched = bus.scheduledTimes && bus.scheduledTimes[i] ? bus.scheduledTimes[i] : null;
+      const actual = sched ? sched + Math.round(delay) : null;
+      const timeStr = actual ? fmtTime(actual) : (sched ? fmtTime(sched) : '');
+
+      const dotContent = i < idx ? '✓' : (i === idx ? '▶' : '');
+      return `<div class="tt-stop ${cls}">
+        <div class="tt-stop-dot">${dotContent}</div>
+        <div class="tt-stop-name">${esc(stop)}</div>
+        ${timeStr ? `<div class="tt-stop-time">${timeStr}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    return `<div class="tt-card">
+      <div class="tt-card-header">
+        <div class="tt-route-badge">${esc(bus.routeNum)}</div>
+        <div class="tt-dest">→ ${esc(bus.destination||'—')}</div>
+        <div class="tt-driver">kier. ${esc(bus.driverName||'—')}</div>
+        <div class="tt-delay-badge" style="${delayBadgeStyle}">${delayLabel(bus.delaySeconds)}</div>
+      </div>
+      <div class="tt-stops"><div class="tt-stops-inner">${stopsHtml}</div></div>
+    </div>`;
+  }).join('');
+}
+
+function selectTTLine(line) {
+  selectedTTLine = line;
+  renderTimetable();
+}
+
+// ══ CONNECTIONS ═══════════════════════════════════════════════
+function getAllStops() {
+  const stops = new Set();
+  allBuses.forEach(bus => {
+    if (bus.allStops) bus.allStops.forEach(s => stops.add(s));
+  });
+  return [...stops].sort();
+}
+
+function renderConnectionStops() {
+  const stops = getAllStops();
+  const fromEl = document.getElementById('connFrom');
+  const toEl   = document.getElementById('connTo');
+  const prevFrom = fromEl.value, prevTo = toEl.value;
+
+  const opts = ['<option value="">— wybierz przystanek —</option>',
+    ...stops.map(s => `<option value="${esc(s)}">${esc(s)}</option>`)
+  ].join('');
+
+  fromEl.innerHTML = opts;
+  toEl.innerHTML   = opts;
+  if (prevFrom) fromEl.value = prevFrom;
+  if (prevTo)   toEl.value   = prevTo;
+}
+
+function searchConnections() {
+  const from = document.getElementById('connFrom').value;
+  const to   = document.getElementById('connTo').value;
+  const el   = document.getElementById('connResults');
+
+  if (!from || !to) {
+    el.innerHTML = '<div class="conn-none">Wybierz oba przystanki.</div>';
+    return;
+  }
+  if (from === to) {
+    el.innerHTML = '<div class="conn-none">Przystanek początkowy i końcowy są takie same.</div>';
+    return;
+  }
+
+  const results = findConnections(from, to);
+
+  if (!results.length) {
+    el.innerHTML = `<div class="conn-none">Brak połączeń z <strong>${esc(from)}</strong> do <strong>${esc(to)}</strong> w oparciu o aktualnie kursujące pojazdy.</div>`;
+    return;
+  }
+
+  el.innerHTML = results.map((conn, ci) => renderConnectionCard(conn, ci)).join('');
+}
+
+// Graph-based connection finder with up to 1 transfer
+function findConnections(from, to) {
+  const activeBuses = allBuses.filter(b => busStatus(b) !== 'zjazd' && b.allStops && b.allStops.length);
+  const results = [];
+
+  // Build: for each bus, what stops does it serve and in what order?
+  // busRoutes[i] = { bus, stops: [...], times: [...] }
+  const busRoutes = activeBuses.map(bus => ({
+    bus,
+    stops: bus.allStops,
+    times: bus.scheduledTimes || [],
+    delay: bus.delaySeconds || 0,
+  }));
+
+  // ── Direct connections ────────────────────────────────────
+  for (const route of busRoutes) {
+    const fromIdx = route.stops.indexOf(from);
+    const toIdx   = route.stops.indexOf(to);
+    if (fromIdx !== -1 && toIdx !== -1 && toIdx > fromIdx) {
+      const depTime  = route.times[fromIdx] ? route.times[fromIdx] + Math.round(route.delay) : null;
+      const arrTime  = route.times[toIdx]   ? route.times[toIdx]   + Math.round(route.delay) : null;
+      results.push({
+        type: 'direct',
+        legs: [{
+          bus: route.bus,
+          from, to,
+          fromIdx, toIdx,
+          depTime, arrTime,
+          stops: route.stops.slice(fromIdx, toIdx + 1),
+        }],
+      });
+    }
+  }
+
+  // ── Connections with 1 transfer ───────────────────────────
+  // Find all stops reachable from `from`, then find buses from those stops to `to`
+  for (const routeA of busRoutes) {
+    const fromIdx = routeA.stops.indexOf(from);
+    if (fromIdx === -1) continue;
+
+    // Every stop after `from` on routeA is a potential transfer point
+    for (let ti = fromIdx + 1; ti < routeA.stops.length; ti++) {
+      const transferStop = routeA.stops[ti];
+      if (transferStop === to) continue; // already a direct connection
+
+      for (const routeB of busRoutes) {
+        if (routeB === routeA) continue;
+        const transferIdx = routeB.stops.indexOf(transferStop);
+        const toIdx       = routeB.stops.indexOf(to);
+        if (transferIdx === -1 || toIdx === -1 || toIdx <= transferIdx) continue;
+
+        // Make sure transfer makes temporal sense
+        const arr1  = routeA.times[ti]          ? routeA.times[ti]          + Math.round(routeA.delay) : null;
+        const dep2  = routeB.times[transferIdx]  ? routeB.times[transferIdx] + Math.round(routeB.delay) : null;
+        const arr2  = routeB.times[toIdx]        ? routeB.times[toIdx]       + Math.round(routeB.delay) : null;
+        const dep1  = routeA.times[fromIdx]      ? routeA.times[fromIdx]     + Math.round(routeA.delay) : null;
+
+        // Skip if second bus has already passed the transfer stop
+        if (arr1 && dep2 && dep2 < arr1) continue;
+
+        results.push({
+          type: 'transfer',
+          legs: [
+            {
+              bus: routeA.bus, from, to: transferStop,
+              fromIdx, toIdx: ti,
+              depTime: dep1, arrTime: arr1,
+              stops: routeA.stops.slice(fromIdx, ti + 1),
+            },
+            {
+              bus: routeB.bus, from: transferStop, to,
+              fromIdx: transferIdx, toIdx,
+              depTime: dep2, arrTime: arr2,
+              stops: routeB.stops.slice(transferIdx, toIdx + 1),
+            },
+          ],
+          transferStop,
+          waitTime: (arr1 && dep2) ? dep2 - arr1 : null,
+        });
+      }
+    }
+  }
+
+  // Sort: direct first, then by departure time
+  results.sort((a, b) => {
+    if (a.type === 'direct' && b.type !== 'direct') return -1;
+    if (b.type === 'direct' && a.type !== 'direct') return 1;
+    const ta = a.legs[0].depTime || 0;
+    const tb = b.legs[0].depTime || 0;
+    return ta - tb;
+  });
+
+  // Deduplicate: same bus + same from/to combo
+  const seen = new Set();
+  return results.filter(r => {
+    const key = r.legs.map(l => l.bus.routeNum + ':' + l.from + '>' + l.to).join('|');
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  }).slice(0, 8); // max 8 results
+}
+
+function renderConnectionCard(conn, ci) {
+  const typeLabel = conn.type === 'direct' ? 'Bezpośrednie' : '1 przesiadka';
+  const firstDep  = conn.legs[0].depTime;
+  const lastArr   = conn.legs[conn.legs.length - 1].arrTime;
+  const totalTime = (firstDep && lastArr) ? Math.round((lastArr - firstDep) / 60) + ' min' : '—';
+
+  let legsHtml = '';
+  conn.legs.forEach((leg, li) => {
+    if (li > 0) {
+      const waitMin = conn.waitTime ? Math.round(conn.waitTime / 60) : null;
+      legsHtml += `<div class="conn-transfer">
+        <span class="conn-transfer-label">⇄ Przesiadka: ${esc(conn.transferStop)}</span>
+        <span class="conn-transfer-time">${waitMin != null ? 'oczekiwanie ~'+waitMin+' min' : ''}</span>
+      </div>`;
+    }
+    const stopsCount = leg.stops.length - 2;
+    legsHtml += `<div class="conn-leg">
+      <div class="conn-leg-line">
+        <div class="conn-leg-badge">${esc(leg.bus.routeNum||'?')}</div>
+        <div class="conn-leg-spine"></div>
+      </div>
+      <div class="conn-leg-body">
+        <div class="conn-leg-row">
+          <span class="conn-leg-stop">${esc(leg.from)}</span>
+          <span class="conn-leg-time">${fmtTime(leg.depTime)}</span>
+        </div>
+        ${stopsCount > 0 ? `<div class="conn-leg-arrow">↓ ${stopsCount} przystanek${stopsCount===1?'':stopsCount<5?'i':'ów'} pośrednich</div>` : ''}
+        <div class="conn-leg-row">
+          <span class="conn-leg-stop">${esc(leg.to)}</span>
+          <span class="conn-leg-time">${fmtTime(leg.arrTime)}</span>
+        </div>
+        <div class="conn-leg-info">kier. ${esc(leg.bus.driverName||'—')} · ${delayLabel(leg.bus.delaySeconds)}</div>
+      </div>
+    </div>`;
+  });
+
+  return `<div class="conn-card" style="animation-delay:${ci*.05}s">
+    <div class="conn-card-header">
+      <span class="conn-card-type">${typeLabel}</span>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--text-3)">czas przejazdu: ${totalTime}</span>
+      <span class="conn-card-time">${fmtTime(firstDep)} → ${fmtTime(lastArr)}</span>
+    </div>
+    <div class="conn-legs">${legsHtml}</div>
+  </div>`;
 }
 
 // ── Init ──────────────────────────────────────────────────────
