@@ -656,6 +656,13 @@ document.getElementById('searchLine').addEventListener('input', e => {
 
 // ══ TIMETABLE ════════════════════════════════════════════════
 function renderTimetable() {
+  if (allBuses.length) {
+    const b = allBuses[0];
+    console.log('[TT] bus:', b.routeNum,
+      '| stopIndex:', b.stopIndex,
+      '| scheduledTimes raw:', JSON.stringify(b.scheduledTimes),
+      '| normed:', JSON.stringify(normTimes(b.scheduledTimes)));
+  }
   const active = allBuses.filter(b => busStatus(b) !== 'zjazd' && b.allStops && b.allStops.length);
   const btnEl  = document.getElementById('ttLineBtns');
   const cardsEl = document.getElementById('ttCards');
