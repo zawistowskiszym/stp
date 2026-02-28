@@ -229,6 +229,7 @@ header {
   display: flex;
   height: calc(100vh - 56px - 65px);
   overflow: hidden;
+  /* height overridden to auto on mobile via media query */
 }
 
 /* ── SIDEBAR ── */
@@ -529,6 +530,135 @@ th:nth-child(4), td:nth-child(4) { width: 110px; text-align: right; }
 th:nth-child(5), td:nth-child(5) { width: 110px; text-align: right; }
 th:nth-child(6), td:nth-child(6) { width: 130px; }
 th:nth-child(7), td:nth-child(7) { width: 120px; }
+
+
+/* ══════════════════════════════════════
+   MOBILE
+══════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* Header: stack logo + hide title, compact right */
+  header { height: auto; flex-wrap: wrap; }
+
+  .header-logo {
+    min-width: unset;
+    padding: 10px 16px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    width: 100%;
+  }
+
+  .logo-full { display: none; }
+
+  .header-title { display: none; }
+
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+    margin-left: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .header-cell {
+    flex: 1;
+    padding: 8px 12px;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 8px;
+    border-left: none;
+    border-right: 1px solid var(--border);
+  }
+
+  .header-cell:last-child { border-right: none; }
+  .header-cell-label { display: none; }
+  .header-cell-value { font-size: 12px; }
+
+  /* Stats: 2x2 grid */
+  .stats-bar { grid-template-columns: repeat(2, 1fr); }
+  .stat-cell { padding: 10px 14px; gap: 10px; }
+  .stat-icon { width: 28px; height: 28px; font-size: 12px; }
+  .stat-value { font-size: 18px; }
+  .stat-label { font-size: 9px; }
+
+  /* Layout: stack sidebar above table */
+  .layout {
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+  }
+
+  /* Sidebar: horizontal scrolling pill filters, no fixed width */
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .sidebar-section { padding: 10px 12px; }
+
+  .sidebar-section:first-child { display: block; }
+
+  /* Hide status/delay label sections on mobile, keep search */
+  .sidebar-section:not(:first-child) .sidebar-title { margin-bottom: 6px; }
+
+  .filter-group {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .filter-option {
+    padding: 5px 10px;
+    gap: 6px;
+    flex: 0 0 auto;
+  }
+
+  .filter-count { display: none; }
+
+  /* Main area: full width, natural height */
+  .main-area { overflow: visible; }
+
+  .table-header-bar { padding: 10px 12px; }
+
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Table: hide less important columns on mobile */
+  table { table-layout: auto; min-width: 480px; }
+
+  /* Hide planned/actual time columns — too narrow */
+  th:nth-child(4), td:nth-child(4),
+  th:nth-child(5), td:nth-child(5) { display: none; }
+
+  th, td { padding: 9px 10px; font-size: 11px; }
+
+  .cell-route { font-size: 13px; }
+  .cell-dest, .cell-stop { font-size: 11px; }
+  .delay-chip { font-size: 9px; padding: 2px 6px; }
+  .status-chip { font-size: 8px; padding: 2px 6px; }
+
+  /* Footer: single line, scrollable */
+  footer {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 8px 12px;
+    gap: 8px;
+    padding-bottom: 12px;
+  }
+
+  .footer-item { font-size: 8px; }
+  .footer-item:last-child { margin-left: 0; width: 100%; }
+}
+
+@media (max-width: 420px) {
+  .stats-bar { grid-template-columns: repeat(2, 1fr); }
+  .stat-value { font-size: 16px; }
+
+  /* On very small screens hide status column too */
+  th:nth-child(7), td:nth-child(7) { display: none; }
+}
 
 </style>
 </head>
