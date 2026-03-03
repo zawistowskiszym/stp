@@ -1174,50 +1174,55 @@ function kartaValidate() {
   return true;
 }
 
-function kartaSubmit() {
+async function kartaSubmit() {
   if (!kartaValidate()) return;
+
+  const btn = document.getElementById('kartaSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Wysyłanie…';
 
   const nr = kartaGenerateNr();
   document.getElementById('previewNr').textContent = nr;
 
-  // Save to localStorage
   const data = {
-    nick:    document.getElementById('kartaRoblox').value.trim(),
-    discord: document.getElementById('kartaDiscord').value.trim(),
-    dz:      document.getElementById('kartaDzielnica').value,
-    os:      document.getElementById('kartaOsiedle').value,
+    nick:     document.getElementById('kartaRoblox').value.trim(),
+    discord:  document.getElementById('kartaDiscord').value.trim(),
+    dz:       document.getElementById('kartaDzielnica').value,
+    os:       document.getElementById('kartaOsiedle').value,
     nr,
     issuedAt: new Date().toISOString(),
   };
+
+  // Zapisz lokalnie
   try { localStorage.setItem('stp_karta', JSON.stringify(data)); } catch(e) {}
 
-  // Show issued state
+  // Wyślij do Cloudflare KV
+  try {
+    const resp = await fetch('https://stp.zawistowski-szym.workers.dev/api/karta', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(data),
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  } catch(e) {
+    // Pokaż błąd ale nie blokuj — karta lokalna działa
+    const errEl = document.getElementById('kartaErrorMsg');
+    errEl.textContent = 'Ostrzeżenie: nie udało się zsynchronizować z serwerem. Karta zapisana lokalnie.';
+    errEl.style.display = 'block';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Wyślij wniosek o kartę';
+
+  // Pokaż potwierdzenie
   document.getElementById('kartaForm').style.display = 'none';
   document.getElementById('kartaIssued').classList.add('show');
 
-  // Animate card
   const card = document.getElementById('kartaCardPreview');
   card.style.transform = 'scale(1.02)';
   card.style.transition = 'transform .3s';
   setTimeout(() => { card.style.transform = 'scale(1)'; }, 300);
 }
-
-function kartaReset() {
-  document.getElementById('kartaForm').style.display = 'flex';
-  document.getElementById('kartaIssued').classList.remove('show');
-  document.getElementById('kartaRoblox').value   = '';
-  document.getElementById('kartaDiscord').value  = '';
-  document.getElementById('kartaDzielnica').value = '';
-  document.getElementById('kartaOsiedle').innerHTML = '<option value="">— najpierw wybierz dzielnicę —</option>';
-  document.getElementById('kartaOsiedle').disabled = true;
-  document.getElementById('kartaErrorMsg').style.display = 'none';
-  document.getElementById('previewName').textContent = 'Twój Nick';
-  document.getElementById('previewDiscord').textContent = '';
-  document.getElementById('previewLoc').textContent = '— nie wybrano —';
-  document.getElementById('previewNr').textContent = '';
-  try { localStorage.removeItem('stp_karta'); } catch(e) {}
-}
-
 // Restore saved card on load
 (function kartaRestore() {
   try {
