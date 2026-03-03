@@ -74,7 +74,7 @@ header{display:flex;align-items:center;height:56px;background:var(--navy-2);bord
 .view.active{display:flex;flex-direction:column}
 
 /* ── FLEET VIEW layout ── */
-.layout{display:flex;height:calc(100vh - 56px - 42px - 65px - 28px);overflow:hidden}
+.layout{display:flex;height:calc(100vh - 56px - 42px - 65px);overflow:hidden}
 .sidebar{width:240px;flex-shrink:0;background:var(--navy-2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
 .sidebar-section{border-bottom:1px solid var(--border);padding:16px}
 .sidebar-title{font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
@@ -128,7 +128,7 @@ tbody tr.row-grey td{border-left:2px solid var(--grey);opacity:.55}
 .empty-row td{text-align:center;padding:60px;color:var(--text-3);font-size:12px;letter-spacing:1px;border-left:none!important}
 
 /* ── TIMETABLE VIEW ── */
-#viewTimetable{padding:24px 32px;overflow-y:auto;height:calc(100vh - 56px - 42px - 65px - 28px)}
+#viewTimetable{padding:24px 32px;overflow-y:auto;height:calc(100vh - 56px - 42px - 65px)}
 .tt-line-selector{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
 .tt-line-btn{padding:6px 16px;background:var(--navy-3);border:1px solid var(--border-2);color:var(--text-2);font-family:var(--mono);font-size:12px;cursor:pointer;transition:all .15s}
 .tt-line-btn:hover{border-color:var(--blue);color:var(--text)}
@@ -155,7 +155,7 @@ tbody tr.row-grey td{border-left:2px solid var(--grey);opacity:.55}
 .tt-stop.current .tt-stop-time{color:var(--green-l)}
 
 /* ── CONNECTIONS VIEW ── */
-#viewConnections{padding:24px 32px;overflow-y:auto;height:calc(100vh - 56px - 42px - 65px - 28px)}
+#viewConnections{padding:24px 32px;overflow-y:auto;height:calc(100vh - 56px - 42px - 65px)}
 .conn-search-panel{background:var(--navy-2);border:1px solid var(--border);padding:24px;margin-bottom:24px}
 .conn-search-title{font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}
 .conn-fields{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end}
@@ -188,9 +188,7 @@ tbody tr.row-grey td{border-left:2px solid var(--grey);opacity:.55}
 .conn-transfer-time{font-family:var(--mono);font-size:10px;color:var(--text-3);margin-left:auto}
 
 /* ── FOOTER ── */
-footer{height:28px;background:var(--navy-2);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:24px;position:fixed;bottom:0;left:0;right:0}
-.footer-item{font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
-.footer-item span{color:var(--text-2)}
+
 
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:6px;height:6px}
@@ -237,9 +235,7 @@ th:nth-child(7),td:nth-child(7){width:120px}
   th:nth-child(4),td:nth-child(4),th:nth-child(5),td:nth-child(5){display:none}
   th,td{padding:9px 10px;font-size:11px}
   .cell-route{font-size:13px}
-  footer{flex-wrap:wrap;height:auto;padding:8px 12px;gap:8px;padding-bottom:12px}
-  .footer-item{font-size:8px}
-  .footer-item:last-child{margin-left:0;width:100%}
+
   #viewTimetable,#viewConnections{padding:16px;height:auto}
   .conn-fields{grid-template-columns:1fr;gap:10px}
   .tt-stop{min-width:90px}
@@ -249,6 +245,69 @@ th:nth-child(7),td:nth-child(7){width:120px}
   .stat-value{font-size:16px}
   th:nth-child(7),td:nth-child(7){display:none}
 }
+
+/* ══ KARTA MIESZKAŃCA ══ */
+#viewKarta{padding:32px;overflow-y:auto;height:calc(100vh - 56px - 42px - 65px)}
+#viewKarta.active{display:block!important}
+#viewKarta{display:none}
+.karta-layout{display:grid;grid-template-columns:1fr 400px;gap:24px;align-items:start;max-width:1100px}
+.karta-form-panel{background:var(--navy-2);border:1px solid var(--border)}
+.karta-panel-header{padding:16px 24px;border-bottom:1px solid var(--border);background:var(--navy-3)}
+.karta-panel-title{font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:2px;text-transform:uppercase}
+.karta-panel-sub{font-size:11px;color:var(--text-3);margin-top:3px}
+.karta-form{padding:24px;display:flex;flex-direction:column;gap:20px}
+.karta-field{display:flex;flex-direction:column;gap:6px}
+.karta-label{font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:1.5px;text-transform:uppercase}
+.karta-label span{color:var(--red-l)}
+.karta-input{padding:10px 14px;background:var(--navy-3);border:1px solid var(--border-2);color:var(--text);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .15s}
+.karta-input:focus{border-color:var(--blue)}
+.karta-input::placeholder{color:var(--text-3)}
+.karta-input.error{border-color:var(--red)}
+.karta-select{padding:10px 14px;background:var(--navy-3);border:1px solid var(--border-2);color:var(--text);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .15s;appearance:none;width:100%;cursor:pointer}
+.karta-select:focus{border-color:var(--blue)}
+.karta-select.error{border-color:var(--red)}
+.karta-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.karta-hint{font-size:11px;color:var(--text-3);margin-top:2px}
+.karta-divider{height:1px;background:var(--border);margin:4px 0}
+.karta-submit{padding:12px 28px;background:var(--blue);border:none;color:var(--white);font-family:var(--mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .15s;align-self:flex-start}
+.karta-submit:hover{opacity:.85}
+.karta-submit:disabled{opacity:.4;cursor:not-allowed}
+.karta-error-msg{color:var(--red-l);font-size:11px;font-family:var(--mono);padding:10px 14px;background:rgba(192,40,42,.08);border:1px solid rgba(192,40,42,.2)}
+/* The card itself */
+.karta-preview-panel{position:sticky;top:24px}
+.karta-card{width:360px;min-height:220px;background:linear-gradient(135deg,#0f1c3a 0%,#1a2f5e 60%,#0d1930 100%);border:1px solid #2a4070;padding:28px;display:flex;flex-direction:column;gap:0;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.karta-card::before{content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(42,109,217,.08);pointer-events:none}
+.karta-card::after{content:'';position:absolute;bottom:-60px;left:-20px;width:200px;height:200px;border-radius:50%;background:rgba(42,109,217,.05);pointer-events:none}
+.karta-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.karta-card-org{display:flex;flex-direction:column;gap:2px}
+.karta-card-logo{font-family:var(--mono);font-size:18px;font-weight:500;color:#fff;letter-spacing:3px}
+.karta-card-org-name{font-size:9px;color:rgba(255,255,255,.45);letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap}
+.karta-card-chip{width:38px;height:28px;background:linear-gradient(135deg,#c8a84b,#e8c96a,#b8952a);border-radius:4px;opacity:.9}
+.karta-card-type{font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.4);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+.karta-card-name{font-size:20px;font-weight:600;color:#fff;letter-spacing:.5px;margin-bottom:4px;min-height:28px}
+.karta-card-discord{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.5);margin-bottom:16px;min-height:18px}
+.karta-card-bottom{display:flex;align-items:flex-end;justify-content:space-between;margin-top:auto;padding-top:16px;border-top:1px solid rgba(255,255,255,.08)}
+.karta-card-loc{display:flex;flex-direction:column;gap:2px}
+.karta-card-loc-label{font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.3);letter-spacing:1.5px;text-transform:uppercase}
+.karta-card-loc-value{font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
+.karta-card-nr{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.25);letter-spacing:2px}
+/* Issued state */
+.karta-issued{display:none;flex-direction:column;gap:16px;padding:24px}
+.karta-issued.show{display:flex}
+.karta-issued-badge{display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(15,168,106,.08);border:1px solid rgba(15,168,106,.2)}
+.karta-issued-icon{font-size:20px}
+.karta-issued-text{font-size:13px;color:var(--green-l)}
+.karta-issued-sub{font-size:11px;color:var(--text-3);margin-top:2px}
+.karta-reissue-btn{padding:8px 18px;background:transparent;border:1px solid var(--border-2);color:var(--text-2);font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .15s;align-self:flex-start}
+.karta-reissue-btn:hover{border-color:var(--blue);color:var(--text)}
+@media(max-width:900px){
+  .karta-layout{grid-template-columns:1fr}
+  .karta-preview-panel{position:static}
+  .karta-card{width:100%;box-sizing:border-box}
+  .karta-row{grid-template-columns:1fr}
+  #viewKarta{padding:16px}
+}
+
 </style>
 </head>
 <body>
@@ -286,6 +345,9 @@ th:nth-child(7),td:nth-child(7){width:120px}
   </button>
   <button class="tab-btn" onclick="switchTab('connections')" id="tab-connections">
     <span class="tab-icon">⇄</span> Połączenia
+  </button>
+  <button class="tab-btn" onclick="switchTab('karta')" id="tab-karta">
+    <span class="tab-icon">◈</span> Karta Mieszkańca
   </button>
 </nav>
 
@@ -436,12 +498,109 @@ th:nth-child(7),td:nth-child(7){width:120px}
   </div>
 </div>
 
-<footer>
-  <div class="footer-item">Dane: <span>stp.zawistowski-szym.workers.dev</span></div>
-  <div class="footer-item">Odświeżanie: <span>co 15s</span></div>
-  <div class="footer-item" id="footerCount">Pojazdy: <span>—</span></div>
-  <div class="footer-item" style="margin-left:auto">STP CZR &nbsp;·&nbsp; <span id="footerYear"></span></div>
-</footer>
+<!-- ══ KARTA MIESZKAŃCA VIEW ══ -->
+<div class="view" id="viewKarta">
+  <div class="karta-layout">
+
+    <!-- Form panel -->
+    <div class="karta-form-panel">
+      <div class="karta-panel-header">
+        <div class="karta-panel-title">Wyrobienie Karty Mieszkańca</div>
+        <div class="karta-panel-sub">Karta jest bezpłatna. Dane przechowywane lokalnie w przeglądarce.</div>
+      </div>
+
+      <!-- Form -->
+      <div class="karta-form" id="kartaForm">
+        <div class="karta-field">
+          <div class="karta-label">Nick Roblox <span>*</span></div>
+          <input class="karta-input" id="kartaRoblox" type="text" placeholder="TwójNick" maxlength="20" oninput="kartaPreview()">
+          <div class="karta-hint">Dokładnie tak jak widnieje w grze.</div>
+        </div>
+
+        <div class="karta-field">
+          <div class="karta-label">Nick Discord <span style="color:var(--text-3)">(opcjonalnie)</span></div>
+          <input class="karta-input" id="kartaDiscord" type="text" placeholder="nick#0000 lub @nick" maxlength="32" oninput="kartaPreview()">
+        </div>
+
+        <div class="karta-divider"></div>
+
+        <div class="karta-row">
+          <div class="karta-field">
+            <div class="karta-label">Dzielnica <span>*</span></div>
+            <select class="karta-select" id="kartaDzielnica" onchange="kartaDzielnicaChange()">
+              <option value="">— wybierz —</option>
+              <option value="Śródmieście">Śródmieście</option>
+              <option value="Jegóry">Jegóry</option>
+              <option value="Wiktoria">Wiktoria</option>
+              <option value="Monotony">Monotony</option>
+              <option value="Brokolin">Brokolin</option>
+              <option value="Wilagrów">Wilagrów</option>
+              <option value="Kabor">Kabor</option>
+              <option value="Kyrylczyn">Kyrylczyn</option>
+              <option value="Borki">Borki</option>
+              <option value="Mirów">Mirów</option>
+              <option value="Dorsztat">Dorsztat</option>
+              <option value="Niukolin">Niukolin</option>
+              <option value="Mostumiły">Mostumiły</option>
+              <option value="Anin">Anin</option>
+              <option value="Kruki">Kruki</option>
+            </select>
+          </div>
+          <div class="karta-field">
+            <div class="karta-label">Osiedle <span id="osiedleRequired" style="color:var(--text-3)">(jeśli dotyczy)</span></div>
+            <select class="karta-select" id="kartaOsiedle" onchange="kartaPreview()" disabled>
+              <option value="">— najpierw wybierz dzielnicę —</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="kartaErrorMsg" class="karta-error-msg" style="display:none"></div>
+
+        <button class="karta-submit" id="kartaSubmitBtn" onclick="kartaSubmit()">Wyślij wniosek o kartę</button>
+      </div>
+
+      <!-- Issued state -->
+      <div class="karta-issued" id="kartaIssued">
+        <div class="karta-issued-badge">
+          <div class="karta-issued-icon">✓</div>
+          <div>
+            <div class="karta-issued-text">Karta mieszkańca została wyrobiona.</div>
+            <div class="karta-issued-sub">Karta jest zapisana w tej przeglądarce. Możesz ją wydrukować lub zrobić zrzut ekranu.</div>
+          </div>
+        </div>
+        <button class="karta-reissue-btn" onclick="kartaReset()">Wyczyść i wyślij nowy wniosek</button>
+      </div>
+    </div>
+
+    <!-- Card preview -->
+    <div class="karta-preview-panel">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Podgląd karty</div>
+      <div class="karta-card" id="kartaCardPreview">
+        <div class="karta-card-top">
+          <div class="karta-card-org">
+            <div class="karta-card-logo">STP</div>
+            <div class="karta-card-org-name">Skuszawyjiński Transport Publiczny</div>
+          </div>
+          <div class="karta-card-chip"></div>
+        </div>
+        <div class="karta-card-type">Karta Mieszkańca</div>
+        <div class="karta-card-name" id="previewName">Twój Nick</div>
+        <div class="karta-card-discord" id="previewDiscord"></div>
+        <div class="karta-card-bottom">
+          <div class="karta-card-loc">
+            <div class="karta-card-loc-label">Miejsce zamieszkania</div>
+            <div class="karta-card-loc-value" id="previewLoc">— nie wybrano —</div>
+          </div>
+          <div class="karta-card-nr" id="previewNr"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+
 
 <script>
 const API_URL    = 'https://stp.zawistowski-szym.workers.dev/api/buses';
@@ -456,7 +615,6 @@ let searchTerm   = '';
 let activeTab    = 'fleet';
 let selectedTTLine = null;
 
-document.getElementById('footerYear').textContent = new Date().getFullYear();
 
 // ── Clock ─────────────────────────────────────────────────────
 setInterval(() => {
@@ -577,7 +735,7 @@ function updateStats() {
   const sorted = [...active].filter(b => b.delaySeconds != null).sort((a,b) => b.delaySeconds - a.delaySeconds);
   document.getElementById('statWorstLine').textContent = sorted.length ? (sorted[0].routeNum || '—') : '—';
   document.getElementById('statBestLine').textContent  = sorted.length ? (sorted[sorted.length-1].routeNum || '—') : '—';
-  document.getElementById('footerCount').innerHTML = `Pojazdy: <span>${e.length}</span>`;
+
 }
 
 function updateCounts() {
@@ -922,9 +1080,178 @@ function renderConnectionCard(conn, ci) {
   </div>`;
 }
 
-// ── Init ──────────────────────────────────────────────────────
-fetchData();
-setInterval(fetchData, REFRESH_MS);
+
+// ══════════════════════════════════════════════════════════════
+const DZIELNICE = {
+  'Śródmieście': ['Śródmieście Wschodnie','Śródmieście Zachodnie','Kazimierz','Różany'],
+  'Jegóry':      ['Stare Jegóry','Przyrzecze','Krzywe Koło','Skuszowice','Przygórze'],
+  'Wiktoria':    ['Alberta','Stara Wiktoria','Międzylesie','Starodęby'],
+};
+// Dzielnice bez osiedli
+const SINGLE = ['Monotony','Brokolin','Wilagrów','Kabor','Kyrylczyn','Borki','Mirów','Dorsztat','Niukolin','Mostumiły','Anin','Kruki'];
+
+function kartaDzielnicaChange() {
+  const dz = document.getElementById('kartaDzielnica').value;
+  const sel = document.getElementById('kartaOsiedle');
+  const req = document.getElementById('osiedleRequired');
+  sel.innerHTML = '';
+
+  if (DZIELNICE[dz]) {
+    req.textContent = '*';
+    req.style.color = 'var(--red-l)';
+    sel.disabled = false;
+    sel.innerHTML = '<option value="">— wybierz osiedle —</option>' +
+      DZIELNICE[dz].map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
+  } else {
+    req.textContent = '(nie dotyczy)';
+    req.style.color = 'var(--text-3)';
+    sel.disabled = true;
+    sel.innerHTML = '<option value="">—</option>';
+  }
+  kartaPreview();
+}
+
+function kartaPreview() {
+  const nick    = document.getElementById('kartaRoblox').value.trim();
+  const discord = document.getElementById('kartaDiscord').value.trim();
+  const dz      = document.getElementById('kartaDzielnica').value;
+  const os      = document.getElementById('kartaOsiedle').value;
+
+  document.getElementById('previewName').textContent    = nick || 'Twój Nick';
+  document.getElementById('previewDiscord').textContent = discord ? discord : '';
+
+  let loc = '— nie wybrano —';
+  if (dz && os)  loc = os + ', ' + dz;
+  else if (dz)   loc = dz;
+  document.getElementById('previewLoc').textContent = loc;
+}
+
+function kartaGenerateNr() {
+  // Deterministic-ish ID from nick + timestamp
+  const nick = document.getElementById('kartaRoblox').value.trim().toUpperCase();
+  const seed  = nick.split('').reduce((a,c) => a + c.charCodeAt(0), 0);
+  const ts    = Date.now();
+  const part1 = String(seed % 10000).padStart(4,'0');
+  const part2 = String(ts % 100000).padStart(5,'0');
+  return `KM-${part1}-${part2}`;
+}
+
+function kartaValidate() {
+  const nick = document.getElementById('kartaRoblox').value.trim();
+  const dz   = document.getElementById('kartaDzielnica').value;
+  const os   = document.getElementById('kartaOsiedle').value;
+  const errEl = document.getElementById('kartaErrorMsg');
+
+  if (!nick) {
+    errEl.textContent = 'Pole „Nick Roblox" jest wymagane.';
+    errEl.style.display = 'block';
+    document.getElementById('kartaRoblox').classList.add('error');
+    return false;
+  }
+  if (!/^[A-Za-z0-9_]{3,20}$/.test(nick)) {
+    errEl.textContent = 'Nick Roblox może zawierać tylko litery, cyfry i podkreślnik (3–20 znaków).';
+    errEl.style.display = 'block';
+    document.getElementById('kartaRoblox').classList.add('error');
+    return false;
+  }
+  if (!dz) {
+    errEl.textContent = 'Wybierz dzielnicę zamieszkania.';
+    errEl.style.display = 'block';
+    document.getElementById('kartaDzielnica').classList.add('error');
+    return false;
+  }
+  if (DZIELNICE[dz] && !os) {
+    errEl.textContent = 'Wybierz osiedle dla dzielnicy ' + dz + '.';
+    errEl.style.display = 'block';
+    document.getElementById('kartaOsiedle').classList.add('error');
+    return false;
+  }
+
+  errEl.style.display = 'none';
+  document.getElementById('kartaRoblox').classList.remove('error');
+  document.getElementById('kartaDzielnica').classList.remove('error');
+  document.getElementById('kartaOsiedle').classList.remove('error');
+  return true;
+}
+
+function kartaSubmit() {
+  if (!kartaValidate()) return;
+
+  const nr = kartaGenerateNr();
+  document.getElementById('previewNr').textContent = nr;
+
+  // Save to localStorage
+  const data = {
+    nick:    document.getElementById('kartaRoblox').value.trim(),
+    discord: document.getElementById('kartaDiscord').value.trim(),
+    dz:      document.getElementById('kartaDzielnica').value,
+    os:      document.getElementById('kartaOsiedle').value,
+    nr,
+    issuedAt: new Date().toISOString(),
+  };
+  try { localStorage.setItem('stp_karta', JSON.stringify(data)); } catch(e) {}
+
+  // Show issued state
+  document.getElementById('kartaForm').style.display = 'none';
+  document.getElementById('kartaIssued').classList.add('show');
+
+  // Animate card
+  const card = document.getElementById('kartaCardPreview');
+  card.style.transform = 'scale(1.02)';
+  card.style.transition = 'transform .3s';
+  setTimeout(() => { card.style.transform = 'scale(1)'; }, 300);
+}
+
+function kartaReset() {
+  document.getElementById('kartaForm').style.display = 'flex';
+  document.getElementById('kartaIssued').classList.remove('show');
+  document.getElementById('kartaRoblox').value   = '';
+  document.getElementById('kartaDiscord').value  = '';
+  document.getElementById('kartaDzielnica').value = '';
+  document.getElementById('kartaOsiedle').innerHTML = '<option value="">— najpierw wybierz dzielnicę —</option>';
+  document.getElementById('kartaOsiedle').disabled = true;
+  document.getElementById('kartaErrorMsg').style.display = 'none';
+  document.getElementById('previewName').textContent = 'Twój Nick';
+  document.getElementById('previewDiscord').textContent = '';
+  document.getElementById('previewLoc').textContent = '— nie wybrano —';
+  document.getElementById('previewNr').textContent = '';
+  try { localStorage.removeItem('stp_karta'); } catch(e) {}
+}
+
+// Restore saved card on load
+(function kartaRestore() {
+  try {
+    const raw = localStorage.getItem('stp_karta');
+    if (!raw) return;
+    const d = JSON.parse(raw);
+
+    document.getElementById('kartaRoblox').value  = d.nick  || '';
+    document.getElementById('kartaDiscord').value = d.discord || '';
+
+    if (d.dz) {
+      document.getElementById('kartaDzielnica').value = d.dz;
+      kartaDzielnicaChange();
+      if (d.os) document.getElementById('kartaOsiedle').value = d.os;
+    }
+
+    document.getElementById('previewName').textContent    = d.nick || 'Twój Nick';
+    document.getElementById('previewDiscord').textContent = d.discord || '';
+    let loc = '— nie wybrano —';
+    if (d.dz && d.os) loc = d.os + ', ' + d.dz;
+    else if (d.dz)    loc = d.dz;
+    document.getElementById('previewLoc').textContent = loc;
+    document.getElementById('previewNr').textContent  = d.nr || '';
+
+    document.getElementById('kartaForm').style.display = 'none';
+    document.getElementById('kartaIssued').classList.add('show');
+    if (d.issuedAt) {
+      const issued = new Date(d.issuedAt);
+      const dateStr = issued.toLocaleDateString('pl-PL', { day:'2-digit', month:'long', year:'numeric' });
+      const subEl = document.querySelector('.karta-issued-sub');
+      if (subEl) subEl.textContent = `Karta wyrobiona ${dateStr}. Możesz ją wydrukować lub zrobić zrzut ekranu.`;
+    }
+  } catch(e) {}
+})();
 </script>
 </body>
 </html>
