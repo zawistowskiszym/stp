@@ -1,1262 +1,483 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>STP — System Monitorowania Ruchu</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!--
+  INSTRUKCJA:
+  1. W <nav class="tab-nav"> dodaj przycisk zakładki (zastąp stary "Karta Mieszkańca"):
+
+  <button class="tab-btn" onclick="switchTab('skarta')" id="tab-skarta">
+    <span class="tab-icon">◈</span> S-Karta
+  </button>
+
+  2. Wklej poniższy blok <div class="view" id="viewSkarta"> po istniejących widokach.
+
+  3. W <style> dodaj CSS z sekcji /* ══ S-KARTA STYLES ══ */
+
+  4. W <script> zmień funkcję switchTab — dodaj:
+     if (tab === 'skarta') skartaInit();
+
+  5. Wklej blok <script> z sekcji /* ══ S-KARTA JS ══ */ na końcu istniejącego <script>.
+-->
+
+<!-- ══ S-KARTA VIEW ══ -->
+<div class="view" id="viewSkarta">
+  <div class="sk-layout">
+
+    <!-- LEWA: formularz wyrobienia + doładowanie -->
+    <div class="sk-left">
+
+      <!-- Wyszukaj kartę -->
+      <div class="sk-panel">
+        <div class="sk-panel-header">
+          <div class="sk-panel-title">Zarządzanie S-Kartą</div>
+          <div class="sk-panel-sub">Wyszukaj swoją kartę po nicku Roblox</div>
+        </div>
+        <div class="sk-search-row">
+          <input class="sk-input" id="skNickSearch" type="text" placeholder="Nick Roblox…" maxlength="20">
+          <button class="sk-btn" onclick="skartaSearch()">Szukaj</button>
+        </div>
+        <div id="skSearchResult" class="sk-search-result" style="display:none"></div>
+      </div>
+
+      <!-- Doładowanie -->
+      <div class="sk-panel" id="skTopupPanel" style="display:none">
+        <div class="sk-panel-header">
+          <div class="sk-panel-title">Doładowanie</div>
+          <div class="sk-panel-sub">Wybierz pakiet lub wpisz własną kwotę</div>
+        </div>
+        <div class="sk-topup-body">
+          <div class="sk-packages">
+            <button class="sk-pkg" onclick="skSelectPkg(10)">10 PLN</button>
+            <button class="sk-pkg" onclick="skSelectPkg(20)">20 PLN</button>
+            <button class="sk-pkg" onclick="skSelectPkg(50)">50 PLN</button>
+            <button class="sk-pkg" onclick="skSelectPkg(100)">100 PLN</button>
+          </div>
+          <div class="sk-divider-label">lub wpisz kwotę</div>
+          <div class="sk-amount-row">
+            <input class="sk-input" id="skTopupAmount" type="number" min="1" max="500" step="1" placeholder="np. 25" oninput="skClearPkg()">
+            <span class="sk-currency">PLN</span>
+            <button class="sk-btn sk-btn-green" onclick="skartaTopup()">Doładuj</button>
+          </div>
+          <div id="skTopupMsg" style="display:none;margin-top:12px;font-family:var(--mono);font-size:11px;padding:10px 14px;border:1px solid"></div>
+        </div>
+      </div>
+
+      <!-- Wyrobienie karty -->
+      <div class="sk-panel" id="skIssuePanel">
+        <div class="sk-panel-header">
+          <div class="sk-panel-title">Wyrobienie S-Karty</div>
+          <div class="sk-panel-sub">Bezpłatna karta do systemu STP</div>
+        </div>
+        <div class="sk-form" id="skForm">
+          <div class="sk-field">
+            <div class="sk-label">Nick Roblox <span style="color:var(--red-l)">*</span></div>
+            <input class="sk-input" id="skRoblox" type="text" placeholder="TwójNick" maxlength="20" oninput="skPreview()">
+          </div>
+          <div class="sk-field">
+            <div class="sk-label">Nick Discord <span style="color:var(--text-3)">(opcjonalnie)</span></div>
+            <input class="sk-input" id="skDiscord" type="text" placeholder="@nick" maxlength="32" oninput="skPreview()">
+          </div>
+          <div class="sk-row2">
+            <div class="sk-field">
+              <div class="sk-label">Dzielnica <span style="color:var(--red-l)">*</span></div>
+              <select class="sk-select" id="skDzielnica" onchange="skDzielnicaChange()">
+                <option value="">— wybierz —</option>
+                <option>Śródmieście</option><option>Jegóry</option><option>Wiktoria</option>
+                <option>Monotony</option><option>Brokolin</option><option>Wilagrów</option>
+                <option>Kabor</option><option>Kyrylczyn</option><option>Borki</option>
+                <option>Mirów</option><option>Dorsztat</option><option>Niukolin</option>
+                <option>Mostumiły</option><option>Anin</option><option>Kruki</option>
+              </select>
+            </div>
+            <div class="sk-field">
+              <div class="sk-label">Osiedle</div>
+              <select class="sk-select" id="skOsiedle" onchange="skPreview()" disabled>
+                <option value="">— najpierw dzielnica —</option>
+              </select>
+            </div>
+          </div>
+          <div id="skFormErr" class="sk-err" style="display:none"></div>
+          <button class="sk-btn" id="skIssueBtn" onclick="skartaIssue()">Wyślij wniosek</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- PRAWA: podgląd karty + historia -->
+    <div class="sk-right">
+      <!-- Karta -->
+      <div class="sk-card-wrap">
+        <div class="sk-card-label">Podgląd S-Karty</div>
+        <div class="sk-card" id="skCardEl">
+          <div class="sk-card-top">
+            <div class="sk-card-org">
+              <div class="sk-card-logo">STP</div>
+              <div class="sk-card-orgname">Skuszawyjiński Transport Publiczny</div>
+            </div>
+            <div class="sk-card-chip"></div>
+          </div>
+          <div class="sk-card-type">S-Karta</div>
+          <div class="sk-card-name" id="skPreviewName">Twój Nick</div>
+          <div class="sk-card-discord" id="skPreviewDiscord"></div>
+          <div class="sk-card-mid">
+            <div class="sk-card-balance-label">SALDO</div>
+            <div class="sk-card-balance" id="skPreviewBalance">— PLN</div>
+          </div>
+          <div class="sk-card-bottom">
+            <div class="sk-card-loc">
+              <div class="sk-card-loc-label">MIEJSCE ZAMIESZKANIA</div>
+              <div class="sk-card-loc-value" id="skPreviewLoc">— nie wybrano —</div>
+            </div>
+            <div class="sk-card-nr" id="skPreviewNr"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Historia transakcji -->
+      <div class="sk-panel sk-hist-panel" id="skHistPanel" style="display:none">
+        <div class="sk-panel-header">
+          <div class="sk-panel-title">Historia transakcji</div>
+        </div>
+        <div id="skHistList" class="sk-hist-list"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══ S-KARTA CSS ══ (wklej do <style>) ══════════════════════════════════════ -->
 <style>
-:root {
-  --navy:    #0b0f1a;
-  --navy-2:  #111827;
-  --navy-3:  #1a2236;
-  --navy-4:  #232d42;
-  --border:  #1e2d47;
-  --border-2:#263449;
-  --text:    #d6dce8;
-  --text-2:  #8899b4;
-  --text-3:  #4d607d;
-  --white:   #f0f4fc;
-  --blue:    #2a6dd9;
-  --blue-l:  #3d82f0;
-  --green:   #0fa86a;
-  --green-l: #17d187;
-  --yellow:  #d4960a;
-  --yellow-l:#f5b31a;
-  --red:     #c0282a;
-  --red-l:   #e8393b;
-  --grey:    #3a4555;
-  --grey-l:  #5a6a7e;
-  --mono:    'IBM Plex Mono', monospace;
-  --sans:    'IBM Plex Sans', sans-serif;
+#viewSkarta { padding:28px 32px; overflow-y:auto; height:calc(100vh - 56px - 42px - 65px); display:none }
+#viewSkarta.active { display:block !important }
+.sk-layout { display:grid; grid-template-columns:1fr 380px; gap:24px; align-items:start; max-width:1100px }
+.sk-left { display:flex; flex-direction:column; gap:16px }
+.sk-right { display:flex; flex-direction:column; gap:16px; position:sticky; top:0 }
+.sk-panel { background:var(--navy-2); border:1px solid var(--border) }
+.sk-panel-header { padding:14px 20px; border-bottom:1px solid var(--border); background:var(--navy-3) }
+.sk-panel-title { font-family:var(--mono); font-size:10px; color:var(--text-3); letter-spacing:2px; text-transform:uppercase }
+.sk-panel-sub { font-size:11px; color:var(--text-3); margin-top:3px }
+.sk-search-row { display:flex; gap:10px; padding:16px 20px }
+.sk-form { padding:20px; display:flex; flex-direction:column; gap:16px }
+.sk-topup-body { padding:20px; display:flex; flex-direction:column; gap:12px }
+.sk-field { display:flex; flex-direction:column; gap:6px }
+.sk-label { font-family:var(--mono); font-size:9px; color:var(--text-3); letter-spacing:1.5px; text-transform:uppercase }
+.sk-row2 { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+.sk-input { padding:9px 12px; background:var(--navy-3); border:1px solid var(--border-2); color:var(--text); font-family:var(--sans); font-size:13px; outline:none; transition:border-color .15s; flex:1 }
+.sk-input:focus { border-color:var(--blue) }
+.sk-input.error { border-color:var(--red) }
+.sk-select { padding:9px 12px; background:var(--navy-3); border:1px solid var(--border-2); color:var(--text); font-family:var(--sans); font-size:13px; outline:none; width:100%; appearance:none; cursor:pointer }
+.sk-select:focus { border-color:var(--blue) }
+.sk-btn { padding:9px 20px; background:var(--blue); border:none; color:var(--white); font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; cursor:pointer; transition:opacity .15s; white-space:nowrap; flex-shrink:0 }
+.sk-btn:hover { opacity:.85 }
+.sk-btn:disabled { opacity:.4; cursor:not-allowed }
+.sk-btn-green { background:var(--green) }
+.sk-packages { display:flex; gap:8px; flex-wrap:wrap }
+.sk-pkg { padding:8px 18px; background:var(--navy-3); border:1px solid var(--border-2); color:var(--text-2); font-family:var(--mono); font-size:12px; cursor:pointer; transition:all .15s }
+.sk-pkg:hover { border-color:var(--blue); color:var(--text) }
+.sk-pkg.selected { background:rgba(42,109,217,.15); border-color:var(--blue); color:var(--blue-l) }
+.sk-divider-label { font-family:var(--mono); font-size:9px; color:var(--text-3); letter-spacing:1.5px; text-transform:uppercase; text-align:center; border-top:1px solid var(--border); padding-top:12px }
+.sk-amount-row { display:flex; gap:8px; align-items:center }
+.sk-currency { font-family:var(--mono); font-size:12px; color:var(--text-2) }
+.sk-err { color:var(--red-l); font-size:11px; font-family:var(--mono); padding:10px 14px; background:rgba(192,40,42,.08); border:1px solid rgba(192,40,42,.2) }
+.sk-search-result { padding:0 20px 16px }
+.sk-search-found { background:rgba(42,109,217,.07); border:1px solid rgba(42,109,217,.2); padding:12px 16px }
+.sk-search-not-found { color:var(--text-3); font-family:var(--mono); font-size:11px }
+.sk-search-name { font-size:15px; color:var(--white); font-weight:600; margin-bottom:4px }
+.sk-search-bal { font-family:var(--mono); font-size:18px; color:var(--green-l); margin-bottom:4px }
+.sk-search-meta { font-size:11px; color:var(--text-3) }
+
+/* Karta */
+.sk-card-wrap { }
+.sk-card-label { font-family:var(--mono); font-size:9px; color:var(--text-3); letter-spacing:2px; text-transform:uppercase; margin-bottom:10px }
+.sk-card { width:100%; min-height:230px; background:linear-gradient(135deg,#0f1c3a 0%,#1a2f5e 60%,#0d1930 100%); border:1px solid #2a4070; padding:24px; display:flex; flex-direction:column; gap:0; position:relative; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,.5) }
+.sk-card::before { content:''; position:absolute; top:-40px; right:-40px; width:180px; height:180px; border-radius:50%; background:rgba(42,109,217,.08); pointer-events:none }
+.sk-card-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:16px }
+.sk-card-org { display:flex; flex-direction:column; gap:2px }
+.sk-card-logo { font-family:var(--mono); font-size:18px; font-weight:500; color:#fff; letter-spacing:3px }
+.sk-card-orgname { font-size:9px; color:rgba(255,255,255,.4); letter-spacing:1.2px; text-transform:uppercase }
+.sk-card-chip { width:38px; height:28px; background:linear-gradient(135deg,#c8a84b,#e8c96a,#b8952a); border-radius:4px; opacity:.9 }
+.sk-card-type { font-family:var(--mono); font-size:9px; color:rgba(255,255,255,.35); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:6px }
+.sk-card-name { font-size:19px; font-weight:600; color:#fff; margin-bottom:2px; min-height:26px }
+.sk-card-discord { font-family:var(--mono); font-size:11px; color:rgba(255,255,255,.45); min-height:16px; margin-bottom:12px }
+.sk-card-mid { margin-bottom:16px }
+.sk-card-balance-label { font-family:var(--mono); font-size:8px; color:rgba(255,255,255,.3); letter-spacing:2px; text-transform:uppercase; margin-bottom:4px }
+.sk-card-balance { font-family:var(--mono); font-size:26px; font-weight:500; color:#fff; letter-spacing:1px }
+.sk-card-bottom { display:flex; align-items:flex-end; justify-content:space-between; border-top:1px solid rgba(255,255,255,.08); padding-top:12px; margin-top:auto }
+.sk-card-loc-label { font-family:var(--mono); font-size:8px; color:rgba(255,255,255,.3); letter-spacing:1.5px; text-transform:uppercase }
+.sk-card-loc-value { font-size:12px; color:rgba(255,255,255,.75); font-weight:500 }
+.sk-card-nr { font-family:var(--mono); font-size:9px; color:rgba(255,255,255,.2); letter-spacing:2px }
+
+/* Historia */
+.sk-hist-panel { }
+.sk-hist-list { max-height:260px; overflow-y:auto }
+.sk-hist-item { display:flex; align-items:center; gap:12px; padding:10px 16px; border-bottom:1px solid var(--border); font-size:12px }
+.sk-hist-item:last-child { border-bottom:none }
+.sk-hist-icon { width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0 }
+.sk-hist-body { flex:1; display:flex; flex-direction:column; gap:2px }
+.sk-hist-note { color:var(--text-2) }
+.sk-hist-time { font-family:var(--mono); font-size:9px; color:var(--text-3) }
+.sk-hist-amount { font-family:var(--mono); font-size:13px; font-weight:500 }
+.sk-hist-amount.plus { color:var(--green-l) }
+.sk-hist-amount.minus { color:var(--red-l) }
+
+@media(max-width:900px) {
+  .sk-layout { grid-template-columns:1fr }
+  .sk-right { position:static }
+  #viewSkarta { padding:16px; height:auto }
+  .sk-row2 { grid-template-columns:1fr }
 }
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:var(--navy);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.5}
-body{background-image:linear-gradient(rgba(42,109,217,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(42,109,217,.03) 1px,transparent 1px);background-size:40px 40px}
-
-/* ── HEADER ── */
-header{display:flex;align-items:center;height:56px;background:var(--navy-2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200}
-.header-logo{display:flex;align-items:center;gap:12px;padding:0 24px;height:100%;border-right:1px solid var(--border);min-width:260px}
-.logo-emblem{width:32px;height:32px;background:var(--blue);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--white);flex-shrink:0}
-.logo-text-wrap{display:flex;flex-direction:column;gap:1px}
-.logo-abbr{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--white);letter-spacing:2px}
-.logo-full{font-size:9px;color:var(--text-2);letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
-.header-title{padding:0 28px;flex:1}
-.header-title h1{font-size:13px;font-weight:500;color:var(--text-2);letter-spacing:1px;text-transform:uppercase}
-.header-right{display:flex;align-items:center;height:100%;margin-left:auto}
-.header-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;height:100%;border-left:1px solid var(--border);gap:3px}
-.header-cell-label{font-family:var(--mono);font-size:8px;color:var(--text-3);letter-spacing:1.5px;text-transform:uppercase}
-.header-cell-value{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--white);letter-spacing:1px}
-.status-indicator{display:flex;align-items:center;gap:8px}
-.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 2.5s ease-in-out infinite}
-.status-dot.offline{background:var(--red);box-shadow:0 0 6px var(--red);animation:none}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
-.status-text{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--green-l);letter-spacing:2px}
-.status-text.offline{color:var(--red-l)}
-
-/* ── TAB NAV ── */
-.tab-nav{display:flex;background:var(--navy-2);border-bottom:1px solid var(--border)}
-.tab-btn{padding:0 28px;height:42px;display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-3);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
-.tab-btn:hover{color:var(--text-2)}
-.tab-btn.active{color:var(--blue-l);border-bottom-color:var(--blue)}
-.tab-icon{font-size:12px}
-
-/* ── STATS BAR ── */
-.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
-.stat-cell{background:var(--navy-2);padding:14px 24px;display:flex;align-items:center;gap:16px}
-.stat-icon{width:36px;height:36px;border:1px solid var(--border-2);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-2);flex-shrink:0;background:var(--navy-3)}
-.stat-data{display:flex;flex-direction:column;gap:2px}
-.stat-value{font-family:var(--mono);font-size:22px;font-weight:500;line-height:1;color:var(--white)}
-.stat-label{font-size:10px;color:var(--text-3);letter-spacing:.8px;text-transform:uppercase}
-
-/* ── VIEWS ── */
-.view{display:none}
-.view.active{display:flex;flex-direction:column}
-
-/* ── FLEET VIEW layout ── */
-.layout{display:flex;height:calc(100vh - 56px - 42px - 65px);overflow:hidden}
-.sidebar{width:240px;flex-shrink:0;background:var(--navy-2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
-.sidebar-section{border-bottom:1px solid var(--border);padding:16px}
-.sidebar-title{font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.sidebar-title::after{content:'';flex:1;height:1px;background:var(--border)}
-.filter-input{width:100%;padding:8px 10px;background:var(--navy-3);border:1px solid var(--border-2);color:var(--text);font-family:var(--mono);font-size:11px;outline:none;transition:border-color .15s}
-.filter-input:focus{border-color:var(--blue)}
-.filter-input::placeholder{color:var(--text-3)}
-.filter-group{display:flex;flex-direction:column;gap:6px;margin-top:8px}
-.filter-option{display:flex;align-items:center;gap:10px;padding:7px 10px;cursor:pointer;border:1px solid transparent;transition:all .12s;user-select:none}
-.filter-option:hover{background:var(--navy-3);border-color:var(--border)}
-.filter-option.active{background:var(--navy-3);border-color:var(--blue)}
-.filter-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.filter-option-label{font-size:11px;color:var(--text-2);flex:1}
-.filter-count{font-family:var(--mono);font-size:10px;color:var(--text-3);background:var(--navy-4);padding:1px 6px}
-.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.table-header-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--navy-2);border-bottom:1px solid var(--border);flex-shrink:0}
-.table-title{font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:2px;text-transform:uppercase}
-.table-meta{font-family:var(--mono);font-size:10px;color:var(--text-3)}
-.table-wrap{flex:1;overflow-y:auto;overflow-x:auto}
-table{width:100%;border-collapse:collapse;table-layout:fixed}
-thead{position:sticky;top:0;z-index:10}
-thead tr{background:var(--navy-3);border-bottom:2px solid var(--border-2)}
-th{padding:10px 16px;text-align:left;font-family:var(--mono);font-size:9px;font-weight:500;color:var(--text-3);letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;cursor:pointer;user-select:none;border-right:1px solid var(--border);transition:color .12s}
-th:last-child{border-right:none}
-th:hover{color:var(--text)}
-th.sorted{color:var(--blue-l)}
-.sort-arrow{margin-left:4px;opacity:.5}
-th.sorted .sort-arrow{opacity:1}
-td{padding:11px 16px;border-bottom:1px solid var(--border);border-right:1px solid rgba(30,45,71,.5);vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .1s}
-td:last-child{border-right:none}
-tbody tr{transition:background .1s;animation:rowIn .3s ease both}
-@keyframes rowIn{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:translateX(0)}}
-tbody tr:hover td{background:rgba(42,109,217,.04)}
-tbody tr.row-green td{border-left:2px solid var(--green)}
-tbody tr.row-yellow td{border-left:2px solid var(--yellow)}
-tbody tr.row-red td{border-left:2px solid var(--red)}
-tbody tr.row-grey td{border-left:2px solid var(--grey);opacity:.55}
-.cell-route{font-family:var(--mono);font-weight:500;font-size:14px;color:var(--white)}
-.cell-dest,.cell-stop{font-size:12px}
-.cell-time{font-family:var(--mono);font-size:12px;color:var(--text-2);text-align:right}
-.cell-time.actual{color:var(--text)}
-.delay-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.5px}
-.delay-chip.on-time{color:var(--green-l);background:rgba(15,168,106,.1)}
-.delay-chip.slight{color:var(--yellow-l);background:rgba(212,150,10,.1)}
-.delay-chip.late{color:var(--red-l);background:rgba(192,40,42,.1)}
-.delay-chip.tech{color:var(--grey-l);background:rgba(58,69,85,.2)}
-.status-chip{display:inline-block;padding:3px 8px;font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;border:1px solid}
-.status-chip.w-trasie{color:var(--blue-l);border-color:var(--blue);background:rgba(42,109,217,.08)}
-.status-chip.zjazd{color:var(--grey-l);border-color:var(--grey);background:rgba(58,69,85,.15)}
-.status-chip.drzwi{color:var(--yellow-l);border-color:var(--yellow);background:rgba(212,150,10,.1)}
-.empty-row td{text-align:center;padding:60px;color:var(--text-3);font-size:12px;letter-spacing:1px;border-left:none!important}
-
-/* ── TIMETABLE VIEW ── */
-#viewTimetable{padding:24px 32px;overflow-y:auto;height:calc(100vh - 56px - 42px - 65px)}
-.tt-line-selector{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
-.tt-line-btn{padding:6px 16px;background:var(--navy-3);border:1px solid var(--border-2);color:var(--text-2);font-family:var(--mono);font-size:12px;cursor:pointer;transition:all .15s}
-.tt-line-btn:hover{border-color:var(--blue);color:var(--text)}
-.tt-line-btn.active{background:var(--blue);border-color:var(--blue);color:var(--white)}
-.tt-none{color:var(--text-3);font-family:var(--mono);font-size:11px;letter-spacing:1px}
-.tt-card{background:var(--navy-2);border:1px solid var(--border);margin-bottom:16px}
-.tt-card-header{display:flex;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--navy-3)}
-.tt-route-badge{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--white);min-width:48px}
-.tt-dest{font-size:13px;color:var(--text-2);flex:1}
-.tt-driver{font-family:var(--mono);font-size:10px;color:var(--text-3)}
-.tt-delay-badge{font-family:var(--mono);font-size:10px;padding:3px 8px}
-.tt-stops{overflow-x:auto}
-.tt-stops-inner{display:flex;align-items:flex-start;padding:20px;gap:0;min-width:max-content}
-.tt-stop{display:flex;flex-direction:column;align-items:center;position:relative;min-width:120px}
-.tt-stop:not(:last-child)::after{content:'';position:absolute;top:12px;left:50%;width:100%;height:2px;background:var(--border-2)}
-.tt-stop.passed::after{background:var(--blue)}
-.tt-stop-dot{width:24px;height:24px;border-radius:50%;border:2px solid var(--border-2);background:var(--navy);z-index:1;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--text-3);transition:all .2s}
-.tt-stop.passed .tt-stop-dot{border-color:var(--blue);background:var(--blue);color:var(--white)}
-.tt-stop.current .tt-stop-dot{border-color:var(--green-l);background:var(--green);color:var(--white);box-shadow:0 0 8px var(--green)}
-.tt-stop-name{font-size:10px;color:var(--text-3);text-align:center;margin-top:8px;max-width:110px;word-break:break-word;white-space:normal;line-height:1.3}
-.tt-stop.current .tt-stop-name{color:var(--green-l)}
-.tt-stop.passed .tt-stop-name{color:var(--text-2)}
-.tt-stop-time{font-family:var(--mono);font-size:9px;color:var(--text-3);margin-top:3px}
-.tt-stop.current .tt-stop-time{color:var(--green-l)}
-
-/* ── CONNECTIONS VIEW ── */
-#viewConnections{padding:24px 32px;overflow-y:auto;height:calc(100vh - 56px - 42px - 65px)}
-.conn-search-panel{background:var(--navy-2);border:1px solid var(--border);padding:24px;margin-bottom:24px}
-.conn-search-title{font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}
-.conn-fields{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end}
-.conn-field label{display:block;font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
-.conn-select,.conn-input-text{width:100%;padding:10px 12px;background:var(--navy-3);border:1px solid var(--border-2);color:var(--text);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .15s;appearance:none}
-.conn-select:focus,.conn-input-text:focus{border-color:var(--blue)}
-.conn-btn{padding:10px 24px;background:var(--blue);border:none;color:var(--white);font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:opacity .15s;white-space:nowrap}
-.conn-btn:hover{opacity:.85}
-.conn-results-title{font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:12px}
-.conn-results-title::after{content:'';flex:1;height:1px;background:var(--border)}
-.conn-none{color:var(--text-3);font-family:var(--mono);font-size:11px;letter-spacing:1px;padding:32px 0;text-align:center}
-.conn-card{background:var(--navy-2);border:1px solid var(--border);margin-bottom:12px;overflow:hidden;animation:rowIn .3s ease both}
-.conn-card-header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--navy-3);border-bottom:1px solid var(--border)}
-.conn-card-type{font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:1.5px;text-transform:uppercase}
-.conn-card-time{font-family:var(--mono);font-size:12px;color:var(--text-2);margin-left:auto}
-.conn-legs{padding:0}
-.conn-leg{display:flex;align-items:stretch;padding:14px 16px;border-bottom:1px solid var(--border);gap:14px}
-.conn-leg:last-child{border-bottom:none}
-.conn-leg-line{display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0;width:28px}
-.conn-leg-badge{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--white);background:var(--blue);padding:2px 6px;text-align:center;min-width:28px}
-.conn-leg-spine{flex:1;width:2px;background:var(--border-2);margin:4px 0}
-.conn-leg-body{flex:1;display:flex;flex-direction:column;gap:6px}
-.conn-leg-row{display:flex;align-items:baseline;gap:8px}
-.conn-leg-stop{font-size:13px;color:var(--text);flex:1}
-.conn-leg-time{font-family:var(--mono);font-size:11px;color:var(--text-2)}
-.conn-leg-arrow{font-size:10px;color:var(--text-3);padding:2px 0}
-.conn-leg-info{font-size:11px;color:var(--text-3)}
-.conn-transfer{display:flex;align-items:center;gap:8px;padding:8px 16px;background:rgba(212,150,10,.05);border-bottom:1px solid var(--border)}
-.conn-transfer-label{font-family:var(--mono);font-size:9px;color:var(--yellow-l);letter-spacing:1px;text-transform:uppercase}
-.conn-transfer-time{font-family:var(--mono);font-size:10px;color:var(--text-3);margin-left:auto}
-
-/* ── FOOTER ── */
-
-
-/* ── SCROLLBAR ── */
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--navy-2)}
-::-webkit-scrollbar-thumb{background:var(--border-2)}
-
-/* Column widths */
-th:nth-child(1),td:nth-child(1){width:72px}
-th:nth-child(2),td:nth-child(2){width:auto}
-th:nth-child(3),td:nth-child(3){width:200px}
-th:nth-child(4),td:nth-child(4){width:110px;text-align:right}
-th:nth-child(5),td:nth-child(5){width:110px;text-align:right}
-th:nth-child(6),td:nth-child(6){width:130px}
-th:nth-child(7),td:nth-child(7){width:120px}
-
-/* ── MOBILE ── */
-@media(max-width:768px){
-  header{height:auto;flex-wrap:wrap}
-  .header-logo{min-width:unset;padding:10px 16px;border-right:none;border-bottom:1px solid var(--border);width:100%}
-  .logo-full{display:none}
-  .header-title{display:none}
-  .header-right{width:100%;justify-content:space-between;margin-left:0;border-top:1px solid var(--border)}
-  .header-cell{flex:1;padding:8px 12px;flex-direction:row;justify-content:flex-start;gap:8px;border-left:none;border-right:1px solid var(--border)}
-  .header-cell:last-child{border-right:none}
-  .header-cell-label{display:none}
-  .header-cell-value{font-size:12px}
-  .tab-btn{padding:0 14px;font-size:9px;gap:4px}
-  .tab-icon{display:none}
-  .stats-bar{grid-template-columns:repeat(2,1fr)}
-  .stat-cell{padding:10px 14px;gap:10px}
-  .stat-icon{width:28px;height:28px;font-size:12px}
-  .stat-value{font-size:18px}
-  .stat-label{font-size:9px}
-  .layout{flex-direction:column;height:auto;overflow:visible}
-  .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border);flex-direction:column;overflow:visible}
-  .sidebar-section{padding:10px 12px}
-  .filter-group{flex-direction:row;flex-wrap:wrap;gap:6px;margin-top:6px}
-  .filter-option{padding:5px 10px;gap:6px;flex:0 0 auto}
-  .filter-count{display:none}
-  .main-area{overflow:visible}
-  .table-header-bar{padding:10px 12px}
-  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  table{table-layout:auto;min-width:480px}
-  th:nth-child(4),td:nth-child(4),th:nth-child(5),td:nth-child(5){display:none}
-  th,td{padding:9px 10px;font-size:11px}
-  .cell-route{font-size:13px}
-
-  #viewTimetable,#viewConnections{padding:16px;height:auto}
-  .conn-fields{grid-template-columns:1fr;gap:10px}
-  .tt-stop{min-width:90px}
-}
-@media(max-width:420px){
-  .stats-bar{grid-template-columns:repeat(2,1fr)}
-  .stat-value{font-size:16px}
-  th:nth-child(7),td:nth-child(7){display:none}
-}
-
-/* ══ KARTA MIESZKAŃCA ══ */
-#viewKarta{padding:32px;overflow-y:auto;height:calc(100vh - 56px - 42px - 65px)}
-#viewKarta.active{display:block!important}
-#viewKarta{display:none}
-.karta-layout{display:grid;grid-template-columns:1fr 400px;gap:24px;align-items:start;max-width:1100px}
-.karta-form-panel{background:var(--navy-2);border:1px solid var(--border)}
-.karta-panel-header{padding:16px 24px;border-bottom:1px solid var(--border);background:var(--navy-3)}
-.karta-panel-title{font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:2px;text-transform:uppercase}
-.karta-panel-sub{font-size:11px;color:var(--text-3);margin-top:3px}
-.karta-form{padding:24px;display:flex;flex-direction:column;gap:20px}
-.karta-field{display:flex;flex-direction:column;gap:6px}
-.karta-label{font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:1.5px;text-transform:uppercase}
-.karta-label span{color:var(--red-l)}
-.karta-input{padding:10px 14px;background:var(--navy-3);border:1px solid var(--border-2);color:var(--text);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .15s}
-.karta-input:focus{border-color:var(--blue)}
-.karta-input::placeholder{color:var(--text-3)}
-.karta-input.error{border-color:var(--red)}
-.karta-select{padding:10px 14px;background:var(--navy-3);border:1px solid var(--border-2);color:var(--text);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .15s;appearance:none;width:100%;cursor:pointer}
-.karta-select:focus{border-color:var(--blue)}
-.karta-select.error{border-color:var(--red)}
-.karta-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.karta-hint{font-size:11px;color:var(--text-3);margin-top:2px}
-.karta-divider{height:1px;background:var(--border);margin:4px 0}
-.karta-submit{padding:12px 28px;background:var(--blue);border:none;color:var(--white);font-family:var(--mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .15s;align-self:flex-start}
-.karta-submit:hover{opacity:.85}
-.karta-submit:disabled{opacity:.4;cursor:not-allowed}
-.karta-error-msg{color:var(--red-l);font-size:11px;font-family:var(--mono);padding:10px 14px;background:rgba(192,40,42,.08);border:1px solid rgba(192,40,42,.2)}
-/* The card itself */
-.karta-preview-panel{position:sticky;top:24px}
-.karta-card{width:360px;min-height:220px;background:linear-gradient(135deg,#0f1c3a 0%,#1a2f5e 60%,#0d1930 100%);border:1px solid #2a4070;padding:28px;display:flex;flex-direction:column;gap:0;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.5)}
-.karta-card::before{content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(42,109,217,.08);pointer-events:none}
-.karta-card::after{content:'';position:absolute;bottom:-60px;left:-20px;width:200px;height:200px;border-radius:50%;background:rgba(42,109,217,.05);pointer-events:none}
-.karta-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
-.karta-card-org{display:flex;flex-direction:column;gap:2px}
-.karta-card-logo{font-family:var(--mono);font-size:18px;font-weight:500;color:#fff;letter-spacing:3px}
-.karta-card-org-name{font-size:9px;color:rgba(255,255,255,.45);letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap}
-.karta-card-chip{width:38px;height:28px;background:linear-gradient(135deg,#c8a84b,#e8c96a,#b8952a);border-radius:4px;opacity:.9}
-.karta-card-type{font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.4);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
-.karta-card-name{font-size:20px;font-weight:600;color:#fff;letter-spacing:.5px;margin-bottom:4px;min-height:28px}
-.karta-card-discord{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.5);margin-bottom:16px;min-height:18px}
-.karta-card-bottom{display:flex;align-items:flex-end;justify-content:space-between;margin-top:auto;padding-top:16px;border-top:1px solid rgba(255,255,255,.08)}
-.karta-card-loc{display:flex;flex-direction:column;gap:2px}
-.karta-card-loc-label{font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.3);letter-spacing:1.5px;text-transform:uppercase}
-.karta-card-loc-value{font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
-.karta-card-nr{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.25);letter-spacing:2px}
-/* Issued state */
-.karta-issued{display:none;flex-direction:column;gap:16px;padding:24px}
-.karta-issued.show{display:flex}
-.karta-issued-badge{display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(15,168,106,.08);border:1px solid rgba(15,168,106,.2)}
-.karta-issued-icon{font-size:20px}
-.karta-issued-text{font-size:13px;color:var(--green-l)}
-.karta-issued-sub{font-size:11px;color:var(--text-3);margin-top:2px}
-.karta-reissue-btn{padding:8px 18px;background:transparent;border:1px solid var(--border-2);color:var(--text-2);font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .15s;align-self:flex-start}
-.karta-reissue-btn:hover{border-color:var(--blue);color:var(--text)}
-@media(max-width:900px){
-  .karta-layout{grid-template-columns:1fr}
-  .karta-preview-panel{position:static}
-  .karta-card{width:100%;box-sizing:border-box}
-  .karta-row{grid-template-columns:1fr}
-  #viewKarta{padding:16px}
-}
-
 </style>
-</head>
-<body>
-
-<header>
-  <div class="header-logo">
-    <div class="logo-emblem">STP</div>
-    <div class="logo-text-wrap">
-      <div class="logo-abbr">STP</div>
-      <div class="logo-full">Skuszawyjiński Transport Publiczny</div>
-    </div>
-  </div>
-  <div class="header-title"><h1>System Monitorowania Ruchu</h1></div>
-  <div class="header-right">
-    <div class="header-cell">
-      <div class="header-cell-label">Status</div>
-      <div class="status-indicator">
-        <div class="status-dot" id="statusDot"></div>
-        <div class="status-text" id="statusText">ONLINE</div>
-      </div>
-    </div>
-    <div class="header-cell">
-      <div class="header-cell-label">Godzina systemowa</div>
-      <div class="header-cell-value" id="sysClock">--:--:--</div>
-    </div>
-  </div>
-</header>
-
-<nav class="tab-nav">
-  <button class="tab-btn active" onclick="switchTab('fleet')" id="tab-fleet">
-    <span class="tab-icon">⊟</span> Monitor floty
-  </button>
-  <button class="tab-btn" onclick="switchTab('timetable')" id="tab-timetable">
-    <span class="tab-icon">◫</span> Rozkład jazdy
-  </button>
-  <button class="tab-btn" onclick="switchTab('connections')" id="tab-connections">
-    <span class="tab-icon">⇄</span> Połączenia
-  </button>
-  <button class="tab-btn" onclick="switchTab('karta')" id="tab-karta">
-    <span class="tab-icon">◈</span> Karta Mieszkańca
-  </button>
-</nav>
-
-<div class="stats-bar">
-  <div class="stat-cell">
-    <div class="stat-icon">⬡</div>
-    <div class="stat-data">
-      <div class="stat-value" id="statActive">—</div>
-      <div class="stat-label">Pojazdy w ruchu</div>
-    </div>
-  </div>
-  <div class="stat-cell">
-    <div class="stat-icon">⊘</div>
-    <div class="stat-data">
-      <div class="stat-value" id="statAvgDelay">—</div>
-      <div class="stat-label">Śr. opóźnienie</div>
-    </div>
-  </div>
-  <div class="stat-cell">
-    <div class="stat-icon">↓</div>
-    <div class="stat-data">
-      <div class="stat-value" id="statWorstLine">—</div>
-      <div class="stat-label">Najbardziej opóźniona</div>
-    </div>
-  </div>
-  <div class="stat-cell">
-    <div class="stat-icon">↑</div>
-    <div class="stat-data">
-      <div class="stat-value" id="statBestLine">—</div>
-      <div class="stat-label">Najbardziej punktualna</div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ FLEET VIEW ══ -->
-<div class="view active" id="viewFleet">
-  <div class="layout">
-    <aside class="sidebar">
-      <div class="sidebar-section">
-        <div class="sidebar-title">Szukaj</div>
-        <input class="filter-input" id="searchLine" type="text" placeholder="Nr linii…">
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-title">Status</div>
-        <div class="filter-group">
-          <div class="filter-option active" data-filter="status" data-value="all" onclick="toggleFilter(this)">
-            <div class="filter-dot" style="background:var(--blue-l)"></div>
-            <span class="filter-option-label">Wszystkie</span>
-            <span class="filter-count" id="countAll">0</span>
-          </div>
-          <div class="filter-option" data-filter="status" data-value="w-trasie" onclick="toggleFilter(this)">
-            <div class="filter-dot" style="background:var(--blue-l)"></div>
-            <span class="filter-option-label">W trasie</span>
-            <span class="filter-count" id="countActive">0</span>
-          </div>
-          <div class="filter-option" data-filter="status" data-value="zjazd" onclick="toggleFilter(this)">
-            <div class="filter-dot" style="background:var(--grey-l)"></div>
-            <span class="filter-option-label">Zjazd techniczny</span>
-            <span class="filter-count" id="countTech">0</span>
-          </div>
-        </div>
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-title">Opóźnienie</div>
-        <div class="filter-group">
-          <div class="filter-option active" data-filter="delay" data-value="all" onclick="toggleFilter(this)">
-            <div class="filter-dot" style="background:var(--text-2)"></div>
-            <span class="filter-option-label">Wszystkie</span>
-            <span class="filter-count" id="countDelayAll">0</span>
-          </div>
-          <div class="filter-option" data-filter="delay" data-value="on-time" onclick="toggleFilter(this)">
-            <div class="filter-dot" style="background:var(--green)"></div>
-            <span class="filter-option-label">Punktualny</span>
-            <span class="filter-count" id="countOnTime">0</span>
-          </div>
-          <div class="filter-option" data-filter="delay" data-value="slight" onclick="toggleFilter(this)">
-            <div class="filter-dot" style="background:var(--yellow)"></div>
-            <span class="filter-option-label">3–5 min opóźnienia</span>
-            <span class="filter-count" id="countSlight">0</span>
-          </div>
-          <div class="filter-option" data-filter="delay" data-value="late" onclick="toggleFilter(this)">
-            <div class="filter-dot" style="background:var(--red)"></div>
-            <span class="filter-option-label">Powyżej 5 min</span>
-            <span class="filter-count" id="countLate">0</span>
-          </div>
-        </div>
-      </div>
-    </aside>
-    <div class="main-area">
-      <div class="table-header-bar">
-        <div class="table-title">Aktywne pojazdy</div>
-        <div class="table-meta" id="tableMeta">Ostatnia aktualizacja: —</div>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th onclick="sortBy('routeNum')" class="sorted">Linia <span class="sort-arrow" id="arrow-routeNum">↑</span></th>
-              <th onclick="sortBy('destination')">Kierunek <span class="sort-arrow" id="arrow-destination"></span></th>
-              <th onclick="sortBy('currentStop')">Następny przystanek <span class="sort-arrow" id="arrow-currentStop"></span></th>
-              <th onclick="sortBy('scheduledTime')" style="text-align:right">Planowany <span class="sort-arrow" id="arrow-scheduledTime"></span></th>
-              <th onclick="sortBy('actualTime')" style="text-align:right">Rzeczywisty <span class="sort-arrow" id="arrow-actualTime"></span></th>
-              <th onclick="sortBy('delaySeconds')">Opóźnienie <span class="sort-arrow" id="arrow-delaySeconds"></span></th>
-              <th onclick="sortBy('statusClass')">Status <span class="sort-arrow" id="arrow-statusClass"></span></th>
-            </tr>
-          </thead>
-          <tbody id="tableBody">
-            <tr class="empty-row"><td colspan="7">Oczekiwanie na dane…</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ TIMETABLE VIEW ══ -->
-<div class="view" id="viewTimetable">
-  <div class="sidebar-title" style="padding:0 0 8px;margin-bottom:16px;font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:2px;text-transform:uppercase">Wybierz linię</div>
-  <div class="tt-line-selector" id="ttLineBtns">
-    <span class="tt-none">Brak aktywnych pojazdów w systemie</span>
-  </div>
-  <div id="ttCards"></div>
-</div>
-
-<!-- ══ CONNECTIONS VIEW ══ -->
-<div class="view" id="viewConnections">
-  <div class="conn-search-panel">
-    <div class="conn-search-title">Wyszukaj połączenie</div>
-    <div class="conn-fields">
-      <div class="conn-field">
-        <label>Skąd</label>
-        <select class="conn-select" id="connFrom">
-          <option value="">— wybierz przystanek —</option>
-        </select>
-      </div>
-      <div class="conn-field">
-        <label>Dokąd</label>
-        <select class="conn-select" id="connTo">
-          <option value="">— wybierz przystanek —</option>
-        </select>
-      </div>
-      <button class="conn-btn" onclick="searchConnections()">Szukaj</button>
-    </div>
-  </div>
-  <div class="conn-results-title">Wyniki</div>
-  <div id="connResults">
-    <div class="conn-none">Wybierz przystanek początkowy i końcowy, aby wyszukać połączenia.</div>
-  </div>
-</div>
-
-<!-- ══ KARTA MIESZKAŃCA VIEW ══ -->
-<div class="view" id="viewKarta">
-  <div class="karta-layout">
-
-    <!-- Form panel -->
-    <div class="karta-form-panel">
-      <div class="karta-panel-header">
-        <div class="karta-panel-title">Wyrobienie Karty Mieszkańca</div>
-        <div class="karta-panel-sub">Karta jest bezpłatna. Dane przechowywane lokalnie w przeglądarce.</div>
-      </div>
-
-      <!-- Form -->
-      <div class="karta-form" id="kartaForm">
-        <div class="karta-field">
-          <div class="karta-label">Nick Roblox <span>*</span></div>
-          <input class="karta-input" id="kartaRoblox" type="text" placeholder="TwójNick" maxlength="20" oninput="kartaPreview()">
-          <div class="karta-hint">Dokładnie tak jak widnieje w grze.</div>
-        </div>
-
-        <div class="karta-field">
-          <div class="karta-label">Nick Discord <span style="color:var(--text-3)">(opcjonalnie)</span></div>
-          <input class="karta-input" id="kartaDiscord" type="text" placeholder="nick#0000 lub @nick" maxlength="32" oninput="kartaPreview()">
-        </div>
-
-        <div class="karta-divider"></div>
-
-        <div class="karta-row">
-          <div class="karta-field">
-            <div class="karta-label">Dzielnica <span>*</span></div>
-            <select class="karta-select" id="kartaDzielnica" onchange="kartaDzielnicaChange()">
-              <option value="">— wybierz —</option>
-              <option value="Śródmieście">Śródmieście</option>
-              <option value="Jegóry">Jegóry</option>
-              <option value="Wiktoria">Wiktoria</option>
-              <option value="Monotony">Monotony</option>
-              <option value="Brokolin">Brokolin</option>
-              <option value="Wilagrów">Wilagrów</option>
-              <option value="Kabor">Kabor</option>
-              <option value="Kyrylczyn">Kyrylczyn</option>
-              <option value="Borki">Borki</option>
-              <option value="Mirów">Mirów</option>
-              <option value="Dorsztat">Dorsztat</option>
-              <option value="Niukolin">Niukolin</option>
-              <option value="Mostumiły">Mostumiły</option>
-              <option value="Anin">Anin</option>
-              <option value="Kruki">Kruki</option>
-            </select>
-          </div>
-          <div class="karta-field">
-            <div class="karta-label">Osiedle <span id="osiedleRequired" style="color:var(--text-3)">(jeśli dotyczy)</span></div>
-            <select class="karta-select" id="kartaOsiedle" onchange="kartaPreview()" disabled>
-              <option value="">— najpierw wybierz dzielnicę —</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="kartaErrorMsg" class="karta-error-msg" style="display:none"></div>
-
-        <button class="karta-submit" id="kartaSubmitBtn" onclick="kartaSubmit()">Wyślij wniosek o kartę</button>
-      </div>
-
-      <!-- Issued state -->
-      <div class="karta-issued" id="kartaIssued">
-        <div class="karta-issued-badge">
-          <div class="karta-issued-icon">✓</div>
-          <div>
-            <div class="karta-issued-text">Karta mieszkańca została wyrobiona.</div>
-            <div class="karta-issued-sub">Karta jest zapisana w tej przeglądarce. Możesz ją wydrukować lub zrobić zrzut ekranu.</div>
-          </div>
-        </div>
-        <button class="karta-reissue-btn" onclick="kartaReset()">Wyczyść i wyślij nowy wniosek</button>
-      </div>
-    </div>
-
-    <!-- Card preview -->
-    <div class="karta-preview-panel">
-      <div style="font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Podgląd karty</div>
-      <div class="karta-card" id="kartaCardPreview">
-        <div class="karta-card-top">
-          <div class="karta-card-org">
-            <div class="karta-card-logo">STP</div>
-            <div class="karta-card-org-name">Skuszawyjiński Transport Publiczny</div>
-          </div>
-          <div class="karta-card-chip"></div>
-        </div>
-        <div class="karta-card-type">Karta Mieszkańca</div>
-        <div class="karta-card-name" id="previewName">Twój Nick</div>
-        <div class="karta-card-discord" id="previewDiscord"></div>
-        <div class="karta-card-bottom">
-          <div class="karta-card-loc">
-            <div class="karta-card-loc-label">Miejsce zamieszkania</div>
-            <div class="karta-card-loc-value" id="previewLoc">— nie wybrano —</div>
-          </div>
-          <div class="karta-card-nr" id="previewNr"></div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</div>
 
 
-
-
+<!-- ══ S-KARTA JS ══ (wklej do <script> na końcu) ═══════════════════════════ -->
 <script>
-const API_URL    = 'https://stp.zawistowski-szym.workers.dev/api/buses';
-const REFRESH_MS = 15000;
-
-let allBuses     = [];
-let sortCol      = 'routeNum';
-let sortAsc      = true;
-let filterStatus = 'all';
-let filterDelay  = 'all';
-let searchTerm   = '';
-let activeTab    = 'fleet';
-let selectedTTLine = null;
-
-
-// ── Clock ─────────────────────────────────────────────────────
-setInterval(() => {
-  document.getElementById('sysClock').textContent = new Date().toTimeString().slice(0,8);
-}, 1000);
-document.getElementById('sysClock').textContent = new Date().toTimeString().slice(0,8);
-
-// ── Tab switching ─────────────────────────────────────────────
-function switchTab(tab) {
-  activeTab = tab;
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('view' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
-  document.getElementById('tab-' + tab).classList.add('active');
-  if (tab === 'timetable') renderTimetable();
-  if (tab === 'connections') renderConnectionStops();
-}
-
-// ── Fetch ─────────────────────────────────────────────────────
-async function fetchData() {
-  try {
-    const resp = await fetch(API_URL, { cache: 'no-store' });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const data = await resp.json();
-    setOnline(true);
-    allBuses = data.buses || [];
-    document.getElementById('tableMeta').textContent =
-      'Ostatnia aktualizacja: ' + new Date().toTimeString().slice(0,8);
-    updateStats();
-    updateCounts();
-    renderTable();
-    if (activeTab === 'timetable')    renderTimetable();
-    if (activeTab === 'connections')  renderConnectionStops();
-  } catch(e) { setOnline(false); }
-}
-
-function setOnline(on) {
-  document.getElementById('statusDot').className  = 'status-dot' + (on ? '' : ' offline');
-  document.getElementById('statusText').className = 'status-text' + (on ? '' : ' offline');
-  document.getElementById('statusText').textContent = on ? 'ONLINE' : 'OFFLINE';
-}
-
-// ── Helpers ───────────────────────────────────────────────────
-const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-// Lua JSONEncode may produce {"1":t1,"2":t2} instead of [t1,t2]
-// Normalise to a proper 0-based JS array every time we access scheduledTimes
-function normTimes(raw) {
-  if (!raw) return [];
-  if (Array.isArray(raw)) return raw;
-  // It's an object with string keys "1","2",... — convert to array
-  const keys = Object.keys(raw).map(Number).sort((a,b)=>a-b);
-  return keys.map(k => raw[String(k)]);
-}
-
-function fmtTime(unixSec) {
-  if (!unixSec) return '—';
-  return new Date(unixSec * 1000).toTimeString().slice(0,5);
-}
-
-function busStatus(bus) {
-  if (!bus.routeNum || !bus.currentStop ||
-      bus.currentStop === 'Oczekiwanie na trasę...' ||
-      bus.currentStop === 'Awaiting route…') return 'zjazd';
-  if (bus.doorsOpen) return 'drzwi';
-  return 'w-trasie';
-}
-
-function delayClass(sec) {
-  if (sec == null) return 'tech';
-  if (sec/60 <= 1) return 'on-time';
-  if (sec/60 <= 5) return 'slight';
-  return 'late';
-}
-
-function delayLabel(sec) {
-  if (sec == null) return '—';
-  const abs = Math.abs(Math.round(sec));
-  const m = Math.floor(abs/60), s = abs%60;
-  const t = m > 0 ? `${m} min${s>0?' '+s+' s':''}` : `${s} s`;
-  if (sec < -60) return `▲ ${t} wcześniej`;
-  if (sec <=  60) return '● Na czasie';
-  return `▼ +${t}`;
-}
-
-function scheduledTime(bus) {
-  if (!bus.scheduledTimes || !bus.stopIndex) return null;
-  const times = normTimes(bus.scheduledTimes);
-  return times[bus.stopIndex - 1] || null;
-}
-
-function actualTime(bus) {
-  const s = scheduledTime(bus);
-  if (!s || bus.delaySeconds == null) return null;
-  return s + Math.round(bus.delaySeconds);
-}
-
-function enrichBus(bus) {
-  return { ...bus,
-    statusClass:   busStatus(bus),
-    delayCategory: delayClass(bus.delaySeconds),
-    scheduledTime: scheduledTime(bus),
-    actualTime:    actualTime(bus),
-  };
-}
-
-// ── Stats ─────────────────────────────────────────────────────
-function updateStats() {
-  const e = allBuses.map(enrichBus);
-  const active = e.filter(b => b.statusClass !== 'zjazd');
-  document.getElementById('statActive').textContent = active.length || '0';
-  const wd = active.filter(b => b.delaySeconds != null);
-  if (wd.length) {
-    const avg = wd.reduce((s,b) => s + b.delaySeconds, 0) / wd.length;
-    const m = Math.floor(Math.abs(avg)/60), s = Math.round(Math.abs(avg)%60);
-    document.getElementById('statAvgDelay').textContent = avg < 0 ? `▲${m}m${s}s` : `+${m}m${s}s`;
-  } else document.getElementById('statAvgDelay').textContent = '—';
-  const sorted = [...active].filter(b => b.delaySeconds != null).sort((a,b) => b.delaySeconds - a.delaySeconds);
-  document.getElementById('statWorstLine').textContent = sorted.length ? (sorted[0].routeNum || '—') : '—';
-  document.getElementById('statBestLine').textContent  = sorted.length ? (sorted[sorted.length-1].routeNum || '—') : '—';
-
-}
-
-function updateCounts() {
-  const e = allBuses.map(enrichBus);
-  document.getElementById('countAll').textContent      = e.length;
-  document.getElementById('countActive').textContent   = e.filter(b => b.statusClass==='w-trasie'||b.statusClass==='drzwi').length;
-  document.getElementById('countTech').textContent     = e.filter(b => b.statusClass==='zjazd').length;
-  document.getElementById('countDelayAll').textContent = e.length;
-  document.getElementById('countOnTime').textContent   = e.filter(b => b.delayCategory==='on-time').length;
-  document.getElementById('countSlight').textContent   = e.filter(b => b.delayCategory==='slight').length;
-  document.getElementById('countLate').textContent     = e.filter(b => b.delayCategory==='late').length;
-}
-
-// ── Fleet table ───────────────────────────────────────────────
-function getFiltered() {
-  let rows = allBuses.map(enrichBus);
-  if (searchTerm) rows = rows.filter(b => (b.routeNum||'').toLowerCase().includes(searchTerm.toLowerCase()));
-  if (filterStatus !== 'all') rows = rows.filter(b => b.statusClass === filterStatus);
-  if (filterDelay  !== 'all') rows = rows.filter(b => b.delayCategory === filterDelay);
-  rows.sort((a,b) => {
-    let av = a[sortCol]??'', bv = b[sortCol]??'';
-    if (typeof av==='string') av=av.toLowerCase();
-    if (typeof bv==='string') bv=bv.toLowerCase();
-    return av<bv ? (sortAsc?-1:1) : av>bv ? (sortAsc?1:-1) : 0;
-  });
-  return rows;
-}
-
-function renderTable() {
-  const rows  = getFiltered();
-  const tbody = document.getElementById('tableBody');
-  if (!rows.length) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="7">Brak pojazdów spełniających kryteria</td></tr>`;
-    return;
-  }
-  const sl = { 'w-trasie':'W trasie','zjazd':'Zjazd tech.','drzwi':'Drzwi otwarte' };
-  tbody.innerHTML = rows.map((bus,i) => {
-    const rc = {'on-time':'row-green','slight':'row-yellow','late':'row-red','tech':'row-grey'}[bus.delayCategory]||'row-grey';
-    return `<tr class="${rc}" style="animation-delay:${i*.03}s">
-      <td><span class="cell-route">${esc(bus.routeNum||'?')}</span></td>
-      <td><span class="cell-dest">${esc(bus.destination||'—')}</span></td>
-      <td><span class="cell-stop">${esc(bus.currentStop||'—')}</span></td>
-      <td class="cell-time">${fmtTime(bus.scheduledTime)}</td>
-      <td class="cell-time actual">${fmtTime(bus.actualTime)}</td>
-      <td><span class="delay-chip ${bus.delayCategory}">${delayLabel(bus.delaySeconds)}</span></td>
-      <td><span class="status-chip ${bus.statusClass}">${sl[bus.statusClass]||bus.statusClass}</span></td>
-    </tr>`;
-  }).join('');
-}
-
-function sortBy(col) {
-  sortAsc = sortCol === col ? !sortAsc : true;
-  sortCol = col;
-  document.querySelectorAll('th').forEach(th => { th.classList.remove('sorted'); th.querySelector('.sort-arrow').textContent=''; });
-  document.querySelectorAll('th').forEach(th => {
-    if (th.getAttribute('onclick') === `sortBy('${col}')`) {
-      th.classList.add('sorted');
-      th.querySelector('.sort-arrow').textContent = sortAsc ? '↑' : '↓';
-    }
-  });
-  renderTable();
-}
-
-function toggleFilter(el) {
-  const type = el.dataset.filter, val = el.dataset.value;
-  document.querySelectorAll(`[data-filter="${type}"]`).forEach(e => e.classList.remove('active'));
-  el.classList.add('active');
-  if (type==='status') filterStatus = val;
-  if (type==='delay')  filterDelay  = val;
-  renderTable();
-}
-
-document.getElementById('searchLine').addEventListener('input', e => {
-  searchTerm = e.target.value.trim(); renderTable();
-});
-
-// ══ TIMETABLE ════════════════════════════════════════════════
-function renderTimetable() {
-  const active = allBuses.filter(b => busStatus(b) !== 'zjazd' && b.allStops && b.allStops.length);
-  const btnEl  = document.getElementById('ttLineBtns');
-  const cardsEl = document.getElementById('ttCards');
-
-  if (!active.length) {
-    btnEl.innerHTML  = '<span class="tt-none">Brak aktywnych pojazdów w systemie</span>';
-    cardsEl.innerHTML = '';
-    selectedTTLine = null;
-    return;
-  }
-
-  // Unique lines
-  const lines = [...new Set(active.map(b => b.routeNum))].sort();
-  if (!selectedTTLine || !lines.includes(selectedTTLine)) selectedTTLine = lines[0];
-
-  btnEl.innerHTML = lines.map(l =>
-    `<button class="tt-line-btn${l===selectedTTLine?' active':''}" onclick="selectTTLine('${esc(l)}')">${esc(l)}</button>`
-  ).join('');
-
-  const buses = active.filter(b => b.routeNum === selectedTTLine);
-
-  cardsEl.innerHTML = buses.map(bus => {
-    const stops = bus.allStops || [];
-    const idx   = (bus.stopIndex || 1) - 1; // 0-based current stop index
-    const delay = bus.delaySeconds || 0;
-
-    const delayBadgeClass = delayClass(bus.delaySeconds);
-    const delayBadgeStyle = {
-      'on-time': 'color:var(--green-l);background:rgba(15,168,106,.1)',
-      'slight':  'color:var(--yellow-l);background:rgba(212,150,10,.1)',
-      'late':    'color:var(--red-l);background:rgba(192,40,42,.1)',
-      'tech':    'color:var(--grey-l);background:rgba(58,69,85,.2)',
-    }[delayBadgeClass];
-
-    const stopsHtml = stops.map((stop, i) => {
-      let cls = '';
-      if (i < idx)  cls = 'passed';
-      if (i === idx) cls = 'current';
-
-      // Calculate scheduled and actual time for each stop
-      const _times = normTimes(bus.scheduledTimes);
-      const sched = _times[i] || null;
-      const actual = sched ? sched + Math.round(delay) : null;
-      const timeStr = actual ? fmtTime(actual) : (sched ? fmtTime(sched) : '');
-
-      const dotContent = i < idx ? '✓' : (i === idx ? '▶' : '');
-      return `<div class="tt-stop ${cls}">
-        <div class="tt-stop-dot">${dotContent}</div>
-        <div class="tt-stop-name">${esc(stop)}</div>
-        ${timeStr ? `<div class="tt-stop-time">${timeStr}</div>` : ''}
-      </div>`;
-    }).join('');
-
-    return `<div class="tt-card">
-      <div class="tt-card-header">
-        <div class="tt-route-badge">${esc(bus.routeNum)}</div>
-        <div class="tt-dest">→ ${esc(bus.destination||'—')}</div>
-        <div class="tt-driver">kier. ${esc(bus.driverName||'—')}</div>
-        <div class="tt-delay-badge" style="${delayBadgeStyle}">${delayLabel(bus.delaySeconds)}</div>
-      </div>
-      <div class="tt-stops"><div class="tt-stops-inner">${stopsHtml}</div></div>
-    </div>`;
-  }).join('');
-}
-
-function selectTTLine(line) {
-  selectedTTLine = line;
-  renderTimetable();
-}
-
-// ══ CONNECTIONS ═══════════════════════════════════════════════
-function getAllStops() {
-  const stops = new Set();
-  allBuses.forEach(bus => {
-    if (bus.allStops) bus.allStops.forEach(s => stops.add(s));
-  });
-  return [...stops].sort();
-}
-
-function renderConnectionStops() {
-  const stops = getAllStops();
-  const fromEl = document.getElementById('connFrom');
-  const toEl   = document.getElementById('connTo');
-  const prevFrom = fromEl.value, prevTo = toEl.value;
-
-  const opts = ['<option value="">— wybierz przystanek —</option>',
-    ...stops.map(s => `<option value="${esc(s)}">${esc(s)}</option>`)
-  ].join('');
-
-  fromEl.innerHTML = opts;
-  toEl.innerHTML   = opts;
-  if (prevFrom) fromEl.value = prevFrom;
-  if (prevTo)   toEl.value   = prevTo;
-}
-
-function searchConnections() {
-  const from = document.getElementById('connFrom').value;
-  const to   = document.getElementById('connTo').value;
-  const el   = document.getElementById('connResults');
-
-  if (!from || !to) {
-    el.innerHTML = '<div class="conn-none">Wybierz oba przystanki.</div>';
-    return;
-  }
-  if (from === to) {
-    el.innerHTML = '<div class="conn-none">Przystanek początkowy i końcowy są takie same.</div>';
-    return;
-  }
-
-  const results = findConnections(from, to);
-
-  if (!results.length) {
-    el.innerHTML = `<div class="conn-none">Brak połączeń z <strong>${esc(from)}</strong> do <strong>${esc(to)}</strong> w oparciu o aktualnie kursujące pojazdy.</div>`;
-    return;
-  }
-
-  el.innerHTML = results.map((conn, ci) => renderConnectionCard(conn, ci)).join('');
-}
-
-// Graph-based connection finder with up to 1 transfer
-function findConnections(from, to) {
-  const activeBuses = allBuses.filter(b => busStatus(b) !== 'zjazd' && b.allStops && b.allStops.length);
-  const results = [];
-
-  // Build: for each bus, what stops does it serve and in what order?
-  // busRoutes[i] = { bus, stops: [...], times: [...] }
-  const busRoutes = activeBuses.map(bus => ({
-    bus,
-    stops: bus.allStops,
-    times: normTimes(bus.scheduledTimes),
-    delay: bus.delaySeconds || 0,
-  }));
-
-  // ── Direct connections ────────────────────────────────────
-  for (const route of busRoutes) {
-    const fromIdx = route.stops.indexOf(from);
-    const toIdx   = route.stops.indexOf(to);
-    if (fromIdx !== -1 && toIdx !== -1 && toIdx > fromIdx) {
-      const depTime  = route.times[fromIdx] ? route.times[fromIdx] + Math.round(route.delay) : null;
-      const arrTime  = route.times[toIdx]   ? route.times[toIdx]   + Math.round(route.delay) : null;
-      results.push({
-        type: 'direct',
-        legs: [{
-          bus: route.bus,
-          from, to,
-          fromIdx, toIdx,
-          depTime, arrTime,
-          stops: route.stops.slice(fromIdx, toIdx + 1),
-        }],
-      });
-    }
-  }
-
-  // ── Connections with 1 transfer ───────────────────────────
-  // Find all stops reachable from `from`, then find buses from those stops to `to`
-  for (const routeA of busRoutes) {
-    const fromIdx = routeA.stops.indexOf(from);
-    if (fromIdx === -1) continue;
-
-    // Every stop after `from` on routeA is a potential transfer point
-    for (let ti = fromIdx + 1; ti < routeA.stops.length; ti++) {
-      const transferStop = routeA.stops[ti];
-      if (transferStop === to) continue; // already a direct connection
-
-      for (const routeB of busRoutes) {
-        if (routeB === routeA) continue;
-        const transferIdx = routeB.stops.indexOf(transferStop);
-        const toIdx       = routeB.stops.indexOf(to);
-        if (transferIdx === -1 || toIdx === -1 || toIdx <= transferIdx) continue;
-
-        // Make sure transfer makes temporal sense
-        const arr1  = routeA.times[ti]          ? routeA.times[ti]          + Math.round(routeA.delay) : null;
-        const dep2  = routeB.times[transferIdx]  ? routeB.times[transferIdx] + Math.round(routeB.delay) : null;
-        const arr2  = routeB.times[toIdx]        ? routeB.times[toIdx]       + Math.round(routeB.delay) : null;
-        const dep1  = routeA.times[fromIdx]      ? routeA.times[fromIdx]     + Math.round(routeA.delay) : null;
-
-        // Skip if second bus has already passed the transfer stop
-        if (arr1 && dep2 && dep2 < arr1) continue;
-
-        results.push({
-          type: 'transfer',
-          legs: [
-            {
-              bus: routeA.bus, from, to: transferStop,
-              fromIdx, toIdx: ti,
-              depTime: dep1, arrTime: arr1,
-              stops: routeA.stops.slice(fromIdx, ti + 1),
-            },
-            {
-              bus: routeB.bus, from: transferStop, to,
-              fromIdx: transferIdx, toIdx,
-              depTime: dep2, arrTime: arr2,
-              stops: routeB.stops.slice(transferIdx, toIdx + 1),
-            },
-          ],
-          transferStop,
-          waitTime: (arr1 && dep2) ? dep2 - arr1 : null,
-        });
-      }
-    }
-  }
-
-  // Sort: direct first, then by departure time
-  results.sort((a, b) => {
-    if (a.type === 'direct' && b.type !== 'direct') return -1;
-    if (b.type === 'direct' && a.type !== 'direct') return 1;
-    const ta = a.legs[0].depTime || 0;
-    const tb = b.legs[0].depTime || 0;
-    return ta - tb;
-  });
-
-  // Deduplicate: same bus + same from/to combo
-  const seen = new Set();
-  return results.filter(r => {
-    const key = r.legs.map(l => l.bus.routeNum + ':' + l.from + '>' + l.to).join('|');
-    if (seen.has(key)) return false;
-    seen.add(key); return true;
-  }).slice(0, 8); // max 8 results
-}
-
-function renderConnectionCard(conn, ci) {
-  const typeLabel = conn.type === 'direct' ? 'Bezpośrednie' : '1 przesiadka';
-  const firstDep  = conn.legs[0].depTime;
-  const lastArr   = conn.legs[conn.legs.length - 1].arrTime;
-  const totalTime = (firstDep && lastArr) ? Math.round((lastArr - firstDep) / 60) + ' min' : '—';
-
-  let legsHtml = '';
-  conn.legs.forEach((leg, li) => {
-    if (li > 0) {
-      const waitMin = conn.waitTime ? Math.round(conn.waitTime / 60) : null;
-      legsHtml += `<div class="conn-transfer">
-        <span class="conn-transfer-label">⇄ Przesiadka: ${esc(conn.transferStop)}</span>
-        <span class="conn-transfer-time">${waitMin != null ? 'oczekiwanie ~'+waitMin+' min' : ''}</span>
-      </div>`;
-    }
-    const stopsCount = leg.stops.length - 2;
-    legsHtml += `<div class="conn-leg">
-      <div class="conn-leg-line">
-        <div class="conn-leg-badge">${esc(leg.bus.routeNum||'?')}</div>
-        <div class="conn-leg-spine"></div>
-      </div>
-      <div class="conn-leg-body">
-        <div class="conn-leg-row">
-          <span class="conn-leg-stop">${esc(leg.from)}</span>
-          <span class="conn-leg-time">${fmtTime(leg.depTime)}</span>
-        </div>
-        ${stopsCount > 0 ? `<div class="conn-leg-arrow">↓ ${stopsCount} przystanek${stopsCount===1?'':stopsCount<5?'i':'ów'} pośrednich</div>` : ''}
-        <div class="conn-leg-row">
-          <span class="conn-leg-stop">${esc(leg.to)}</span>
-          <span class="conn-leg-time">${fmtTime(leg.arrTime)}</span>
-        </div>
-        <div class="conn-leg-info">kier. ${esc(leg.bus.driverName||'—')} · ${delayLabel(leg.bus.delaySeconds)}</div>
-      </div>
-    </div>`;
-  });
-
-  return `<div class="conn-card" style="animation-delay:${ci*.05}s">
-    <div class="conn-card-header">
-      <span class="conn-card-type">${typeLabel}</span>
-      <span style="font-family:var(--mono);font-size:10px;color:var(--text-3)">czas przejazdu: ${totalTime}</span>
-      <span class="conn-card-time">${fmtTime(firstDep)} → ${fmtTime(lastArr)}</span>
-    </div>
-    <div class="conn-legs">${legsHtml}</div>
-  </div>`;
-}
-
-
-// ══════════════════════════════════════════════════════════════
-const DZIELNICE = {
+const SK_API    = 'https://stp.zawistowski-szym.workers.dev';
+const SK_DZIEL  = {
   'Śródmieście': ['Śródmieście Wschodnie','Śródmieście Zachodnie','Kazimierz','Różany'],
   'Jegóry':      ['Stare Jegóry','Przyrzecze','Krzywe Koło','Skuszowice','Przygórze'],
   'Wiktoria':    ['Alberta','Stara Wiktoria','Międzylesie','Starodęby'],
 };
-// Dzielnice bez osiedli
-const SINGLE = ['Monotony','Brokolin','Wilagrów','Kabor','Kyrylczyn','Borki','Mirów','Dorsztat','Niukolin','Mostumiły','Anin','Kruki'];
 
-function kartaDzielnicaChange() {
-  const dz = document.getElementById('kartaDzielnica').value;
-  const sel = document.getElementById('kartaOsiedle');
-  const req = document.getElementById('osiedleRequired');
+let skCurrentNick = null;
+let skSelectedPkg = null;
+
+function skartaInit() {
+  // Przywróć z localStorage
+  try {
+    const saved = localStorage.getItem('stp_skarta');
+    if (saved) {
+      const d = JSON.parse(saved);
+      document.getElementById('skRoblox').value  = d.nick    || '';
+      document.getElementById('skDiscord').value = d.discord || '';
+      if (d.dz) {
+        document.getElementById('skDzielnica').value = d.dz;
+        skDzielnicaChange();
+        if (d.os) document.getElementById('skOsiedle').value = d.os;
+      }
+      skPreview();
+    }
+  } catch(e) {}
+}
+
+// Podgląd na żywo
+function skPreview() {
+  const nick    = document.getElementById('skRoblox').value.trim();
+  const discord = document.getElementById('skDiscord').value.trim();
+  const dz      = document.getElementById('skDzielnica').value;
+  const os      = document.getElementById('skOsiedle').value;
+  document.getElementById('skPreviewName').textContent    = nick    || 'Twój Nick';
+  document.getElementById('skPreviewDiscord').textContent = discord || '';
+  let loc = '— nie wybrano —';
+  if (dz && os) loc = os + ', ' + dz;
+  else if (dz)  loc = dz;
+  document.getElementById('skPreviewLoc').textContent = loc;
+}
+
+function skDzielnicaChange() {
+  const dz  = document.getElementById('skDzielnica').value;
+  const sel = document.getElementById('skOsiedle');
   sel.innerHTML = '';
-
-  if (DZIELNICE[dz]) {
-    req.textContent = '*';
-    req.style.color = 'var(--red-l)';
+  if (SK_DZIEL[dz]) {
     sel.disabled = false;
     sel.innerHTML = '<option value="">— wybierz osiedle —</option>' +
-      DZIELNICE[dz].map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
+      SK_DZIEL[dz].map(o => `<option>${esc(o)}</option>`).join('');
   } else {
-    req.textContent = '(nie dotyczy)';
-    req.style.color = 'var(--text-3)';
     sel.disabled = true;
     sel.innerHTML = '<option value="">—</option>';
   }
-  kartaPreview();
+  skPreview();
 }
 
-function kartaPreview() {
-  const nick    = document.getElementById('kartaRoblox').value.trim();
-  const discord = document.getElementById('kartaDiscord').value.trim();
-  const dz      = document.getElementById('kartaDzielnica').value;
-  const os      = document.getElementById('kartaOsiedle').value;
-
-  document.getElementById('previewName').textContent    = nick || 'Twój Nick';
-  document.getElementById('previewDiscord').textContent = discord ? discord : '';
-
-  let loc = '— nie wybrano —';
-  if (dz && os)  loc = os + ', ' + dz;
-  else if (dz)   loc = dz;
-  document.getElementById('previewLoc').textContent = loc;
+function skGenNr(nick) {
+  const seed = nick.toUpperCase().split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  const ts   = Date.now();
+  return `SK-${String(seed%10000).padStart(4,'0')}-${String(ts%100000).padStart(5,'0')}`;
 }
 
-function kartaGenerateNr() {
-  // Deterministic-ish ID from nick + timestamp
-  const nick = document.getElementById('kartaRoblox').value.trim().toUpperCase();
-  const seed  = nick.split('').reduce((a,c) => a + c.charCodeAt(0), 0);
-  const ts    = Date.now();
-  const part1 = String(seed % 10000).padStart(4,'0');
-  const part2 = String(ts % 100000).padStart(5,'0');
-  return `KM-${part1}-${part2}`;
-}
-
-function kartaValidate() {
-  const nick = document.getElementById('kartaRoblox').value.trim();
-  const dz   = document.getElementById('kartaDzielnica').value;
-  const os   = document.getElementById('kartaOsiedle').value;
-  const errEl = document.getElementById('kartaErrorMsg');
-
-  if (!nick) {
-    errEl.textContent = 'Pole „Nick Roblox" jest wymagane.';
-    errEl.style.display = 'block';
-    document.getElementById('kartaRoblox').classList.add('error');
-    return false;
-  }
-  if (!/^[A-Za-z0-9_]{3,20}$/.test(nick)) {
-    errEl.textContent = 'Nick Roblox może zawierać tylko litery, cyfry i podkreślnik (3–20 znaków).';
-    errEl.style.display = 'block';
-    document.getElementById('kartaRoblox').classList.add('error');
-    return false;
-  }
-  if (!dz) {
-    errEl.textContent = 'Wybierz dzielnicę zamieszkania.';
-    errEl.style.display = 'block';
-    document.getElementById('kartaDzielnica').classList.add('error');
-    return false;
-  }
-  if (DZIELNICE[dz] && !os) {
-    errEl.textContent = 'Wybierz osiedle dla dzielnicy ' + dz + '.';
-    errEl.style.display = 'block';
-    document.getElementById('kartaOsiedle').classList.add('error');
-    return false;
-  }
-
+// Walidacja formularza
+function skValidate() {
+  const nick = document.getElementById('skRoblox').value.trim();
+  const dz   = document.getElementById('skDzielnica').value;
+  const os   = document.getElementById('skOsiedle').value;
+  const errEl = document.getElementById('skFormErr');
+  const show = (msg) => { errEl.textContent=msg; errEl.style.display='block'; return false; };
   errEl.style.display = 'none';
-  document.getElementById('kartaRoblox').classList.remove('error');
-  document.getElementById('kartaDzielnica').classList.remove('error');
-  document.getElementById('kartaOsiedle').classList.remove('error');
+  if (!nick)                          return show('Pole "Nick Roblox" jest wymagane.');
+  if (!/^[A-Za-z0-9_]{3,20}$/.test(nick)) return show('Nick może zawierać litery, cyfry i _ (3–20 znaków).');
+  if (!dz)                            return show('Wybierz dzielnicę.');
+  if (SK_DZIEL[dz] && !os)            return show('Wybierz osiedle dla dzielnicy ' + dz + '.');
   return true;
 }
 
-async function kartaSubmit() {
-  if (!kartaValidate()) return;
+async function skartaIssue() {
+  if (!skValidate()) return;
+  const btn  = document.getElementById('skIssueBtn');
+  btn.disabled = true; btn.textContent = 'Wysyłanie…';
 
-  const btn = document.getElementById('kartaSubmitBtn');
-  btn.disabled = true;
-  btn.textContent = 'Wysyłanie…';
+  const nick    = document.getElementById('skRoblox').value.trim();
+  const discord = document.getElementById('skDiscord').value.trim();
+  const dz      = document.getElementById('skDzielnica').value;
+  const os      = document.getElementById('skOsiedle').value;
+  const nr      = skGenNr(nick);
 
-  const nr = kartaGenerateNr();
-  document.getElementById('previewNr').textContent = nr;
+  const data = { nick, discord, dz, os, nr, issuedAt: new Date().toISOString() };
 
-  const data = {
-    nick:     document.getElementById('kartaRoblox').value.trim(),
-    discord:  document.getElementById('kartaDiscord').value.trim(),
-    dz:       document.getElementById('kartaDzielnica').value,
-    os:       document.getElementById('kartaOsiedle').value,
-    nr,
-    issuedAt: new Date().toISOString(),
-  };
-
-  // Zapisz lokalnie
-  try { localStorage.setItem('stp_karta', JSON.stringify(data)); } catch(e) {}
-
-  // Wyślij do Cloudflare KV
   try {
-    const resp = await fetch('https://stp.zawistowski-szym.workers.dev/api/karta', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(data),
+    const resp = await fetch(SK_API + '/api/skarta', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(data),
     });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const res = await resp.json();
+    if (!res.ok) throw new Error(res.error || 'Błąd serwera');
+
+    localStorage.setItem('stp_skarta', JSON.stringify(data));
+    document.getElementById('skPreviewNr').textContent = nr;
+    document.getElementById('skPreviewBalance').textContent = (res.balance ?? 0).toFixed(2) + ' PLN';
+
+    // Pokaż panel doładowania
+    document.getElementById('skTopupPanel').style.display = 'block';
+    skCurrentNick = nick.toLowerCase();
+    skLoadHistory();
+
+    document.getElementById('skFormErr').style.display = 'none';
+    btn.textContent = '✓ Karta wyrobiona!';
+    btn.style.background = 'var(--green)';
   } catch(e) {
-    // Pokaż błąd ale nie blokuj — karta lokalna działa
-    const errEl = document.getElementById('kartaErrorMsg');
-    errEl.textContent = 'Ostrzeżenie: nie udało się zsynchronizować z serwerem. Karta zapisana lokalnie.';
-    errEl.style.display = 'block';
+    document.getElementById('skFormErr').textContent = 'Błąd: ' + e.message;
+    document.getElementById('skFormErr').style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Wyślij wniosek';
+  }
+}
+
+// Wyszukaj kartę
+async function skartaSearch() {
+  const nick = document.getElementById('skNickSearch').value.trim();
+  if (!nick) return;
+  const res  = document.getElementById('skSearchResult');
+  res.style.display = 'block';
+  res.innerHTML = '<span style="font-family:var(--mono);font-size:11px;color:var(--text-3)">Szukam…</span>';
+
+  try {
+    const r = await fetch(SK_API + '/api/skarta?nick=' + encodeURIComponent(nick.toLowerCase()));
+    const d = await r.json();
+    if (!d.found) {
+      res.innerHTML = `<div class="sk-search-not-found">Nie znaleziono karty dla nicku <b>${esc(nick)}</b>.</div>`;
+      return;
+    }
+    let loc = d.dz || '—';
+    if (d.os) loc = d.os + ', ' + d.dz;
+
+    res.innerHTML = `<div class="sk-search-found">
+      <div class="sk-search-name">${esc(d.nick)}</div>
+      <div class="sk-search-bal">${(d.balance||0).toFixed(2)} PLN</div>
+      <div class="sk-search-meta">${esc(loc)} · Nr: ${esc(d.nr||'—')}</div>
+    </div>`;
+
+    // Zaktualizuj podgląd karty
+    document.getElementById('skPreviewName').textContent    = d.nick    || '';
+    document.getElementById('skPreviewDiscord').textContent = d.discord || '';
+    document.getElementById('skPreviewLoc').textContent     = loc;
+    document.getElementById('skPreviewNr').textContent      = d.nr      || '';
+    document.getElementById('skPreviewBalance').textContent = (d.balance||0).toFixed(2) + ' PLN';
+
+    skCurrentNick = nick.toLowerCase();
+    document.getElementById('skTopupPanel').style.display = 'block';
+    skLoadHistory();
+  } catch(e) {
+    res.innerHTML = `<div class="sk-search-not-found">Błąd połączenia: ${esc(e.message)}</div>`;
+  }
+}
+
+// Pakiety
+function skSelectPkg(amount) {
+  skSelectedPkg = amount;
+  document.querySelectorAll('.sk-pkg').forEach(b => b.classList.remove('selected'));
+  event.target.classList.add('selected');
+  document.getElementById('skTopupAmount').value = amount;
+}
+function skClearPkg() {
+  skSelectedPkg = null;
+  document.querySelectorAll('.sk-pkg').forEach(b => b.classList.remove('selected'));
+}
+
+async function skartaTopup() {
+  if (!skCurrentNick) {
+    skShowTopupMsg(false, 'Najpierw wyszukaj lub wyrób kartę.');
+    return;
+  }
+  const amount = parseFloat(document.getElementById('skTopupAmount').value);
+  if (isNaN(amount) || amount <= 0) {
+    skShowTopupMsg(false, 'Wpisz kwotę doładowania.'); return;
   }
 
-  btn.disabled = false;
-  btn.textContent = 'Wyślij wniosek o kartę';
-
-  // Pokaż potwierdzenie
-  document.getElementById('kartaForm').style.display = 'none';
-  document.getElementById('kartaIssued').classList.add('show');
-
-  const card = document.getElementById('kartaCardPreview');
-  card.style.transform = 'scale(1.02)';
-  card.style.transition = 'transform .3s';
-  setTimeout(() => { card.style.transform = 'scale(1)'; }, 300);
-}
-// Restore saved card on load
-(function kartaRestore() {
   try {
-    const raw = localStorage.getItem('stp_karta');
-    if (!raw) return;
-    const d = JSON.parse(raw);
+    const resp = await fetch(SK_API + '/api/skarta/topup', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ nick: skCurrentNick, amount }),
+    });
+    const d = await resp.json();
+    if (!d.ok) throw new Error(d.error || 'Błąd serwera');
 
-    document.getElementById('kartaRoblox').value  = d.nick  || '';
-    document.getElementById('kartaDiscord').value = d.discord || '';
+    skShowTopupMsg(true, `Doładowano +${amount.toFixed(2)} PLN · Nowe saldo: ${d.balance.toFixed(2)} PLN`);
+    document.getElementById('skPreviewBalance').textContent = d.balance.toFixed(2) + ' PLN';
 
-    if (d.dz) {
-      document.getElementById('kartaDzielnica').value = d.dz;
-      kartaDzielnicaChange();
-      if (d.os) document.getElementById('kartaOsiedle').value = d.os;
+    // Animacja karty
+    const card = document.getElementById('skCardEl');
+    card.style.transition = 'transform .2s';
+    card.style.transform  = 'scale(1.02)';
+    setTimeout(() => { card.style.transform = 'scale(1)'; }, 200);
+
+    skLoadHistory();
+  } catch(e) {
+    skShowTopupMsg(false, 'Błąd: ' + e.message);
+  }
+}
+
+function skShowTopupMsg(ok, text) {
+  const el = document.getElementById('skTopupMsg');
+  el.textContent   = text;
+  el.style.display = 'block';
+  el.style.color   = ok ? 'var(--green-l)' : 'var(--red-l)';
+  el.style.background = ok ? 'rgba(15,168,106,.08)' : 'rgba(192,40,42,.08)';
+  el.style.borderColor = ok ? 'rgba(15,168,106,.2)' : 'rgba(192,40,42,.2)';
+  setTimeout(() => { el.style.display='none'; }, 5000);
+}
+
+async function skLoadHistory() {
+  if (!skCurrentNick) return;
+  const panel = document.getElementById('skHistPanel');
+  const list  = document.getElementById('skHistList');
+  panel.style.display = 'block';
+  list.innerHTML = '<div style="padding:16px;font-family:var(--mono);font-size:11px;color:var(--text-3)">Ładowanie…</div>';
+
+  try {
+    const r = await fetch(SK_API + '/api/skarta/history?nick=' + encodeURIComponent(skCurrentNick));
+    const d = await r.json();
+    const hist = d.history || [];
+    if (!hist.length) {
+      list.innerHTML = '<div style="padding:16px;font-family:var(--mono);font-size:11px;color:var(--text-3)">Brak transakcji.</div>';
+      return;
     }
+    list.innerHTML = hist.map(h => {
+      const plus = h.amount > 0;
+      const icon = plus ? '↑' : '↓';
+      const date = new Date(h.ts).toLocaleString('pl-PL', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      return `<div class="sk-hist-item">
+        <div class="sk-hist-icon" style="color:${plus?'var(--green-l)':'var(--red-l)'}">${icon}</div>
+        <div class="sk-hist-body">
+          <div class="sk-hist-note">${esc(h.note||'?')}</div>
+          <div class="sk-hist-time">${date} · saldo po: ${(h.balance??0).toFixed(2)} PLN</div>
+        </div>
+        <div class="sk-hist-amount ${plus?'plus':'minus'}">${plus?'+':''}${(h.amount??0).toFixed(2)} PLN</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = `<div style="padding:16px;font-family:var(--mono);font-size:11px;color:var(--text-3)">Błąd: ${esc(e.message)}</div>`;
+  }
+}
 
-    document.getElementById('previewName').textContent    = d.nick || 'Twój Nick';
-    document.getElementById('previewDiscord').textContent = d.discord || '';
-    let loc = '— nie wybrano —';
-    if (d.dz && d.os) loc = d.os + ', ' + d.dz;
-    else if (d.dz)    loc = d.dz;
-    document.getElementById('previewLoc').textContent = loc;
-    document.getElementById('previewNr').textContent  = d.nr || '';
-
-    document.getElementById('kartaForm').style.display = 'none';
-    document.getElementById('kartaIssued').classList.add('show');
-    if (d.issuedAt) {
-      const issued = new Date(d.issuedAt);
-      const dateStr = issued.toLocaleDateString('pl-PL', { day:'2-digit', month:'long', year:'numeric' });
-      const subEl = document.querySelector('.karta-issued-sub');
-      if (subEl) subEl.textContent = `Karta wyrobiona ${dateStr}. Możesz ją wydrukować lub zrobić zrzut ekranu.`;
-    }
-  } catch(e) {}
-})();
+// Extend switchTab to call skartaInit
+const _origSwitchTab = switchTab;
+function switchTab(tab) {
+  _origSwitchTab(tab);
+  if (tab === 'skarta') skartaInit();
+}
 </script>
-</body>
-</html>
