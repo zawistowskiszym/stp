@@ -39,6 +39,34 @@
         {
             "type": "Feature",
             "properties": {
+                "railway": "halt",
+                "name": "Nowe Skuszowice"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.66983633664,
+                    -1.81055964768
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Śródmieście",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68713759309,
+                    -1.81419293683
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "railway": "rail",
                 "usage": "main",
                 "gauge": "1435",
@@ -125,6 +153,10 @@
                 "coordinates": [
                     [
                         -1.68559712539,
+                        -1.82153915092
+                    ],
+                    [
+                        -1.68396747945,
                         -1.82153915092
                     ],
                     [
@@ -307,6 +339,34 @@
         {
             "type": "Feature",
             "properties": {
+                "name": "Jegórska",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67624551910,
+                    -1.80184613157
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Oleśnik",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67037200729,
+                    -1.79347190952
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "railway": "rail",
                 "usage": "main",
                 "gauge": "1435",
@@ -413,6 +473,20 @@
                         -1.68325828168,
                         -1.81237700137
                     ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "halt",
+                "name": "Bonda"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68065838434,
+                    -1.79878310437
                 ]
             }
         },
@@ -545,6 +619,34 @@
         {
             "type": "Feature",
             "properties": {
+                "railway": "halt",
+                "name": "Kazimierz"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68559145308,
+                    -1.81250794328
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "halt",
+                "name": "Jegórka"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67203560042,
+                    -1.79924451001
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "railway": "rail",
                 "usage": "main",
                 "gauge": "1435",
@@ -565,6 +667,34 @@
                         -1.68077797564,
                         -1.79927278476
                     ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Niukolin",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67889369375,
+                    -1.79993073519
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Plac Unii Bizceńskiej",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68783035144,
+                    -1.82183323629
                 ]
             }
         },
@@ -607,6 +737,34 @@
                         -2.74190971503,
                         -1.73440238332
                     ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "station",
+                "name": "Pustelnik"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.66340172375,
+                    -1.78121685627
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Dorsztat",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67674978449,
+                    -1.79486819489
                 ]
             }
         },
@@ -822,13 +980,43 @@
             "type": "Feature",
             "properties": {
                 "railway": "station",
-                "name": "Helonki Centralne"
+                "name": "Helonki Centralne",
+                "station": "main"
             },
             "geometry": {
                 "type": "Point",
                 "coordinates": [
                     -1.35574473820,
                     -0.80326838879
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Partyzantów",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68704946811,
+                    -1.81059735590
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "station": "main",
+                "name": "Skuszawyjice Centralne",
+                "railway": "station"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68325828168,
+                    -1.81237700137
                 ]
             }
         },
@@ -875,6 +1063,20 @@
                         -1.68559712539,
                         -1.82153915092
                     ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "halt",
+                "name": "Brokolin"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68603282368,
+                    -1.80784304550
                 ]
             }
         },
@@ -935,6 +1137,20 @@
         {
             "type": "Feature",
             "properties": {
+                "name": "Przyrzecze",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67358800554,
+                    -1.80035890520
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "railway": "rail",
                 "usage": "main",
                 "gauge": "1435",
@@ -946,6 +1162,10 @@
                     [
                         -1.66887818782,
                         -1.78685845194
+                    ],
+                    [
+                        -1.66340172375,
+                        -1.78121685627
                     ],
                     [
                         -1.38628596295,
@@ -991,6 +1211,62 @@
                         -1.37886391990,
                         -1.14868771034
                     ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Uniwersytet",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68200589123,
+                    -1.80824457019
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "halt",
+                "name": "Stare Jegóry"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67852023700,
+                    -1.80732460277
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "halt",
+                "name": "Jegóry"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67539674894,
+                    -1.80071875891
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "halt",
+                "name": "Wynalazek"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68007066026,
+                    -1.81248257373
                 ]
             }
         },
@@ -1147,6 +1423,34 @@
         {
             "type": "Feature",
             "properties": {
+                "railway": "halt",
+                "name": "Polimówka"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67421131573,
+                    -1.79228517990
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Wittek",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67117174095,
+                    -1.79800402162
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "railway": "rail",
                 "usage": "main",
                 "gauge": "1435",
@@ -1156,92 +1460,8 @@
                 "type": "LineString",
                 "coordinates": [
                     [
-                        -1.67818072743,
-                        -1.79994204282
-                    ],
-                    [
-                        -1.67766769074,
-                        -1.79971581477
-                    ],
-                    [
-                        -1.67710184146,
-                        -1.79939155452
-                    ],
-                    [
-                        -1.67633983109,
-                        -1.79943680014
-                    ],
-                    [
-                        -1.67587206234,
-                        -1.79985909254
-                    ],
-                    [
-                        -1.67539674894,
-                        -1.80071875891
-                    ],
-                    [
-                        -1.67485353363,
-                        -1.80183481641
-                    ],
-                    [
-                        -1.67464228323,
-                        -1.80241546767
-                    ],
-                    [
-                        -1.67455929200,
-                        -1.80298857783
-                    ],
-                    [
-                        -1.67462719392,
-                        -1.80359939240
-                    ],
-                    [
-                        -1.67496758305,
-                        -1.80489222983
-                    ],
-                    [
-                        -1.67534393634,
-                        -1.80632166227
-                    ],
-                    [
-                        -1.67559291003,
-                        -1.80736230729
-                    ],
-                    [
-                        -1.67556273140,
-                        -1.80808623391
-                    ],
-                    [
-                        -1.67536657032,
-                        -1.80888556921
-                    ],
-                    [
-                        -1.67527603443,
-                        -1.80992621276
-                    ],
-                    [
-                        -1.67538165963,
-                        -1.81094423305
-                    ],
-                    [
-                        -1.67578152646,
-                        -1.81188684392
-                    ],
-                    [
-                        -1.67650581354,
-                        -1.81240716491
-                    ],
-                    [
-                        -1.67751679760,
-                        -1.81248257373
-                    ],
-                    [
-                        -1.67818072743,
-                        -1.81248257373
-                    ],
-                    [
-                        -1.68292631676,
-                        -1.81248257373
+                        -1.68559145308,
+                        -1.81250794328
                     ],
                     [
                         -1.68688726176,
@@ -1270,6 +1490,10 @@
                     [
                         -1.68711642412,
                         -1.81326117628
+                    ],
+                    [
+                        -1.68713759309,
+                        -1.81419293683
                     ],
                     [
                         -1.68715886941,
@@ -1693,6 +1917,21 @@
         {
             "type": "Feature",
             "properties": {
+                "name": "Skuszawyjice Zachodnie",
+                "railway": "station",
+                "station": "main"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.69008619638,
+                    -1.81617760238
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "railway": "rail",
                 "usage": "main",
                 "gauge": "1435",
@@ -1713,6 +1952,20 @@
                         -1.68664066656,
                         -1.80806704989
                     ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "station",
+                "name": "Wola Graniecka"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.66887818782,
+                    -1.78685845194
                 ]
             }
         },
@@ -2083,6 +2336,34 @@
         {
             "type": "Feature",
             "properties": {
+                "name": "Planetarium",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67996126651,
+                    -1.80256628615
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "halt",
+                "name": "Plac Elżbiety"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68134948342,
+                    -1.82112440441
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "railway": "rail",
                 "usage": "main",
                 "gauge": "1435",
@@ -2139,6 +2420,173 @@
                         -1.32303131613,
                         -0.77254923889
                     ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "halt",
+                "name": "Most Bizceński"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67872750916,
+                    -1.79688062305
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Łostoj",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67155692642,
+                    -1.78958420625
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "halt",
+                "name": "Zarzecze"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67083977604,
+                    -1.79616403071
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "rail",
+                "usage": "main",
+                "gauge": "1435",
+                "electrified": "contact_line"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -1.67818072743,
+                        -1.79994204282
+                    ],
+                    [
+                        -1.67766769074,
+                        -1.79971581477
+                    ],
+                    [
+                        -1.67710184146,
+                        -1.79939155452
+                    ],
+                    [
+                        -1.67633983109,
+                        -1.79943680014
+                    ],
+                    [
+                        -1.67587206234,
+                        -1.79985909254
+                    ],
+                    [
+                        -1.67539674894,
+                        -1.80071875891
+                    ],
+                    [
+                        -1.67485353363,
+                        -1.80183481641
+                    ],
+                    [
+                        -1.67464228323,
+                        -1.80241546767
+                    ],
+                    [
+                        -1.67455929200,
+                        -1.80298857783
+                    ],
+                    [
+                        -1.67462719392,
+                        -1.80359939240
+                    ],
+                    [
+                        -1.67496758305,
+                        -1.80489222983
+                    ],
+                    [
+                        -1.67534393634,
+                        -1.80632166227
+                    ],
+                    [
+                        -1.67559291003,
+                        -1.80736230729
+                    ],
+                    [
+                        -1.67556273140,
+                        -1.80808623391
+                    ],
+                    [
+                        -1.67536657032,
+                        -1.80888556921
+                    ],
+                    [
+                        -1.67527603443,
+                        -1.80992621276
+                    ],
+                    [
+                        -1.67538165963,
+                        -1.81094423305
+                    ],
+                    [
+                        -1.67578152646,
+                        -1.81188684392
+                    ],
+                    [
+                        -1.67650581354,
+                        -1.81240716491
+                    ],
+                    [
+                        -1.67751679760,
+                        -1.81248257373
+                    ],
+                    [
+                        -1.67818072743,
+                        -1.81248257373
+                    ],
+                    [
+                        -1.68007066026,
+                        -1.81248257373
+                    ],
+                    [
+                        -1.68292631676,
+                        -1.81248257373
+                    ],
+                    [
+                        -1.68559145308,
+                        -1.81250794328
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Skuszawyjice Wschodnie",
+                "railway": "station",
+                "station": "main"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67583375377,
+                    -1.81154554935
                 ]
             }
         },
@@ -2325,6 +2773,34 @@
         {
             "type": "Feature",
             "properties": {
+                "railway": "halt",
+                "name": "Targowa"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68340162639,
+                    -1.80599740696
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "station",
+                "name": "Aleja Kolejowa"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68068555359,
+                    -1.81846248366
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "railway": "rail",
                 "usage": "main",
                 "gauge": "1435",
@@ -2490,6 +2966,10 @@
                         -1.81325928446
                     ],
                     [
+                        -1.67583375377,
+                        -1.81154554935
+                    ],
+                    [
                         -1.67580956071,
                         -1.81112533771
                     ],
@@ -2591,6 +3071,34 @@
                         -1.68200589123,
                         -1.80824457019
                     ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Pryzmów",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68657792704,
+                    -1.80632920695
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Borysin",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67975001611,
+                    -1.79792107125
                 ]
             }
         },
@@ -2719,6 +3227,62 @@
         {
             "type": "Feature",
             "properties": {
+                "railway": "halt",
+                "name": "Plac Wielkopolski"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68396747945,
+                    -1.82153915092
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Ugraniec",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67048517715,
+                    -1.79068929271
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Most Kolasińskiego",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67912381711,
+                    -1.82064178264
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "halt",
+                "name": "Rondo Unii Europejskiej"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67793929840,
+                    -1.80900622357
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "railway": "rail",
                 "usage": "main",
                 "gauge": "1435",
@@ -2772,9 +3336,43 @@
                         -1.79792107125
                     ],
                     [
+                        -1.67872750916,
+                        -1.79688062305
+                    ],
+                    [
+                        -1.67674978449,
+                        -1.79486819489
+                    ],
+                    [
+                        -1.67420966388,
+                        -1.79228349907
+                    ],
+                    [
+                        -1.67421131573,
+                        -1.79228517990
+                    ],
+                    [
+                        -1.67155692642,
+                        -1.78958420625
+                    ],
+                    [
                         -1.66887818782,
                         -1.78685845194
                     ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Królewska",
+                "railway": "station"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67114156232,
+                    -1.80623117137
                 ]
             }
         }
