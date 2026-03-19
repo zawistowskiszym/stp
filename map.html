@@ -462,7 +462,7 @@
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const GEOJSON_PATH = 'railway.geojson';
+const GEOJSON_PATH = 'railway_mercator.geojson';
 const LINE_COLORS = {
   red:'#d94f3d', blue:'#4a8fd4', purple:'#9b72cf',
   yellow:'#e8a945', green:'#3daa6e', orange:'#e8783d',
@@ -482,7 +482,7 @@ function lineRef(p) { if(!p) return 'default'; return p.colour||'default'; }
 // Measure a known distance in JOSM and adjust this value accordingly
 // Adjust this until distances match reality.
 // Measure: a known ~115km line shows as ~1 coord unit → scale = 115
-const KM_PER_UNIT = 115;
+const KM_PER_UNIT = 134; // 115km / 0.86 coord units
 
 function cdist(a, b) {
   const dx = a[0]-b[0], dy = a[1]-b[1];
@@ -569,7 +569,7 @@ function buildGraph(d) {
       const nk = k + dir;
       if (nk < 0 || nk >= coords.length) continue;
       const nc = coords[nk];
-      const nd = dist + Math.sqrt((nc[0]-coords[k][0])**2 + (nc[1]-coords[k][1])**2);
+      const nd = dist + cdist(nc, coords[k]);
       const npath = [...path, nc];
       const sid = c2s[ck(nc)];
       if (sid) {
