@@ -504,7 +504,7 @@
   <div class="panel-body" id="train-panel-body">
     <div style="margin-bottom:12px">
       <div class="field-label" style="margin-bottom:6px">Kategoria pociągu</div>
-      <div id="category-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
+      <div id="category-grid" style="display:grid;grid-template-columns:1fr;gap:5px"></div>
     </div>
     <div style="margin-bottom:12px">
       <div class="field-label" style="margin-bottom:6px">Prędkość maks. (km/h)</div>
@@ -938,44 +938,50 @@ function clearRoute() {
 // ── TRAIN PARAMETERS ─────────────────────────────────────────────────────────
 const TRAIN_CATEGORIES = [
   {
-    id: 'os',   label: 'Os',   name: 'Osobowy',
-    speed: 80,  color: '#4a8fd4',
-    desc: 'Zatrzymuje się na wszystkich stacjach i przystankach.',
-    stops: (st) => true  // stops everywhere
+    id: 'vv',   label: 'VV',   name: 'VELOVIA',
+    speed: 350, color: '#c8a028',
+    desc: 'Pociągi premium najwyższej prędkości. Zatrzymują się wyłącznie na największych stacjach węzłowych.',
+    stops: (st) => st.props.station === 'main' && st.props.interchange === 'yes'
   },
   {
-    id: 'rj',   label: 'Rj',   name: 'Regionalny',
-    speed: 120, color: '#3daa6e',
-    desc: 'Zatrzymuje się na stacjach głównych i wybranych przystankach.',
-    stops: (st) => st.props.railway === 'station' || st.props.interchange === 'yes'
-  },
-  {
-    id: 'irj',  label: 'IRj',  name: 'InterRegionalny',
-    speed: 160, color: '#9b72cf',
-    desc: 'Zatrzymuje się wyłącznie na stacjach głównych.',
-    stops: (st) => st.props.railway === 'station'
-  },
-  {
-    id: 'ic',   label: 'IC',   name: 'InterCity',
-    speed: 200, color: '#e8a945',
-    desc: 'Zatrzymuje się tylko na stacjach węzłowych i głównych.',
-    stops: (st) => st.props.railway === 'station' && (st.props.station === 'main' || st.props.interchange === 'yes')
-  },
-  {
-    id: 'ex',   label: 'Ex',   name: 'Express',
-    speed: 250, color: '#d94f3d',
-    desc: 'Zatrzymuje się tylko na największych stacjach (station=main).',
+    id: 'ice',  label: 'ICE',  name: 'Intercity Express',
+    speed: 300, color: '#d94f3d',
+    desc: 'Najszybsze pociągi w przystępnej cenie. Tylko stacje główne (station=main).',
     stops: (st) => st.props.station === 'main'
   },
   {
-    id: 'kdp',  label: 'KDP',  name: 'Kolej Dużej Prędkości',
-    speed: 350, color: '#e8783d',
-    desc: 'Tylko stacje KDP — stacje main z interchange.',
-    stops: (st) => st.props.station === 'main' && st.props.interchange === 'yes'
+    id: 'spr',  label: 'SPR',  name: 'Sprinter',
+    speed: 250, color: '#e8783d',
+    desc: 'Obsługuje wyłącznie duże stacje węzłowe i główne.',
+    stops: (st) => st.props.railway === 'station' && (st.props.station === 'main' || st.props.interchange === 'yes')
+  },
+  {
+    id: 'ic',   label: 'IC',   name: 'Intercity',
+    speed: 200, color: '#9b72cf',
+    desc: 'Typowe pociągi międzyregionalne. Zatrzymują się na wszystkich stacjach.',
+    stops: (st) => st.props.railway === 'station'
+  },
+  {
+    id: 're',   label: 'RE',   name: 'Regio Express',
+    speed: 160, color: '#4a8fd4',
+    desc: 'Szybsze pociągi regionalne. Stacje i wybrane przystanki węzłowe.',
+    stops: (st) => st.props.railway === 'station' || st.props.interchange === 'yes'
+  },
+  {
+    id: 'rg',   label: 'RG',   name: 'Regio',
+    speed: 120, color: '#3daa6e',
+    desc: 'Pociągi regionalne. Zatrzymują się na wszystkich stacjach i przystankach.',
+    stops: (st) => true
+  },
+  {
+    id: 'sks',  label: 'SKS',  name: 'SKS',
+    speed: 90,  color: '#3daabb',
+    desc: 'Szybka Kolej Skuszawyjicka — sieć podmiejska aglomeracji Skuszawyjic. Wszystkie przystanki.',
+    stops: (st) => true
   },
 ];
 
-let trainCategory = TRAIN_CATEGORIES[2]; // default: IRj
+let trainCategory = TRAIN_CATEGORIES[3]; // default: IC
 let trainMaxSpeed = trainCategory.speed;
 // manualOverrides: stationId → true (force stop) | false (force pass)
 let manualOverrides = {};
