@@ -848,14 +848,21 @@ function stitchGeom(path) {
 function togglePassThrough(stId) {
   const st = stations.find(s => s.id === stId);
   const defaultStop = shouldStop(st);
-  // Cycle: default → forced opposite → back to default
   if (manualOverrides[stId] === undefined) {
-    manualOverrides[stId] = !defaultStop; // force opposite of default
+    manualOverrides[stId] = !defaultStop;
   } else {
-    delete manualOverrides[stId]; // back to default
+    delete manualOverrides[stId];
   }
   findRoute();
 }
+
+// Event delegation — avoids inline onclick with special characters in station names
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.pt-toggle');
+  if (!btn) return;
+  const stId = decodeURIComponent(btn.dataset.sid);
+  togglePassThrough(stId);
+});
 
 function findRoute() {
   if(!origin||!dest)return;
@@ -895,7 +902,7 @@ function findRoute() {
     const trackSeg=!isL?'<div class="stop-line-seg"></div>':'';
     const dotClass=isF?' origin':isL?' destination':'';
     const isOverride=manualOverrides[p.id]!==undefined;
-    const toggleBtn=(!isF&&!isL)?`<button class="stop-toggle-btn ${isPT?'passing':'stopping'}" onclick="togglePassThrough('${p.id}')" title="${isOverride?'Kliknij aby przywrócić domyślne':'Kliknij aby zmienić'}" style="${isOverride?'outline:1px solid var(--amber)':''}">${isPT?'Przejeżdża':'Zatrzymuje'}${isOverride?' *':''}</button>`:'';
+    const toggleBtn=(!isF&&!isL)?`<button class="stop-toggle-btn ${isPT?'passing':'stopping'} pt-toggle" data-sid="${encodeURIComponent(p.id)}" title="${isOverride?'Kliknij aby przywrócić domyślne':'Kliknij aby zmienić'}" style="${isOverride?'outline:1px solid var(--amber)':''}">${isPT?'Przejeżdża':'Zatrzymuje'}${isOverride?' *':''}</button>`:'';
     return`<li class="stop-item${isPT?' passing-through':''}">
       <div class="stop-track">
         <div class="stop-dot${dotClass}"></div>${trackSeg}
