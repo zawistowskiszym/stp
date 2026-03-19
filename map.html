@@ -458,11 +458,11 @@
   </div>
 </div>
 
-<div id="scale-info">Projekcja: <span id="scale-val">…</span></div>
+<div id="scale-info">Skala: <span id="scale-val">…</span></div>
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const GEOJSON_PATH = 'railway.geojson';
+const GEOJSON_PATH = 'railway_mercator.geojson';
 const LINE_COLORS = {
   red:'#d94f3d', blue:'#4a8fd4', purple:'#9b72cf',
   yellow:'#e8a945', green:'#3daa6e', orange:'#e8783d',
@@ -471,19 +471,22 @@ const LINE_COLORS = {
 const DWELL_MAIN = 3, DWELL_HALT = 1, SNAP = 0.005;
 
 // ── MAP ───────────────────────────────────────────────────────────────────────
-const map = L.map('map', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 20 });
+const map = L.map('map', { minZoom: 3, maxZoom: 20 });
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let stations=[], graph={}, routeLayer=null, origin=null, dest=null, selecting=null;
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function lineRef(p) { if(!p) return 'default'; return p.colour||'default'; }
-function cdist(a,b) {
-  // Haversine — returns km between two [lng,lat] coords
-  const R=6371, dLat=(b[1]-a[1])*Math.PI/180, dLon=(b[0]-a[0])*Math.PI/180;
-  const la1=a[1]*Math.PI/180, la2=b[1]*Math.PI/180;
-  const s=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)**2;
-  return R*2*Math.asin(Math.sqrt(s));
+// KM_PER_UNIT: how many km = 1 coordinate unit in your JOSM flat space
+// Measure a known distance in JOSM and adjust this value accordingly
+// Adjust this until distances match reality.
+// Measure: a known ~115km line shows as ~1 coord unit → scale = 115
+const KM_PER_UNIT = 115;
+
+function cdist(a, b) {
+  const dx = a[0]-b[0], dy = a[1]-b[1];
+  return Math.sqrt(dx*dx + dy*dy) * KM_PER_UNIT;
 }
 function fmt(m) {
   if(m<60) return Math.round(m)+' min';
@@ -758,7 +761,7 @@ function clearRoute() {
 fetch(GEOJSON_PATH)
   .then(r=>{if(!r.ok)throw new Error();return r.json()})
   .then(data=>{
-    document.getElementById('scale-val').textContent='Mercator · WGS84';
+    document.getElementById('scale-val').textContent=`1 jedn. = ${KM_PER_UNIT} km`;
     buildGraph(data);
 
     L.geoJSON(data,{
