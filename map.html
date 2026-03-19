@@ -507,19 +507,39 @@ function buildGraph(d) {
   });
   lines.forEach(line=>{
     let coords=line.geometry.type==='LineString'?line.geometry.coordinates:line.geometry.coordinates.flat();
+
+    // For each station, find the closest segment index AND the exact projected point on that segment
     const snapped=[];
     stations.forEach(st=>{
-      const[slat,slng]=st.latlng;let md=Infinity,mi=-1;
-      for(let i=0;i<coords.length-1;i++){const d=p2seg([slng,slat],coords[i],coords[i+1]);if(d<md){md=d;mi=i}}
-      if(md<SNAP)snapped.push({st,si:mi});
+      const[slat,slng]=st.latlng;
+      let md=Infinity,mi=-1,proj=null;
+      for(let i=0;i<coords.length-1;i++){
+        const a=coords[i],b=coords[i+1];
+        const dx=b[0]-a[0],dy=b[1]-a[1];
+        const len2=dx*dx+dy*dy;
+        let t=len2>0?((slng-a[0])*dx+(slat-a[1])*dy)/len2:0;
+        t=Math.max(0,Math.min(1,t));
+        const px=a[0]+t*dx,py=a[1]+t*dy;
+        const dd=Math.sqrt((slng-px)**2+(slat-py)**2);
+        if(dd<md){md=dd;mi=i;proj=[px,py];}
+      }
+      if(md<SNAP)snapped.push({st,si:mi,proj});
     });
-    snapped.sort((a,b)=>a.si-b.si);
+
+    snapped.sort((a,b)=>a.si-b.si||(a.proj&&b.proj?cdist([a.proj[0],a.proj[1]],[coords[a.si][0],coords[a.si][1]])-cdist([b.proj[0],b.proj[1]],[coords[b.si][0],coords[b.si][1]]):0));
+
     for(let i=0;i<snapped.length-1;i++){
       const fr=snapped[i].st,to=snapped[i+1].st;
-      let dist=0;for(let j=snapped[i].si;j<snapped[i+1].si&&j<coords.length-1;j++)dist+=cdist(coords[j],coords[j+1]);
+
+      // Build geometry: projected start point + intermediate coords + projected end point
+      const inner=coords.slice(snapped[i].si+1, snapped[i+1].si+1);
+      const fwdCoords=[snapped[i].proj,...inner,snapped[i+1].proj];
+
+      let dist=0;
+      for(let k=0;k<fwdCoords.length-1;k++)dist+=cdist(fwdCoords[k],fwdCoords[k+1]);
+
       const ms=line.properties?.maxspeed||null,col=lineRef(line.properties);
-      const segCoords=coords.slice(snapped[i].si,snapped[i+1].si+1);
-      const fwd=segCoords.map(c=>[c[1],c[0]]);
+      const fwd=fwdCoords.map(c=>[c[1],c[0]]);
       const rev=[...fwd].reverse();
       graph[fr.id].push({to:to.id,dist,maxspeed:ms,colour:col,geom:fwd});
       graph[to.id].push({to:fr.id,dist,maxspeed:ms,colour:col,geom:rev});
