@@ -530,35 +530,46 @@ const LINE_COLORS = {
 };
 // Time estimation constants
 const SNAP = 0.005;
-const ACCEL_RATE = 0.6;      // km/s² — typical train acceleration
-const DECEL_RATE = 0.7;      // km/s² — typical train braking
-const MIN_STOP_DWELL = 0.5;  // minutes minimum dwell at any stop
-const DWELL_HALT = 1.0;      // minutes dwell at halt
-const DWELL_MAIN = 2.5;      // minutes dwell at main station
-const PASS_THROUGH_DWELL = 0; // minutes for pass-through (no stop)
+const DWELL_HALT = 1.0;       // minutes dwell at halt
+const DWELL_MAIN = 2.5;       // minutes dwell at main station
+const PASS_THROUGH_DWELL = 0; // minutes for pass-through
 
-// Realistic segment time: accounts for acceleration + cruise + deceleration
+// Acceleration/deceleration in km/h per minute
+// 0.5 m/s² = 1.8 km/h/s = 108 km/h/min  (typical train accel)
+// 0.7 m/s² = 2.52 km/h/s = 151 km/h/min (typical train braking)
+const ACCEL_KMH_MIN = 108.0;
+const DECEL_KMH_MIN = 151.0;
+
+// Realistic segment time in minutes
+// distKm: distance in km, maxspeedKmh: line max speed in km/h, willStop: brakes to 0
 function segmentTime(distKm, maxspeedKmh, willStop) {
   if (distKm <= 0) return 0;
-  const vmax = maxspeedKmh / 3600; // km/s
-  // Distance needed to accelerate to vmax then brake to 0
-  const accelDist = (vmax * vmax) / (2 * ACCEL_RATE);
-  const decelDist = (vmax * vmax) / (2 * DECEL_RATE);
-  const fullDist = accelDist + decelDist;
-  let timeSec;
-  if (distKm >= fullDist) {
-    // Enough distance to reach full speed
-    const cruiseDist = distKm - fullDist;
-    const accelTime = vmax / ACCEL_RATE;
-    const decelTime = vmax / DECEL_RATE;
-    const cruiseTime = cruiseDist / vmax;
-    timeSec = accelTime + cruiseTime + decelTime;
-  } else {
-    // Too short — triangle profile, never reaches max speed
-    const vpeak = Math.sqrt(distKm * 2 * (ACCEL_RATE * DECEL_RATE) / (ACCEL_RATE + DECEL_RATE));
-    timeSec = vpeak / ACCEL_RATE + vpeak / DECEL_RATE;
+  const v = maxspeedKmh; // km/h
+
+  if (!willStop) {
+    // Pass-through: just cruise (train doesn't need to stop)
+    return (distKm / v) * 60;
   }
-  return timeSec / 60; // return minutes
+
+  // Time to accel 0→v and decel v→0 (minutes)
+  const tAccel = v / ACCEL_KMH_MIN;
+  const tDecel = v / DECEL_KMH_MIN;
+  // Distance covered during accel/decel (km)
+  // d = v_avg * t = (v/2) * t_min / 60  (convert minutes to hours)
+  const dAccel = (v / 2) * (tAccel / 60);
+  const dDecel = (v / 2) * (tDecel / 60);
+  const dFull  = dAccel + dDecel;
+
+  if (distKm >= dFull) {
+    // Long enough to reach max speed
+    const tCruise = ((distKm - dFull) / v) * 60;
+    return tAccel + tCruise + tDecel;
+  } else {
+    // Short segment — triangle profile, never reaches max speed
+    // v_peak² = dist * 2 * 60 * A * B / (A + B)  where A,B in km/h/min
+    const vPeak = Math.sqrt(distKm * 2 * 60 * ACCEL_KMH_MIN * DECEL_KMH_MIN / (ACCEL_KMH_MIN + DECEL_KMH_MIN));
+    return vPeak / ACCEL_KMH_MIN + vPeak / DECEL_KMH_MIN;
+  }
 }
 
 // ── MAP ───────────────────────────────────────────────────────────────────────
