@@ -73,6 +73,10 @@
                         -1.25267517680
                     ],
                     [
+                        -1.76891112235,
+                        -1.24966561690
+                    ],
+                    [
                         -1.76870930224,
                         -1.23433089194
                     ],
@@ -354,6 +358,10 @@
                         -1.81098945576
                     ],
                     [
+                        -0.31512873721,
+                        -1.83639627373
+                    ],
+                    [
                         -0.31096251979,
                         -1.83647557922
                     ]
@@ -486,6 +494,10 @@
                         -1.81248257373
                     ],
                     [
+                        -1.68507679124,
+                        -1.81250304419
+                    ],
+                    [
                         -1.68559145308,
                         -1.81250794328
                     ]
@@ -517,6 +529,21 @@
                 "coordinates": [
                     -1.68200589123,
                     -1.80824457019
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Donnsk Centrum",
+                "railway": "station",
+                "station": "main"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -0.31512873721,
+                    -1.83639627373
                 ]
             }
         },
@@ -644,6 +671,10 @@
                         -1.14868771034
                     ],
                     [
+                        -1.37728151176,
+                        -1.14250316949
+                    ],
+                    [
                         -1.37662880182,
                         -1.13995217311
                     ],
@@ -658,6 +689,10 @@
                     [
                         -1.36407449236,
                         -1.04194976757
+                    ],
+                    [
+                        -1.36313671816,
+                        -1.01569632355
                     ],
                     [
                         -1.36310877624,
@@ -784,6 +819,20 @@
         {
             "type": "Feature",
             "properties": {
+                "railway": "station",
+                "name": "Radwabojaszywice"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -2.74191008652,
+                    -1.73466639105
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "usage": "main",
                 "electrified": "contact_line",
                 "railway": "rail",
@@ -794,8 +843,8 @@
                 "type": "LineString",
                 "coordinates": [
                     [
-                        -1.67851269234,
-                        -1.80862163778
+                        -1.67849520608,
+                        -1.80861611855
                     ],
                     [
                         -1.67873903205,
@@ -853,6 +902,21 @@
         {
             "type": "Feature",
             "properties": {
+                "railway": "station",
+                "name": "Selbert",
+                "station": "main"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.37728151176,
+                    -1.14250316949
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "name": "Łostoj",
                 "railway": "halt"
             },
@@ -861,6 +925,20 @@
                 "coordinates": [
                     -1.67155692642,
                     -1.78958420625
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Murdocha",
+                "railway": "station"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.76891112235,
+                    -1.24966561690
                 ]
             }
         },
@@ -1090,6 +1168,10 @@
                     [
                         -2.83437727427,
                         -2.07438725483
+                    ],
+                    [
+                        -2.86990861978,
+                        -2.10899599679
                     ],
                     [
                         -2.87252306073,
@@ -1394,6 +1476,20 @@
         {
             "type": "Feature",
             "properties": {
+                "name": "Bajgel",
+                "railway": "station"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.39076608219,
+                    -1.50033972922
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "usage": "main",
                 "electrified": "contact_line",
                 "railway": "rail",
@@ -1426,6 +1522,20 @@
                         -1.68711170870,
                         -1.81304437599
                     ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "station",
+                "name": "Wiksa"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.51342792552,
+                    -1.96934993152
                 ]
             }
         },
@@ -1509,6 +1619,14 @@
                     [
                         -1.66340172375,
                         -1.78121685627
+                    ],
+                    [
+                        -1.53385241870,
+                        -1.64775633854
+                    ],
+                    [
+                        -1.39076608219,
+                        -1.50033972922
                     ],
                     [
                         -1.38628596295,
@@ -1647,6 +1765,35 @@
                         -1.32303131613,
                         -0.77254923889
                     ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "station": "main",
+                "name": "Radok"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.36313671816,
+                    -1.01569632355
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "station": "main",
+                "railway": "station",
+                "name": "Nieboszczyce"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -0.57004351807,
+                    -0.82558813177
                 ]
             }
         },
@@ -2161,6 +2308,20 @@
         {
             "type": "Feature",
             "properties": {
+                "name": "Suchy Brzeg",
+                "railway": "station"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -2.86990861978,
+                    -2.10899599679
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "name": "Przyrzecze",
                 "railway": "halt"
             },
@@ -2426,6 +2587,20 @@
         {
             "type": "Feature",
             "properties": {
+                "railway": "station",
+                "name": "Szaszyków"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.10011305390,
+                    -1.31513960204
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "name": "Stare Jegóry",
                 "railway": "halt"
             },
@@ -2563,6 +2738,20 @@
         {
             "type": "Feature",
             "properties": {
+                "name": "Pęclin",
+                "railway": "station"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -0.89288422637,
+                    -1.16424018573
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "usage": "main",
                 "electrified": "contact_line",
                 "railway": "rail",
@@ -2597,8 +2786,8 @@
                         -1.80900622357
                     ],
                     [
-                        -1.67851269234,
-                        -1.80862163778
+                        -1.67849520608,
+                        -1.80861611855
                     ],
                     [
                         -1.67916907751,
@@ -2670,9 +2859,27 @@
                         -1.90597174591
                     ],
                     [
+                        -2.74191008652,
+                        -1.73466639105
+                    ],
+                    [
                         -2.74190971503,
                         -1.73440238332
                     ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "station",
+                "name": "Józefiny"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -0.70423182853,
+                    -1.10390378486
                 ]
             }
         },
@@ -3154,6 +3361,20 @@
         {
             "type": "Feature",
             "properties": {
+                "railway": "station",
+                "name": "Nowy Ursen"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.53385241870,
+                    -1.64775633854
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "usage": "main",
                 "electrified": "contact_line",
                 "railway": "rail",
@@ -3166,6 +3387,10 @@
                     [
                         -1.50869023884,
                         -1.97425699043
+                    ],
+                    [
+                        -1.51342792552,
+                        -1.96934993152
                     ],
                     [
                         -1.52196883539,
@@ -3381,6 +3606,10 @@
                         -1.31905119518
                     ],
                     [
+                        -1.10011305390,
+                        -1.31513960204
+                    ],
+                    [
                         -1.05601105233,
                         -1.29491457362
                     ],
@@ -3401,6 +3630,10 @@
                         -1.17712464233
                     ],
                     [
+                        -0.89288422637,
+                        -1.16424018573
+                    ],
+                    [
                         -0.87687071339,
                         -1.15491777126
                     ],
@@ -3415,6 +3648,10 @@
                     [
                         -0.73491092765,
                         -1.12112389200
+                    ],
+                    [
+                        -0.70423182853,
+                        -1.10390378486
                     ],
                     [
                         -0.67986510921,
@@ -3453,8 +3690,16 @@
                         -0.82662334893
                     ],
                     [
+                        -0.67251257939,
+                        -0.82614753496
+                    ],
+                    [
                         -0.65475649027,
                         -0.82372650104
+                    ],
+                    [
+                        -0.57004351807,
+                        -0.82558813177
                     ],
                     [
                         -0.56687632400,
@@ -3568,6 +3813,21 @@
                 "coordinates": [
                     -1.68657792704,
                     -1.80632920695
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Nieboszczyce Miasto",
+                "railway": "station",
+                "station": "main"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -0.67251257939,
+                    -0.82614753496
                 ]
             }
         }

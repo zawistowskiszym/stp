@@ -713,8 +713,40 @@ function buildGraph(d) {
 // viaStations: ordered list of station IDs that must be visited
 // passThroughSet: Set of station IDs that don't stop (dwell=0)
 // stopSet: Set of station IDs that must stop (overrides passThrough)
+// Returns the departure bearing (direction vector) of an edge as [dx, dy]
+function edgeDepartureBearing(edge, fromId) {
+  const g = edge.geom;
+  if (!g || g.length < 2) return null;
+  // Orient geometry so it starts at fromId
+  const fromSt = stations.find(s => s.id === fromId);
+  if (!fromSt) return null;
+  const fll = fromSt.latlng;
+  const d2s = (g[0][0]-fll[0])**2 + (g[0][1]-fll[1])**2;
+  const d2e = (g[g.length-1][0]-fll[0])**2 + (g[g.length-1][1]-fll[1])**2;
+  const oriented = d2e < d2s ? [...g].reverse() : g;
+  // Use first meaningful segment for bearing
+  for (let i = 0; i < oriented.length - 1; i++) {
+    const dx = oriented[i+1][1] - oriented[i][1];
+    const dy = oriented[i+1][0] - oriented[i][0];
+    if (Math.abs(dx) + Math.abs(dy) > 1e-10) return [dx, dy];
+  }
+  return null;
+}
+
+// Two bearings are opposite if their dot product is strongly negative
+function isReversal(b1, b2) {
+  if (!b1 || !b2) return false;
+  const dot = b1[0]*b2[0] + b1[1]*b2[1];
+  const mag1 = Math.sqrt(b1[0]**2 + b1[1]**2);
+  const mag2 = Math.sqrt(b2[0]**2 + b2[1]**2);
+  if (mag1 < 1e-12 || mag2 < 1e-12) return false;
+  return (dot / (mag1 * mag2)) < -0.5; // >120° angle = reversal
+}
+
+const REVERSAL_PENALTY = 30; // minutes
+
 function dijkstra(s, e, passThroughSet=new Set()) {
-  const dist={},prev={},pline={},vis=new Set();
+  const dist={},prev={},prevEdge={},pline={},vis=new Set();
   Object.keys(graph).forEach(id=>dist[id]=Infinity);dist[s]=0;
   const pq=[[0,s]];
   while(pq.length){
@@ -730,12 +762,25 @@ function dijkstra(s, e, passThroughSet=new Set()) {
         if(!stops) dw=PASS_THROUGH_DWELL;
         else dw=toSt?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN;
       }
-      const c=d+tm+dw;
-      if(c<dist[edge.to]){dist[edge.to]=c;prev[edge.to]=u;pline[edge.to]=edge.colour;pq.push([c,edge.to])}
+      // Direction reversal penalty
+      const prevEdgeObj = prevEdge[u];
+      let reversalCost = 0;
+      if(prevEdgeObj){
+        const incomingBearing = edgeDepartureBearing(prevEdgeObj, prev[u]);
+        const outgoingBearing = edgeDepartureBearing(edge, u);
+        if(isReversal(incomingBearing, outgoingBearing)) reversalCost = REVERSAL_PENALTY;
+      }
+      const c=d+tm+dw+reversalCost;
+      if(c<dist[edge.to]){dist[edge.to]=c;prev[edge.to]=u;prevEdge[edge.to]=edge;pline[edge.to]=edge.colour;pq.push([c,edge.to])}
     }
   }
   if(dist[e]===Infinity)return null;
-  const path=[];let cur=e;while(cur){path.unshift({id:cur,ref:pline[cur]||null});cur=prev[cur]}
+  const path=[];let cur=e;
+  while(cur){
+    const edge=prevEdge[cur];
+    path.unshift({id:cur,ref:pline[cur]||null,edge});
+    cur=prev[cur];
+  }
   return{path,total:dist[e]};
 }
 
@@ -889,18 +934,30 @@ function findRoute() {
     const st=stations.find(s=>s.id===p.id);
     const isF=i===0,isL=i===path.length-1;
     const isPT=!isF&&!isL&&!shouldStop(st);
+    let reversalHere=false;
     if(!isF){
       const pr=path[i-1],edge=graph[pr.id]?.find(e=>e.to===p.id);
       if(edge){
         const spd=Math.min(parseFloat(edge.maxspeed)||160, trainMaxSpeed);
         elapsed+=segmentTime(edge.dist,spd,!isPT);
         if(!isL&&!isPT) elapsed+=(st?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN);
+        // Check reversal with previous edge
+        if(i>=2){
+          const prevPrevId=path[i-2].id;
+          const inEdge=graph[prevPrevId]?.find(e=>e.to===pr.id);
+          if(inEdge){
+            const inB=edgeDepartureBearing(inEdge,prevPrevId);
+            const outB=edgeDepartureBearing(edge,pr.id);
+            if(isReversal(inB,outB)){reversalHere=true;elapsed+=REVERSAL_PENALTY;}
+          }
+        }
       }
     }
     const ts=isF?'Odjazd':'+'+fmt(elapsed);
     const dwLabel=isPT?'przejazd bez zatrzymania':(isF||isL)?'':`postój ${st?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN} min`;
     const trackSeg=!isL?'<div class="stop-line-seg"></div>':'';
     const dotClass=isF?' origin':isL?' destination':'';
+    const reversalBadge=reversalHere?`<span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--amber);background:#e8a94520;border:1px solid var(--amber);border-radius:2px;padding:1px 5px;letter-spacing:1px">↩ ZMIANA KIERUNKU +30 min</span>`:'';
     const isOverride=manualOverrides[p.id]!==undefined;
     const toggleBtn=(!isF&&!isL)?`<button class="stop-toggle-btn ${isPT?'passing':'stopping'} pt-toggle" data-sid="${encodeURIComponent(p.id)}" title="${isOverride?'Kliknij aby przywrócić domyślne':'Kliknij aby zmienić'}" style="${isOverride?'outline:1px solid var(--amber)':''}">${isPT?'Przejeżdża':'Zatrzymuje'}${isOverride?' *':''}</button>`:'';
     return`<li class="stop-item${isPT?' passing-through':''}">
@@ -910,6 +967,7 @@ function findRoute() {
       <div class="stop-info">
         <div class="stop-name">${st?.name||p.id}</div>
         <div class="stop-time">${ts}${dwLabel?' · '+dwLabel:''}</div>
+        ${reversalBadge?`<div style="margin-top:4px">${reversalBadge}</div>`:''}
         ${toggleBtn?`<div class="stop-toggle">${toggleBtn}</div>`:''}
       </div>
     </li>`;
