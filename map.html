@@ -967,16 +967,17 @@ function findRoute() {
         const spd=Math.min(parseFloat(edge.maxspeed)||160, trainMaxSpeed);
         elapsed+=segmentTime(edge.dist,spd,!isPT);
         if(!isL&&!isPT) elapsed+=(st?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN);
-        // Check reversal with previous edge
-        if(i>=2){
-          const prevPrevId=path[i-2].id;
-          const inEdge=graph[prevPrevId]?.find(e=>e.to===pr.id);
-          if(inEdge){
-            const inB=edgeDepartureBearing(inEdge,prevPrevId);
-            const outB=edgeDepartureBearing(edge,pr.id);
-            if(isReversal(inB,outB)){reversalHere=true;elapsed+=REVERSAL_PENALTY;}
-          }
-        }
+      }
+    }
+    // Check reversal AT this station: incoming edge vs outgoing edge
+    // Reversal happens here if train must change direction before leaving
+    if(!isF&&!isL&&i+1<path.length){
+      const inEdge=graph[path[i-1].id]?.find(e=>e.to===p.id);
+      const outEdge=graph[p.id]?.find(e=>e.to===path[i+1].id);
+      if(inEdge&&outEdge){
+        const inB=edgeDepartureBearing(inEdge,path[i-1].id);
+        const outB=edgeDepartureBearing(outEdge,p.id);
+        if(isReversal(inB,outB)){reversalHere=true;elapsed+=REVERSAL_PENALTY;}
       }
     }
     const ts=isF?'Odjazd':'+'+fmt(elapsed);
