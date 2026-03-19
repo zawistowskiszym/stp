@@ -512,90 +512,106 @@ function buildGraph(d) {
     graph[id] = [];
   });
 
-  // Build a coord→stationId lookup using multiple precision levels
-  // Try several rounding levels to handle any float drift
-  const coordKeys = (c) => {
-    const keys = [];
-    for (const p of [1e8, 1e7, 1e6, 1e5]) {
-      keys.push(Math.round(c[0]*p) + ',' + Math.round(c[1]*p));
-    }
-    return keys;
-  };
-  const coordToStation = {};
-  stations.forEach(st => {
-    const [lat, lng] = st.latlng;
-    coordKeys([lng, lat]).forEach(k => { coordToStation[k] = st.id; });
-  });
+  const ck = c => `${Math.round(c[0]*1e8)},${Math.round(c[1]*1e8)}`;
 
-  lines.forEach(line => {
-    let coords = line.geometry.type === 'LineString'
+  // coord → stationId
+  const c2s = {};
+  stations.forEach(st => { const [lat,lng] = st.latlng; c2s[ck([lng,lat])] = st.id; });
+
+  // Flatten line coords
+  const lineCoords = lines.map(line =>
+    line.geometry.type === 'LineString'
       ? line.geometry.coordinates
-      : line.geometry.coordinates.flat();
-    const ms = line.properties?.maxspeed || null;
-    const col = lineRef(line.properties);
+      : line.geometry.coordinates.flat()
+  );
 
-    // Find all stations whose coordinates exactly match a node on this line
-    const snapped = [];
+  // junction map: coordKey → [{li, k}]
+  const jmap = {};
+  lineCoords.forEach((coords, li) => {
     coords.forEach((c, k) => {
-      let sid = null;
-      for (const key of coordKeys(c)) { sid = coordToStation[key]; if (sid) break; }
-      if (sid) snapped.push({ sid, k });
+      const key = ck(c);
+      if (!jmap[key]) jmap[key] = [];
+      jmap[key].push({ li, k });
     });
-
-    // Sort by node index along the line
-    snapped.sort((a, b) => a.k - b.k);
-
-    for (let i = 0; i < snapped.length - 1; i++) {
-      const A = snapped[i], B = snapped[i + 1];
-      const slice = coords.slice(A.k, B.k + 1);
-      if (slice.length < 2) continue;
-
-      let dist = 0;
-      for (let k = 0; k < slice.length - 1; k++) dist += cdist(slice[k], slice[k + 1]);
-
-      const fwd = slice.map(c => [c[1], c[0]]);
-      const rev = [...fwd].reverse();
-
-      // Keep shortest edge if duplicate
-      const exFwd = graph[A.sid].findIndex(e => e.to === B.sid);
-      if (exFwd === -1) {
-        graph[A.sid].push({ to: B.sid, dist, maxspeed: ms, colour: col, geom: fwd });
-      } else if (dist < graph[A.sid][exFwd].dist) {
-        graph[A.sid][exFwd] = { to: B.sid, dist, maxspeed: ms, colour: col, geom: fwd };
-      }
-      const exRev = graph[B.sid].findIndex(e => e.to === A.sid);
-      if (exRev === -1) {
-        graph[B.sid].push({ to: A.sid, dist, maxspeed: ms, colour: col, geom: rev });
-      } else if (dist < graph[B.sid][exRev].dist) {
-        graph[B.sid][exRev] = { to: A.sid, dist, maxspeed: ms, colour: col, geom: rev };
-      }
-    }
   });
 
-  const isolated = stations.filter(s => graph[s.id]?.length === 0);
-  if (isolated.length) {
-    console.warn('Isolated stations:', isolated.map(s => s.name));
-    // For each isolated station, find the closest line node and show the coord difference
-    isolated.forEach(st => {
-      const [lat, lng] = st.latlng;
-      let bestDist = Infinity, bestCoord = null, bestLine = null;
-      lines.forEach(line => {
-        let coords = line.geometry.type === 'LineString'
-          ? line.geometry.coordinates
-          : line.geometry.coordinates.flat();
-        coords.forEach(c => {
-          const d = Math.sqrt((c[0]-lng)**2 + (c[1]-lat)**2);
-          if (d < bestDist) { bestDist = d; bestCoord = c; bestLine = line.properties?.name||'unnamed'; }
-        });
-      });
-      console.warn(
-        `  "${st.name}": station=[${lng.toFixed(8)},${lat.toFixed(8)}]`,
-        `closest line node=[${bestCoord[0].toFixed(8)},${bestCoord[1].toFixed(8)}]`,
-        `delta=[${Math.abs(bestCoord[0]-lng).toExponential(2)},${Math.abs(bestCoord[1]-lat).toExponential(2)}]`,
-        `line="${bestLine}"`
-      );
+  // Add or update edge, keeping shortest
+  function addEdge(aid, bid, dist, ms, col, fwdGeom) {
+    const rev = [...fwdGeom].reverse();
+    [[aid, bid, fwdGeom], [bid, aid, rev]].forEach(([from, to, geom]) => {
+      const ex = graph[from].findIndex(e => e.to === to);
+      const entry = { to, dist, maxspeed: ms, colour: col, geom };
+      if (ex === -1) graph[from].push(entry);
+      else if (dist < graph[from][ex].dist) graph[from][ex] = entry;
     });
   }
+
+  // BFS from a station: walk the network finding all reachable stations
+  // Returns [{sid, dist, geom}] where geom is [lng,lat] pairs from station outward
+  function findReachable(homeLi, homeK) {
+    const results = [];
+    // queue: {li, k, direction, dist, path:[coord...]}
+    const visited = new Set();
+    const queue = [];
+    // seed both directions from the home node
+    for (const dir of [+1, -1]) {
+      queue.push({ li: homeLi, k: homeK, dir, dist: 0, path: [lineCoords[homeLi][homeK]] });
+    }
+    while (queue.length) {
+      const { li, k, dir, dist, path } = queue.shift();
+      const stateKey = `${li},${k},${dir}`;
+      if (visited.has(stateKey)) continue;
+      visited.add(stateKey);
+      const coords = lineCoords[li];
+      const nk = k + dir;
+      if (nk < 0 || nk >= coords.length) continue;
+      const nc = coords[nk];
+      const nd = dist + Math.sqrt((nc[0]-coords[k][0])**2 + (nc[1]-coords[k][1])**2);
+      const npath = [...path, nc];
+      const sid = c2s[ck(nc)];
+      if (sid) {
+        results.push({ sid, dist: nd, geom: npath });
+        continue; // don't walk past a station
+      }
+      // Is this a junction?
+      const jentries = jmap[ck(nc)] || [];
+      // Continue on current line
+      queue.push({ li, k: nk, dir, dist: nd, path: npath });
+      // Branch onto other lines at junction
+      if (jentries.length > 1) {
+        jentries.forEach(({ li: li2, k: k2 }) => {
+          if (li2 === li) return;
+          for (const d2 of [+1, -1]) {
+            queue.push({ li: li2, k: k2, dir: d2, dist: nd, path: npath });
+          }
+        });
+      }
+    }
+    return results;
+  }
+
+  // For each station, run BFS and add edges to all reachable stations
+  stations.forEach(st => {
+    const [lat, lng] = st.latlng;
+    const key = ck([lng, lat]);
+    // Find which line/node this station sits on
+    lineCoords.forEach((coords, li) => {
+      coords.forEach((c, k) => {
+        if (ck(c) !== key) return;
+        const ms = lines[li].properties?.maxspeed || null;
+        const col = lineRef(lines[li].properties);
+        const reachable = findReachable(li, k);
+        reachable.forEach(({ sid, dist, geom }) => {
+          if (sid === st.id) return;
+          addEdge(st.id, sid, dist, ms, col, geom.map(c => [c[1], c[0]]));
+        });
+      });
+    });
+  });
+
+  const isolated = stations.filter(s => !graph[s.id] || graph[s.id].length === 0);
+  if (isolated.length) console.warn('Still isolated:', isolated.map(s => s.name));
+  else console.log('All stations connected!');
 }
 
 // ── DIJKSTRA ──────────────────────────────────────────────────────────────────
