@@ -572,11 +572,18 @@ function buildGraph(d) {
       const fwd=clean.map(c=>[c[1],c[0]]);
       const rev=[...fwd].reverse();
 
-      // Avoid duplicate edges (same pair already added by another line)
-      const alreadyExists=graph[A.st.id].some(e=>e.to===B.st.id&&Math.abs(e.dist-dist)<1e-8);
-      if(!alreadyExists){
+      // If an edge between this pair already exists, keep only the shorter one
+      const existingFwd=graph[A.st.id].findIndex(e=>e.to===B.st.id);
+      if(existingFwd===-1){
         graph[A.st.id].push({to:B.st.id,dist,maxspeed:ms,colour:col,geom:fwd});
+      } else if(dist<graph[A.st.id][existingFwd].dist){
+        graph[A.st.id][existingFwd]={to:B.st.id,dist,maxspeed:ms,colour:col,geom:fwd};
+      }
+      const existingRev=graph[B.st.id].findIndex(e=>e.to===A.st.id);
+      if(existingRev===-1){
         graph[B.st.id].push({to:A.st.id,dist,maxspeed:ms,colour:col,geom:rev});
+      } else if(dist<graph[B.st.id][existingRev].dist){
+        graph[B.st.id][existingRev]={to:A.st.id,dist,maxspeed:ms,colour:col,geom:rev};
       }
     }
   });
@@ -653,26 +660,31 @@ function findRoute() {
   const{path,total}=res;
   // Animated route line
   // Stitch actual rail geometry for each edge in the path
-  // For each edge, orient the geom so it starts closest to the last point we drew
   const routeLatLngs=[];
   for(let i=0;i<path.length-1;i++){
+    const fromSt=stations.find(s=>s.id===path[i].id);
+    const toSt=stations.find(s=>s.id===path[i+1].id);
     const edge=graph[path[i].id]?.find(e=>e.to===path[i+1].id);
     if(edge?.geom && edge.geom.length>=2){
-      let geom=edge.geom;
-      // If we already have points, check whether geom needs reversing
-      if(routeLatLngs.length>0){
-        const last=routeLatLngs[routeLatLngs.length-1];
-        const d2start=(geom[0][0]-last[0])**2+(geom[0][1]-last[1])**2;
-        const d2end=(geom[geom.length-1][0]-last[0])**2+(geom[geom.length-1][1]-last[1])**2;
-        if(d2end<d2start) geom=[...geom].reverse();
-      }
+      // Always orient: first point nearest fromSt, last point nearest toSt
+      const g=edge.geom;
+      const fromLL=fromSt?.latlng||g[0];
+      const d2start=(g[0][0]-fromLL[0])**2+(g[0][1]-fromLL[1])**2;
+      const d2end=(g[g.length-1][0]-fromLL[0])**2+(g[g.length-1][1]-fromLL[1])**2;
+      const geom=d2end<d2start?[...g].reverse():g;
       // Skip first point if it duplicates the last pushed point
       const skip=routeLatLngs.length>0?1:0;
       routeLatLngs.push(...geom.slice(skip));
-    } else {
-      const st=stations.find(s=>s.id===path[i].id);
-      if(st)routeLatLngs.push(st.latlng);
+    } else if(fromSt){
+      routeLatLngs.push(fromSt.latlng);
     }
+  }
+  // Add final destination
+  const lastSt=stations.find(s=>s.id===path[path.length-1].id);
+  if(lastSt&&routeLatLngs.length>0){
+    const last=routeLatLngs[routeLatLngs.length-1];
+    if((last[0]-lastSt.latlng[0])**2+(last[1]-lastSt.latlng[1])**2>1e-12)
+      routeLatLngs.push(lastSt.latlng);
   }
   routeLayer=L.polyline(routeLatLngs,
     {color:'#e8a945',weight:5,opacity:.95,lineJoin:'round',lineCap:'round'}
