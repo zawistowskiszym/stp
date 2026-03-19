@@ -3,99 +3,509 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mapa Kolejowa — Koleje Królewskie</title>
+  <title>Koleje Królewskie — Mapa Sieci</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    :root{--red:#c0392b;--navy:#1a2545;--gold:#d4ac0d;--green:#1e8449;--gray:#7f8c8d;--bg:#f5f0e8;--panel:#ffffffee;--border:#d0c8b8;--text:#1a1a1a}
-    html,body{height:100%;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text)}
-    #header{position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;gap:16px;padding:0 20px;height:56px;background:var(--navy);border-bottom:3px solid var(--red);box-shadow:0 2px 12px #0004}
-    #header .logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#fff}
-    #header .logo span{color:var(--red)}
-    #header .subtitle{font-size:11px;color:#aab;letter-spacing:1.5px;text-transform:uppercase;border-left:1px solid #ffffff30;padding-left:16px}
-    #header .badge{margin-left:auto;font-size:10px;background:var(--red);color:#fff;padding:3px 10px;border-radius:2px;letter-spacing:1px;text-transform:uppercase;font-weight:600}
-    #map{position:fixed;top:56px;bottom:0;left:0;right:0;background:var(--bg)}
-    #planner{position:absolute;top:16px;left:16px;z-index:900;background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:16px 18px;width:260px;box-shadow:0 4px 20px #0002}
-    #planner h3{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--navy);margin-bottom:12px;border-bottom:2px solid var(--red);padding-bottom:6px}
-    .planner-row{margin-bottom:10px}
-    .planner-row label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--gray);display:block;margin-bottom:4px}
-    .station-btn{width:100%;padding:8px 10px;text-align:left;background:#f9f7f3;border:1px solid var(--border);border-radius:3px;font-family:'Barlow',sans-serif;font-size:13px;color:var(--navy);cursor:pointer;transition:background .15s}
-    .station-btn:hover{background:#eee8da}
-    .station-btn.selecting{border-color:var(--gold);background:#fffbe6}
-    .station-btn.origin.set{border-color:var(--green);color:var(--green);font-weight:600}
-    .station-btn.destination.set{border-color:var(--red);color:var(--red);font-weight:600}
-    #find-btn{width:100%;padding:9px;margin-top:4px;background:var(--navy);color:#fff;border:none;border-radius:3px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;cursor:pointer;transition:background .15s}
-    #find-btn:hover{background:var(--red)}
-    #find-btn:disabled{background:var(--gray);cursor:not-allowed}
-    #clear-btn{width:100%;padding:6px;margin-top:6px;background:transparent;color:var(--gray);border:1px solid var(--border);border-radius:3px;font-family:'Barlow',sans-serif;font-size:12px;cursor:pointer;transition:all .15s}
-    #clear-btn:hover{border-color:var(--red);color:var(--red)}
-    #results{position:absolute;bottom:24px;left:16px;z-index:900;background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:16px 18px;width:260px;box-shadow:0 4px 20px #0002;display:none;max-height:55vh;overflow-y:auto}
-    #results h3{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--navy);margin-bottom:10px;border-bottom:2px solid var(--red);padding-bottom:6px}
-    .result-summary{display:flex;gap:10px;margin-bottom:12px}
-    .result-stat{flex:1;background:#f9f7f3;border:1px solid var(--border);border-radius:3px;padding:8px;text-align:center}
-    .result-stat .val{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--navy);line-height:1}
-    .result-stat .lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--gray);margin-top:2px}
-    .stop-list{list-style:none}
-    .stop-item{display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
-    .stop-item:last-child{border-bottom:none}
-    .stop-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--navy);background:#fff;flex-shrink:0;margin-top:2px}
-    .stop-dot.origin{background:var(--green);border-color:var(--green)}
-    .stop-dot.destination{background:var(--red);border-color:var(--red)}
-    .stop-name{font-weight:600;color:var(--navy)}
-    .stop-time{font-size:11px;color:var(--gray);margin-top:1px}
-    .stop-line-tag{margin-left:auto;font-size:9px;padding:2px 6px;border-radius:2px;color:#fff;font-weight:600;flex-shrink:0;align-self:center}
-    .no-route{color:var(--red);font-size:13px;text-align:center;padding:12px 0}
-    #scale-info{position:absolute;bottom:24px;right:16px;z-index:900;background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:8px 14px;font-size:11px;color:var(--gray);box-shadow:0 2px 8px #0001}
-    #scale-info span{color:var(--navy);font-weight:600}
-    .leaflet-container{font-family:'Barlow',sans-serif;background:var(--bg)!important}
-    .leaflet-control-zoom a{font-family:'Barlow',sans-serif;font-weight:600;color:var(--navy);border-color:var(--border)!important}
-    .leaflet-control-zoom a:hover{background:var(--navy);color:#fff}
-    .leaflet-tooltip{font-family:'Barlow',sans-serif;font-size:11px;font-weight:600;color:var(--navy);background:transparent;border:none;box-shadow:none;padding:0;white-space:nowrap}
-    #map.selecting-station{cursor:crosshair!important}
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0e1117;
+      --surface:   #161b27;
+      --surface2:  #1e2535;
+      --border:    #2a3347;
+      --border2:   #3a4560;
+      --amber:     #e8a945;
+      --amber-dim: #a87830;
+      --red:       #d94f3d;
+      --green:     #3daa6e;
+      --blue:      #4a8fd4;
+      --text:      #e8e4da;
+      --text-dim:  #8896aa;
+      --text-faint:#4a5568;
+    }
+
+    html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
+
+    /* ── Subtle grid texture on body ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.18;
+    }
+
+    /* ── Header ── */
+    #header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      height: 60px;
+      display: flex; align-items: center; gap: 0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 30px #00000060;
+    }
+
+    .header-accent {
+      width: 4px; height: 100%;
+      background: linear-gradient(180deg, var(--amber) 0%, var(--amber-dim) 100%);
+      flex-shrink: 0;
+    }
+
+    .header-inner {
+      display: flex; align-items: center; gap: 20px;
+      padding: 0 24px; flex: 1;
+    }
+
+    .logo-mark {
+      width: 32px; height: 32px;
+      background: var(--amber);
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      color: var(--text);
+      letter-spacing: 0.5px;
+      line-height: 1;
+    }
+
+    .logo-text small {
+      display: block;
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 2px;
+      font-weight: 400;
+    }
+
+    .header-divider {
+      width: 1px; height: 28px;
+      background: var(--border2);
+    }
+
+    .header-meta {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .header-status {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--green);
+      letter-spacing: 1px;
+    }
+
+    .status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ── Map ── */
+    #map {
+      position: fixed; top: 60px; bottom: 0; left: 0; right: 0;
+      background: var(--bg);
+      z-index: 1;
+    }
+
+    /* ── Panels shared ── */
+    .panel {
+      position: absolute;
+      z-index: 900;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      box-shadow: 0 8px 40px #00000080, inset 0 1px 0 #ffffff08;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 14px 18px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+
+    .panel-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--amber);
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .panel-title::before {
+      content: '';
+      width: 3px; height: 12px;
+      background: var(--amber);
+      border-radius: 1px;
+      flex-shrink: 0;
+    }
+
+    .panel-body { padding: 16px 18px; }
+
+    /* ── Planner panel ── */
+    #planner { top: 80px; left: 20px; width: 270px; }
+
+    .field-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin-bottom: 6px;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    .field-label .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .field-label .dot.origin { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .field-label .dot.dest   { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+
+    .station-btn {
+      width: 100%; padding: 10px 12px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 2px; text-align: left;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; color: var(--text-dim);
+      cursor: pointer; transition: all 0.2s;
+      letter-spacing: 0.2px;
+    }
+
+    .station-btn:hover { border-color: var(--border2); color: var(--text); background: var(--surface2); }
+    .station-btn.selecting { border-color: var(--amber); color: var(--amber); background: #e8a94508; animation: blink-border 1s infinite; }
+    .station-btn.origin.set { border-color: var(--green); color: var(--green); background: #3daa6e08; font-weight: 500; }
+    .station-btn.destination.set { border-color: var(--red); color: var(--red); background: #d94f3d08; font-weight: 500; }
+
+    @keyframes blink-border {
+      0%, 100% { border-color: var(--amber); }
+      50% { border-color: var(--amber-dim); }
+    }
+
+    .field-group { margin-bottom: 12px; }
+
+    .connector-line {
+      width: 1px; height: 10px;
+      background: var(--border2);
+      margin: 3px 0 3px 18px;
+    }
+
+    #find-btn {
+      width: 100%; padding: 11px;
+      background: var(--amber);
+      color: #0e1117;
+      border: none; border-radius: 2px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px; letter-spacing: 2.5px;
+      text-transform: uppercase;
+      font-weight: 500;
+      cursor: pointer; transition: all 0.2s;
+      margin-top: 4px;
+    }
+
+    #find-btn:hover { background: #f0b955; transform: translateY(-1px); box-shadow: 0 4px 20px #e8a94540; }
+    #find-btn:active { transform: translateY(0); }
+    #find-btn:disabled { background: var(--surface2); color: var(--text-faint); cursor: not-allowed; transform: none; box-shadow: none; }
+
+    #clear-btn {
+      width: 100%; padding: 8px;
+      background: transparent; color: var(--text-faint);
+      border: 1px solid var(--border); border-radius: 2px;
+      font-family: 'DM Mono', monospace; font-size: 10px;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      cursor: pointer; transition: all 0.2s; margin-top: 8px;
+    }
+
+    #clear-btn:hover { border-color: var(--red); color: var(--red); }
+
+    /* ── Results panel ── */
+    #results {
+      bottom: 20px; left: 20px; width: 270px;
+      display: none;
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+    }
+
+    #results::-webkit-scrollbar { width: 3px; }
+    #results::-webkit-scrollbar-track { background: transparent; }
+    #results::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    .result-summary {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px; margin-bottom: 16px;
+    }
+
+    .result-stat {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 2px; padding: 10px 8px; text-align: center;
+    }
+
+    .result-stat .val {
+      font-family: 'Playfair Display', serif;
+      font-size: 17px; color: var(--amber);
+      line-height: 1; margin-bottom: 4px;
+    }
+
+    .result-stat .lbl {
+      font-family: 'DM Mono', monospace;
+      font-size: 8px; text-transform: uppercase;
+      letter-spacing: 1.5px; color: var(--text-faint);
+    }
+
+    .stop-list { list-style: none; }
+
+    .stop-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+
+    .stop-item:last-child { border-bottom: none; }
+
+    .stop-track {
+      display: flex; flex-direction: column;
+      align-items: center; flex-shrink: 0;
+      padding-top: 3px;
+    }
+
+    .stop-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      border: 2px solid var(--border2);
+      background: var(--surface); flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .stop-dot.origin   { background: var(--green); border-color: var(--green); box-shadow: 0 0 8px #3daa6e60; }
+    .stop-dot.destination { background: var(--red); border-color: var(--red); box-shadow: 0 0 8px #d94f3d60; }
+
+    .stop-line-seg {
+      width: 2px; flex: 1; min-height: 10px;
+      background: var(--border); margin-top: 3px;
+    }
+
+    .stop-info { flex: 1; min-width: 0; }
+    .stop-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stop-time { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-faint); margin-top: 2px; }
+
+    .no-route {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px; color: var(--red);
+      text-align: center; padding: 16px 0;
+      letter-spacing: 0.5px; line-height: 1.6;
+    }
+
+    /* ── Scale pill ── */
+    #scale-info {
+      position: absolute; bottom: 20px; right: 20px; z-index: 900;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 2px; padding: 7px 14px;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; color: var(--text-faint);
+      letter-spacing: 1px;
+    }
+
+    #scale-info span { color: var(--amber); }
+
+    /* ── Selecting hint ── */
+    #select-hint {
+      position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+      z-index: 950; pointer-events: none;
+      background: var(--amber); color: #0e1117;
+      font-family: 'DM Mono', monospace; font-size: 11px;
+      letter-spacing: 2px; text-transform: uppercase;
+      padding: 8px 20px; border-radius: 2px;
+      box-shadow: 0 4px 20px #e8a94550;
+      display: none;
+      animation: float 2s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-4px); }
+    }
+
+    /* ── Leaflet overrides ── */
+    .leaflet-container {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg) !important;
+    }
+
+    .leaflet-control-zoom {
+      border: 1px solid var(--border) !important;
+      border-radius: 2px !important;
+      overflow: hidden;
+      box-shadow: 0 4px 20px #00000060 !important;
+    }
+
+    .leaflet-control-zoom a {
+      background: var(--surface) !important;
+      color: var(--text-dim) !important;
+      border-bottom: 1px solid var(--border) !important;
+      font-family: 'DM Sans', sans-serif !important;
+      font-size: 16px !important;
+      width: 32px !important; height: 32px !important;
+      line-height: 32px !important;
+      transition: all 0.15s;
+    }
+
+    .leaflet-control-zoom a:last-child { border-bottom: none !important; }
+    .leaflet-control-zoom a:hover { background: var(--surface2) !important; color: var(--amber) !important; }
+
+    .leaflet-tooltip {
+      font-family: 'DM Mono', monospace !important;
+      font-size: 10px !important;
+      font-weight: 500 !important;
+      letter-spacing: 0.5px;
+      color: var(--text) !important;
+      background: var(--surface) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 2px !important;
+      padding: 3px 7px !important;
+      box-shadow: 0 2px 10px #00000060 !important;
+      white-space: nowrap;
+    }
+
+    .leaflet-tooltip::before { display: none; }
+
+    #map.selecting-station { cursor: crosshair !important; }
+
+    /* Panel slide-in animation */
+    .panel { animation: slideIn 0.3s ease; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    #results.show { display: block; animation: slideIn 0.3s ease; }
   </style>
 </head>
 <body>
+
 <div id="header">
-  <div class="logo">Koleje <span>Królewskie</span></div>
-  <div class="subtitle">Mapa Sieci Kolejowej KDP 2025</div>
-  <div class="badge">Planer Tras</div>
+  <div class="header-accent"></div>
+  <div class="header-inner">
+    <div class="logo-mark"></div>
+    <div class="logo-text">
+      Koleje Królewskie
+      <small>Sieć Krajowa · KDP 2025</small>
+    </div>
+    <div class="header-divider"></div>
+    <div class="header-meta">Mapa Sieci · Planer Tras</div>
+    <div class="header-status">
+      <div class="status-dot"></div>
+      System aktywny
+    </div>
+  </div>
 </div>
+
 <div id="map"></div>
-<div id="planner">
-  <h3>Planer Trasy</h3>
-  <div class="planner-row">
-    <label>📍 Stacja początkowa</label>
-    <button class="station-btn origin" id="btn-origin" onclick="startSelecting('origin')">Kliknij stację na mapie…</button>
+
+<div id="select-hint">Wybierz stację na mapie</div>
+
+<!-- Planner -->
+<div class="panel" id="planner">
+  <div class="panel-header">
+    <div class="panel-title">Planer Trasy</div>
   </div>
-  <div class="planner-row">
-    <label>🏁 Stacja docelowa</label>
-    <button class="station-btn destination" id="btn-dest" onclick="startSelecting('destination')">Kliknij stację na mapie…</button>
+  <div class="panel-body">
+    <div class="field-group">
+      <div class="field-label"><div class="dot origin"></div>Stacja początkowa</div>
+      <button class="station-btn origin" id="btn-origin" onclick="startSelecting('origin')">Kliknij stację na mapie…</button>
+    </div>
+    <div class="connector-line"></div>
+    <div class="field-group">
+      <div class="field-label"><div class="dot dest"></div>Stacja docelowa</div>
+      <button class="station-btn destination" id="btn-dest" onclick="startSelecting('destination')">Kliknij stację na mapie…</button>
+    </div>
+    <button id="find-btn" onclick="findRoute()" disabled>Znajdź trasę</button>
+    <button id="clear-btn" onclick="clearRoute()">Wyczyść</button>
   </div>
-  <button id="find-btn" onclick="findRoute()" disabled>ZNAJDŹ TRASĘ</button>
-  <button id="clear-btn" onclick="clearRoute()">Wyczyść</button>
 </div>
-<div id="results"><h3>Wynik</h3><div id="results-content"></div></div>
-<div id="scale-info">Skala: <span id="scale-val">obliczanie…</span></div>
+
+<!-- Results -->
+<div class="panel" id="results">
+  <div class="panel-header">
+    <div class="panel-title">Wynik trasy</div>
+  </div>
+  <div class="panel-body">
+    <div id="results-content"></div>
+  </div>
+</div>
+
+<div id="scale-info">1 jedn. ≈ <span id="scale-val">…</span> km</div>
+
 <script>
-const GEOJSON_PATH='railway.geojson';
-const LINE_COLORS={red:'#c0392b',blue:'#2471a3',purple:'#6c3483',yellow:'#d4ac0d',green:'#1e8449',orange:'#e67e22',brown:'#7b4f2e',default:'#555555'};
-const DWELL_MAIN=3,DWELL_HALT=1,TARGET_WIDTH_KM=500,SNAP=0.005;
-const map=L.map('map',{crs:L.CRS.Simple,minZoom:-3,maxZoom:10});
-let stations=[],graph={},routeLayer=null,origin=null,dest=null,selecting=null,scale=null;
-function lineRef(p){if(!p)return'default';return p.colour||'default'}
-function cdist(a,b){const dx=a[0]-b[0],dy=a[1]-b[1];return Math.sqrt(dx*dx+dy*dy)}
-function fmt(m){if(m<60)return Math.round(m)+' min';const h=Math.floor(m/60),mn=Math.round(m%60);return mn>0?h+' godz '+mn+' min':h+' godz'}
-function p2seg(p,a,b){const dx=b[0]-a[0],dy=b[1]-a[1];if(!dx&&!dy)return cdist(p,a);const t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/(dx*dx+dy*dy)));return cdist(p,[a[0]+t*dx,a[1]+t*dy])}
-function autoScale(d){let mn=Infinity,mx=-Infinity;function w(c){if(typeof c[0]==='number'){if(c[0]<mn)mn=c[0];if(c[0]>mx)mx=c[0]}else c.forEach(w)}d.features.forEach(f=>{if(f.geometry)w(f.geometry.coordinates)});const s=mx-mn;return s>0?TARGET_WIDTH_KM/s:10}
-function buildGraph(d){
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const GEOJSON_PATH = 'railway.geojson';
+const LINE_COLORS = {
+  red:'#d94f3d', blue:'#4a8fd4', purple:'#9b72cf',
+  yellow:'#e8a945', green:'#3daa6e', orange:'#e8783d',
+  brown:'#a07850', cyan:'#3daabb', default:'#5a6a80'
+};
+const DWELL_MAIN = 3, DWELL_HALT = 1, TARGET_WIDTH_KM = 500, SNAP = 0.005;
+
+// ── MAP ───────────────────────────────────────────────────────────────────────
+const map = L.map('map', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 20 });
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let stations=[], graph={}, routeLayer=null, origin=null, dest=null, selecting=null, scale=null;
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function lineRef(p) { if(!p) return 'default'; return p.colour||'default'; }
+function cdist(a,b) { const dx=a[0]-b[0],dy=a[1]-b[1]; return Math.sqrt(dx*dx+dy*dy); }
+function fmt(m) {
+  if(m<60) return Math.round(m)+' min';
+  const h=Math.floor(m/60),mn=Math.round(m%60);
+  return mn>0 ? h+'h '+mn+'min' : h+'h';
+}
+function p2seg(p,a,b) {
+  const dx=b[0]-a[0],dy=b[1]-a[1];
+  if(!dx&&!dy) return cdist(p,a);
+  const t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/(dx*dx+dy*dy)));
+  return cdist(p,[a[0]+t*dx,a[1]+t*dy]);
+}
+function autoScale(d) {
+  let mn=Infinity,mx=-Infinity;
+  function w(c){if(typeof c[0]==='number'){if(c[0]<mn)mn=c[0];if(c[0]>mx)mx=c[0]}else c.forEach(w)}
+  d.features.forEach(f=>{if(f.geometry)w(f.geometry.coordinates)});
+  const s=mx-mn; return s>0?TARGET_WIDTH_KM/s:10;
+}
+
+// ── GRAPH ─────────────────────────────────────────────────────────────────────
+function buildGraph(d) {
   const lines=d.features.filter(f=>f.geometry&&(f.geometry.type==='LineString'||f.geometry.type==='MultiLineString'));
   const pts=d.features.filter(f=>f.geometry&&f.geometry.type==='Point'&&f.properties&&(f.properties.railway==='station'||f.properties.railway==='halt'));
-  pts.forEach((f,i)=>{const[lng,lat]=f.geometry.coordinates,id=f.properties.name||'st_'+i;stations.push({id,name:f.properties.name||id,latlng:[lat,lng],props:f.properties});graph[id]=[]});
+  pts.forEach((f,i)=>{
+    const[lng,lat]=f.geometry.coordinates,id=f.properties.name||'st_'+i;
+    stations.push({id,name:f.properties.name||id,latlng:[lat,lng],props:f.properties});graph[id]=[];
+  });
   lines.forEach(line=>{
-    const ref=lineRef(line.properties);
     let coords=line.geometry.type==='LineString'?line.geometry.coordinates:line.geometry.coordinates.flat();
     const snapped=[];
     stations.forEach(st=>{
@@ -107,79 +517,184 @@ function buildGraph(d){
     for(let i=0;i<snapped.length-1;i++){
       const fr=snapped[i].st,to=snapped[i+1].st;
       let dist=0;for(let j=snapped[i].si;j<snapped[i+1].si&&j<coords.length-1;j++)dist+=cdist(coords[j],coords[j+1]);
-      graph[fr.id].push({to:to.id,dist,maxspeed:line.properties?.maxspeed||null,colour:lineRef(line.properties)});graph[to.id].push({to:fr.id,dist,maxspeed:line.properties?.maxspeed||null,colour:lineRef(line.properties)});
+      const ms=line.properties?.maxspeed||null,col=lineRef(line.properties);
+      graph[fr.id].push({to:to.id,dist,maxspeed:ms,colour:col});
+      graph[to.id].push({to:fr.id,dist,maxspeed:ms,colour:col});
     }
   });
 }
-function dijkstra(s,e){
+
+// ── DIJKSTRA ──────────────────────────────────────────────────────────────────
+function dijkstra(s,e) {
   const dist={},prev={},pline={},vis=new Set();
   Object.keys(graph).forEach(id=>dist[id]=Infinity);dist[s]=0;
   const pq=[[0,s]];
-  while(pq.length){pq.sort((a,b)=>a[0]-b[0]);const[d,u]=pq.shift();if(vis.has(u))continue;vis.add(u);if(u===e)break;
-    for(const edge of(graph[u]||[])){const spd=parseFloat(edge.maxspeed)||160,tm=(edge.dist*scale/spd)*60,dw=stations.find(x=>x.id===edge.to)?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN,c=d+tm+dw;if(c<dist[edge.to]){dist[edge.to]=c;prev[edge.to]=u;pline[edge.to]=edge.colour;pq.push([c,edge.to])}}}
+  while(pq.length){
+    pq.sort((a,b)=>a[0]-b[0]);const[d,u]=pq.shift();
+    if(vis.has(u))continue;vis.add(u);if(u===e)break;
+    for(const edge of(graph[u]||[])){
+      const spd=parseFloat(edge.maxspeed)||160,tm=(edge.dist*scale/spd)*60;
+      const dw=stations.find(x=>x.id===edge.to)?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN;
+      const c=d+tm+dw;
+      if(c<dist[edge.to]){dist[edge.to]=c;prev[edge.to]=u;pline[edge.to]=edge.colour;pq.push([c,edge.to])}
+    }
+  }
   if(dist[e]===Infinity)return null;
   const path=[];let cur=e;while(cur){path.unshift({id:cur,ref:pline[cur]||null});cur=prev[cur]}
   return{path,total:dist[e]};
 }
-function startSelecting(mode){selecting=mode;map.getContainer().classList.add('selecting-station');document.getElementById(mode==='origin'?'btn-origin':'btn-dest').classList.add('selecting')}
-function onStationClick(st){
+
+// ── SELECTION ─────────────────────────────────────────────────────────────────
+function startSelecting(mode) {
+  selecting=mode;
+  map.getContainer().classList.add('selecting-station');
+  document.getElementById(mode==='origin'?'btn-origin':'btn-dest').classList.add('selecting');
+  const hint=document.getElementById('select-hint');
+  hint.style.display='block';
+}
+
+function onStationClick(st) {
   if(!selecting)return;
   map.getContainer().classList.remove('selecting-station');
-  if(selecting==='origin'){origin=st;const b=document.getElementById('btn-origin');b.textContent=st.name;b.classList.remove('selecting');b.classList.add('set')}
-  else{dest=st;const b=document.getElementById('btn-dest');b.textContent=st.name;b.classList.remove('selecting');b.classList.add('set')}
-  selecting=null;document.getElementById('find-btn').disabled=!(origin&&dest);highlight();
+  document.getElementById('select-hint').style.display='none';
+  if(selecting==='origin'){
+    origin=st;const b=document.getElementById('btn-origin');
+    b.textContent=st.name;b.classList.remove('selecting');b.classList.add('set');
+  } else {
+    dest=st;const b=document.getElementById('btn-dest');
+    b.textContent=st.name;b.classList.remove('selecting');b.classList.add('set');
+  }
+  selecting=null;
+  document.getElementById('find-btn').disabled=!(origin&&dest);
+  highlight();
 }
-function highlight(){stations.forEach(st=>{if(!st.marker)return;if(st===origin)st.marker.setStyle({fillColor:'#1e8449',color:'#1e8449',fillOpacity:1});else if(st===dest)st.marker.setStyle({fillColor:'#c0392b',color:'#c0392b',fillOpacity:1});else st.marker.setStyle({fillColor:'#1a2545',color:'#1a2545',fillOpacity:1})})}
-function findRoute(){
+
+function highlight() {
+  stations.forEach(st=>{
+    if(!st.marker)return;
+    if(st===origin) st.marker.setStyle({fillColor:'#3daa6e',color:'#3daa6e',fillOpacity:1});
+    else if(st===dest) st.marker.setStyle({fillColor:'#d94f3d',color:'#d94f3d',fillOpacity:1});
+    else st.marker.setStyle({fillColor:'#e8e4da',color:'#e8e4da',fillOpacity:0.9});
+  });
+}
+
+// ── ROUTE ─────────────────────────────────────────────────────────────────────
+function findRoute() {
   if(!origin||!dest)return;
   if(routeLayer){map.removeLayer(routeLayer);routeLayer=null}
   const res=dijkstra(origin.id,dest.id);
   const rd=document.getElementById('results'),rc=document.getElementById('results-content');
-  if(!res){rc.innerHTML='<div class="no-route">Nie znaleziono trasy.<br><small>Sprawdź tagi stacji w JOSM lub zwiększ SNAP_THRESHOLD.</small></div>';rd.style.display='block';return}
+  if(!res){
+    rc.innerHTML='<div class="no-route">BRAK TRASY<br><span style="font-size:9px;color:#4a5568">Sprawdź tagi stacji w JOSM<br>lub zwiększ SNAP w pliku HTML</span></div>';
+    rd.classList.add('show');return;
+  }
   const{path,total}=res;
-  routeLayer=L.polyline(path.map(p=>stations.find(s=>s.id===p.id)?.latlng).filter(Boolean),{color:'#f39c12',weight:6,opacity:.9,lineJoin:'round',lineCap:'round'}).addTo(map);
-  map.fitBounds(routeLayer.getBounds(),{padding:[60,60]});
+  // Animated route line
+  routeLayer=L.polyline(
+    path.map(p=>stations.find(s=>s.id===p.id)?.latlng).filter(Boolean),
+    {color:'#e8a945',weight:5,opacity:.95,lineJoin:'round',lineCap:'round',
+     dashArray:null}
+  ).addTo(map);
+  map.fitBounds(routeLayer.getBounds(),{padding:[80,80]});
+
   let elapsed=0,totalKm=0;
   const items=path.map((p,i)=>{
     const st=stations.find(s=>s.id===p.id),isF=i===0,isL=i===path.length-1;
-    if(!isF){const pr=path[i-1],edge=graph[pr.id]?.find(e=>e.to===p.id);if(edge){elapsed+=(edge.dist*scale/(parseFloat(edge.maxspeed)||160))*60;}}
+    if(!isF){const pr=path[i-1],edge=graph[pr.id]?.find(e=>e.to===p.id);if(edge)elapsed+=(edge.dist*scale/(parseFloat(edge.maxspeed)||160))*60;}
     const dw=st?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN;
-    const h=Math.floor(elapsed/60),m=Math.round(elapsed%60),ts=isF?'Odjazd':'+'+( h>0?h+'godz ':'')+m+' min';
-    return`<li class="stop-item"><div class="stop-dot${isF?' origin':isL?' destination':''}"></div><div><div class="stop-name">${st?.name||p.id}</div><div class="stop-time">${ts}${!isL?' · postój '+dw+' min':''}</div></div></li>`;
+    const h=Math.floor(elapsed/60),m=Math.round(elapsed%60);
+    const ts=isF?'Odjazd':'+'+fmt(elapsed);
+    const trackSeg=!isL?'<div class="stop-line-seg"></div>':'';
+    return`<li class="stop-item">
+      <div class="stop-track">
+        <div class="stop-dot${isF?' origin':isL?' destination':''}"></div>
+        ${trackSeg}
+      </div>
+      <div class="stop-info">
+        <div class="stop-name">${st?.name||p.id}</div>
+        <div class="stop-time">${ts}${!isL?' · '+dw+' min postoju':''}</div>
+      </div>
+    </li>`;
   }).join('');
   for(let i=0;i<path.length-1;i++){const e=graph[path[i].id]?.find(x=>x.to===path[i+1].id);if(e)totalKm+=e.dist*scale}
-  rc.innerHTML=`<div class="result-summary"><div class="result-stat"><div class="val">${fmt(total)}</div><div class="lbl">Czas</div></div><div class="result-stat"><div class="val">${Math.round(totalKm)} km</div><div class="lbl">Dystans</div></div><div class="result-stat"><div class="val">${path.length}</div><div class="lbl">Stacji</div></div></div><ul class="stop-list">${items}</ul>`;
-  rd.style.display='block';
+  rc.innerHTML=`
+    <div class="result-summary">
+      <div class="result-stat"><div class="val">${fmt(total)}</div><div class="lbl">Czas</div></div>
+      <div class="result-stat"><div class="val">${Math.round(totalKm)}</div><div class="lbl">km</div></div>
+      <div class="result-stat"><div class="val">${path.length}</div><div class="lbl">Stacji</div></div>
+    </div>
+    <ul class="stop-list">${items}</ul>`;
+  rd.classList.add('show');
 }
-function clearRoute(){
+
+function clearRoute() {
   origin=null;dest=null;selecting=null;
   if(routeLayer){map.removeLayer(routeLayer);routeLayer=null}
   document.getElementById('btn-origin').textContent='Kliknij stację na mapie…';
   document.getElementById('btn-dest').textContent='Kliknij stację na mapie…';
   ['btn-origin','btn-dest'].forEach(id=>document.getElementById(id).classList.remove('set','selecting'));
-  document.getElementById('find-btn').disabled=true;document.getElementById('results').style.display='none';highlight();
+  document.getElementById('find-btn').disabled=true;
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('select-hint').style.display='none';
+  highlight();
 }
-fetch(GEOJSON_PATH).then(r=>{if(!r.ok)throw new Error();return r.json()}).then(data=>{
-  scale=autoScale(data);document.getElementById('scale-val').textContent='1 jedn. ≈ '+scale.toFixed(1)+' km';
-  buildGraph(data);
-  L.geoJSON(data,{
-    style(f){if(!f.geometry)return{};const t=f.geometry.type;if(t!=='LineString'&&t!=='MultiLineString')return{};return{color:LINE_COLORS[lineRef(f.properties)]||LINE_COLORS.default,weight:3.5,opacity:.95,lineJoin:'round',lineCap:'round'}},
-    pointToLayer(f,ll){const p=f.properties||{};if(p.railway!=='station'&&p.railway!=='halt')return null;const big=p.interchange==='yes'||p.station==='main';return L.circleMarker(ll,{radius:big?9:p.railway==='halt'?4:6,color:'#1a2545',weight:big?3:2,fillColor:'#1a2545',fillOpacity:1})},
-    onEachFeature(f,layer){
-      const p=f.properties||{};
-      if(p.railway==='station'||p.railway==='halt'){
-        if(p.name)layer.bindTooltip(p.name,{permanent:true,direction:'right',offset:[8,0]});
-        const st=stations.find(s=>s.id===(p.name||''));if(st)st.marker=layer;
-        layer.on('click',()=>{if(selecting&&st)onStationClick(st)});
-        layer.on('mouseover',function(){if(selecting)this.setStyle({fillColor:'#f39c12',color:'#f39c12'})});
-        layer.on('mouseout',function(){if(st!==origin&&st!==dest)this.setStyle({fillColor:'#1a2545',color:'#1a2545'})});
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+fetch(GEOJSON_PATH)
+  .then(r=>{if(!r.ok)throw new Error();return r.json()})
+  .then(data=>{
+    scale=autoScale(data);
+    document.getElementById('scale-val').textContent=scale.toFixed(1);
+    buildGraph(data);
+
+    L.geoJSON(data,{
+      style(f){
+        if(!f.geometry)return{};
+        const t=f.geometry.type;
+        if(t!=='LineString'&&t!=='MultiLineString')return{};
+        return{color:LINE_COLORS[lineRef(f.properties)]||LINE_COLORS.default,weight:3,opacity:.9,lineJoin:'round',lineCap:'round'};
+      },
+      pointToLayer(f,ll){
+        const p=f.properties||{};
+        if(p.railway!=='station'&&p.railway!=='halt')return null;
+        const big=p.interchange==='yes'||p.station==='main';
+        return L.circleMarker(ll,{
+          radius:big?8:p.railway==='halt'?3:5,
+          color:'#e8e4da',weight:big?2.5:1.5,
+          fillColor:'#e8e4da',fillOpacity:0.9,
+        });
+      },
+      onEachFeature(f,layer){
+        const p=f.properties||{};
+        if(p.railway==='station'||p.railway==='halt'){
+          if(p.name) layer.bindTooltip(p.name,{permanent:false,direction:'right',offset:[10,0]});
+          const st=stations.find(s=>s.id===(p.name||''));if(st)st.marker=layer;
+          layer.on('click',()=>{if(selecting&&st)onStationClick(st)});
+          layer.on('mouseover',function(){if(selecting)this.setStyle({fillColor:'#e8a945',color:'#e8a945'})});
+          layer.on('mouseout',function(){if(st!==origin&&st!==dest)this.setStyle({fillColor:'#e8e4da',color:'#e8e4da'})});
+        }
+        const t=f.geometry?.type;
+        if(t==='LineString'||t==='MultiLineString'){
+          layer.on('mouseover',()=>layer.setStyle({weight:5,opacity:1}));
+          layer.on('mouseout', ()=>layer.setStyle({weight:3,opacity:.9}));
+        }
       }
-      const t=f.geometry?.type;
-      if(t==='LineString'||t==='MultiLineString'){layer.on('mouseover',()=>layer.setStyle({weight:6,opacity:1}));layer.on('mouseout',()=>layer.setStyle({weight:3.5,opacity:.95}))}
-    }
-  }).addTo(map);
-  const b=L.geoJSON(data).getBounds();if(b.isValid())map.fitBounds(b,{padding:[40,40]});
-}).catch(()=>{document.getElementById('map').innerHTML+='<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#555;font-family:Barlow,sans-serif"><div style="font-size:48px;margin-bottom:12px">🗺️</div><div style="font-size:18px;font-weight:600">Nie znaleziono pliku railway.geojson</div><div style="font-size:13px;margin-top:6px;color:#999">Umieść plik GeoJSON obok tego pliku HTML i nazwij go <code>railway.geojson</code></div></div>'});
+    }).addTo(map);
+
+    const b=L.geoJSON(data).getBounds();
+    if(b.isValid())map.fitBounds(b,{padding:[60,60]});
+  })
+  .catch(()=>{
+    document.getElementById('map').innerHTML+=`
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#5a6a80;font-family:'DM Mono',monospace">
+        <div style="font-size:40px;margin-bottom:16px;opacity:.4">◈</div>
+        <div style="font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#e8a945">Brak danych</div>
+        <div style="font-size:11px;margin-top:8px;letter-spacing:1px;line-height:1.8">
+          Umieść plik <span style="color:#e8e4da">railway.geojson</span><br>
+          w tym samym katalogu co ten plik HTML
+        </div>
+      </div>`;
+  });
 </script>
 </body>
 </html>
