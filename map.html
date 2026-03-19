@@ -458,7 +458,7 @@
   </div>
 </div>
 
-<div id="scale-info">1 jedn. ≈ <span id="scale-val">…</span> km</div>
+<div id="scale-info">Projekcja: <span id="scale-val">…</span></div>
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
@@ -468,17 +468,23 @@ const LINE_COLORS = {
   yellow:'#e8a945', green:'#3daa6e', orange:'#e8783d',
   brown:'#a07850', cyan:'#3daabb', default:'#5a6a80'
 };
-const DWELL_MAIN = 3, DWELL_HALT = 1, TARGET_WIDTH_KM = 500, SNAP = 0.005;
+const DWELL_MAIN = 3, DWELL_HALT = 1, SNAP = 0.005;
 
 // ── MAP ───────────────────────────────────────────────────────────────────────
-const map = L.map('map', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 20 });
+const map = L.map('map', { minZoom: 2, maxZoom: 20 });
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
-let stations=[], graph={}, routeLayer=null, origin=null, dest=null, selecting=null, scale=null;
+let stations=[], graph={}, routeLayer=null, origin=null, dest=null, selecting=null;
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function lineRef(p) { if(!p) return 'default'; return p.colour||'default'; }
-function cdist(a,b) { const dx=a[0]-b[0],dy=a[1]-b[1]; return Math.sqrt(dx*dx+dy*dy); }
+function cdist(a,b) {
+  // Haversine — returns km between two [lng,lat] coords
+  const R=6371, dLat=(b[1]-a[1])*Math.PI/180, dLon=(b[0]-a[0])*Math.PI/180;
+  const la1=a[1]*Math.PI/180, la2=b[1]*Math.PI/180;
+  const s=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)**2;
+  return R*2*Math.asin(Math.sqrt(s));
+}
 function fmt(m) {
   if(m<60) return Math.round(m)+' min';
   const h=Math.floor(m/60),mn=Math.round(m%60);
@@ -490,12 +496,7 @@ function p2seg(p,a,b) {
   const t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/(dx*dx+dy*dy)));
   return cdist(p,[a[0]+t*dx,a[1]+t*dy]);
 }
-function autoScale(d) {
-  let mn=Infinity,mx=-Infinity;
-  function w(c){if(typeof c[0]==='number'){if(c[0]<mn)mn=c[0];if(c[0]>mx)mx=c[0]}else c.forEach(w)}
-  d.features.forEach(f=>{if(f.geometry)w(f.geometry.coordinates)});
-  const s=mx-mn; return s>0?TARGET_WIDTH_KM/s:10;
-}
+// autoScale removed — using Haversine for real distances
 
 // ── GRAPH ─────────────────────────────────────────────────────────────────────
 function buildGraph(d) {
@@ -602,7 +603,7 @@ function dijkstra(s,e) {
     pq.sort((a,b)=>a[0]-b[0]);const[d,u]=pq.shift();
     if(vis.has(u))continue;vis.add(u);if(u===e)break;
     for(const edge of(graph[u]||[])){
-      const spd=parseFloat(edge.maxspeed)||160,tm=(edge.dist*scale/spd)*60;
+      const spd=parseFloat(edge.maxspeed)||160,tm=(edge.dist/spd)*60;
       const dw=stations.find(x=>x.id===edge.to)?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN;
       const c=d+tm+dw;
       if(c<dist[edge.to]){dist[edge.to]=c;prev[edge.to]=u;pline[edge.to]=edge.colour;pq.push([c,edge.to])}
@@ -694,7 +695,7 @@ function findRoute() {
   let elapsed=0,totalKm=0;
   const items=path.map((p,i)=>{
     const st=stations.find(s=>s.id===p.id),isF=i===0,isL=i===path.length-1;
-    if(!isF){const pr=path[i-1],edge=graph[pr.id]?.find(e=>e.to===p.id);if(edge)elapsed+=(edge.dist*scale/(parseFloat(edge.maxspeed)||160))*60;}
+    if(!isF){const pr=path[i-1],edge=graph[pr.id]?.find(e=>e.to===p.id);if(edge)elapsed+=(edge.dist/(parseFloat(edge.maxspeed)||160))*60;}
     const dw=st?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN;
     const h=Math.floor(elapsed/60),m=Math.round(elapsed%60);
     const ts=isF?'Odjazd':'+'+fmt(elapsed);
@@ -710,7 +711,7 @@ function findRoute() {
       </div>
     </li>`;
   }).join('');
-  for(let i=0;i<path.length-1;i++){const e=graph[path[i].id]?.find(x=>x.to===path[i+1].id);if(e)totalKm+=e.dist*scale}
+  for(let i=0;i<path.length-1;i++){const e=graph[path[i].id]?.find(x=>x.to===path[i+1].id);if(e)totalKm+=e.dist;}
   rc.innerHTML=`
     <div class="result-summary">
       <div class="result-stat"><div class="val">${fmt(total)}</div><div class="lbl">Czas</div></div>
@@ -737,8 +738,7 @@ function clearRoute() {
 fetch(GEOJSON_PATH)
   .then(r=>{if(!r.ok)throw new Error();return r.json()})
   .then(data=>{
-    scale=autoScale(data);
-    document.getElementById('scale-val').textContent=scale.toFixed(1);
+    document.getElementById('scale-val').textContent='Mercator · WGS84';
     buildGraph(data);
 
     L.geoJSON(data,{
