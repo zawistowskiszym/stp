@@ -641,9 +641,11 @@ function buildGraph(d) {
   });
 
   // Add or update edge, keeping shortest
-  function addEdge(aid, bid, dist, ms, col, fwdGeom) {
-    const rev = [...fwdGeom].reverse();
-    [[aid, bid, fwdGeom], [bid, aid, rev]].forEach(([from, to, geom]) => {
+  // geom stored as raw [lng,lat] coords (lineCoords format)
+  function addEdge(aid, bid, dist, ms, col, rawGeom) {
+    const fwd = rawGeom;
+    const rev = [...rawGeom].reverse();
+    [[aid, bid, fwd], [bid, aid, rev]].forEach(([from, to, geom]) => {
       const ex = graph[from].findIndex(e => e.to === to);
       const entry = { to, dist, maxspeed: ms, colour: col, geom };
       if (ex === -1) graph[from].push(entry);
@@ -708,7 +710,7 @@ function buildGraph(d) {
         const reachable = findReachable(li, k);
         reachable.forEach(({ sid, dist, geom }) => {
           if (sid === st.id) return;
-          addEdge(st.id, sid, dist, ms, col, geom.map(c => [c[1], c[0]]));
+          addEdge(st.id, sid, dist, ms, col, geom); // geom is raw [lng,lat]
         });
       });
     });
@@ -726,19 +728,19 @@ function buildGraph(d) {
 // stopSet: Set of station IDs that must stop (overrides passThrough)
 // Returns the departure bearing (direction vector) of an edge as [dx, dy]
 function edgeDepartureBearing(edge, fromId) {
-  const g = edge.geom;
+  const g = edge.geom; // raw [lng,lat]
   if (!g || g.length < 2) return null;
-  // Orient geometry so it starts at fromId
   const fromSt = stations.find(s => s.id === fromId);
   if (!fromSt) return null;
-  const fll = fromSt.latlng;
-  const d2s = (g[0][0]-fll[0])**2 + (g[0][1]-fll[1])**2;
-  const d2e = (g[g.length-1][0]-fll[0])**2 + (g[g.length-1][1]-fll[1])**2;
+  const fll = fromSt.latlng; // [lat,lng]
+  // Compare geom endpoints (lng,lat) against station (lat,lng swapped)
+  const d2s = (g[0][0]-fll[1])**2 + (g[0][1]-fll[0])**2;
+  const d2e = (g[g.length-1][0]-fll[1])**2 + (g[g.length-1][1]-fll[0])**2;
   const oriented = d2e < d2s ? [...g].reverse() : g;
-  // Use first meaningful segment for bearing
+  // Use first meaningful segment for bearing (lng as x, lat as y)
   for (let i = 0; i < oriented.length - 1; i++) {
-    const dx = oriented[i+1][1] - oriented[i][1];
-    const dy = oriented[i+1][0] - oriented[i][0];
+    const dx = oriented[i+1][0] - oriented[i][0]; // lng delta
+    const dy = oriented[i+1][1] - oriented[i][1]; // lat delta
     if (Math.abs(dx) + Math.abs(dy) > 1e-10) return [dx, dy];
   }
   return null;
@@ -882,23 +884,36 @@ function highlight() {
 
 // ── ROUTE ─────────────────────────────────────────────────────────────────────
 function stitchGeom(path) {
-  // edge.geom is stored in from→to direction by addEdge, so we can trust it directly.
-  // Just concatenate, deduplicating the shared junction node between segments.
-  const pts = [];
+  const routeLatLngs = [];
   for (let i = 0; i < path.length - 1; i++) {
+    const fromSt = stations.find(s => s.id === path[i].id);
     const edge = graph[path[i].id]?.find(e => e.to === path[i+1].id);
     if (!edge?.geom || edge.geom.length < 2) {
-      // Fallback: straight line between stations
-      const fromSt = stations.find(s => s.id === path[i].id);
-      if (fromSt && pts.length === 0) pts.push(fromSt.latlng);
+      if (fromSt) routeLatLngs.push(fromSt.latlng);
       continue;
     }
+    // geom is raw [lng,lat] — orient so first point is near fromSt [lat,lng]
     const g = edge.geom;
-    // Skip first point if it's a duplicate of the last pushed point
-    const start = pts.length > 0 ? 1 : 0;
-    for (let k = start; k < g.length; k++) pts.push(g[k]);
+    const fromLL = fromSt?.latlng; // [lat,lng]
+    let oriented = g;
+    if (fromLL) {
+      const d2s = (g[0][0]-fromLL[1])**2 + (g[0][1]-fromLL[0])**2;
+      const d2e = (g[g.length-1][0]-fromLL[1])**2 + (g[g.length-1][1]-fromLL[0])**2;
+      if (d2e < d2s) oriented = [...g].reverse();
+    }
+    // Convert raw [lng,lat] → Leaflet [lat,lng]
+    const leaflet = oriented.map(c => [c[1], c[0]]);
+    const skip = routeLatLngs.length > 0 ? 1 : 0;
+    routeLatLngs.push(...leaflet.slice(skip));
   }
-  return pts;
+  // Add final destination
+  const lastSt = stations.find(s => s.id === path[path.length-1].id);
+  if (lastSt && routeLatLngs.length > 0) {
+    const last = routeLatLngs[routeLatLngs.length-1];
+    if ((last[0]-lastSt.latlng[0])**2 + (last[1]-lastSt.latlng[1])**2 > 1e-12)
+      routeLatLngs.push(lastSt.latlng);
+  }
+  return routeLatLngs;
 }
 
 function togglePassThrough(stId) {
