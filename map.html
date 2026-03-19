@@ -490,6 +490,36 @@
 
 <div id="scale-info">Skala: <span id="scale-val">…</span></div>
 
+<!-- Train details panel -->
+<div class="panel" id="train-panel" style="position:absolute;bottom:20px;left:20px;width:270px;z-index:900;">
+  <div class="panel-header" style="cursor:pointer;user-select:none" onclick="toggleTrainPanel()">
+    <div class="panel-title" style="justify-content:space-between;display:flex">
+      <span style="display:flex;align-items:center;gap:8px">
+        <span style="width:3px;height:12px;background:var(--amber);border-radius:1px;flex-shrink:0;display:inline-block"></span>
+        Parametry Pociągu
+      </span>
+      <span id="train-panel-arrow" style="font-size:10px;color:var(--amber)">▲</span>
+    </div>
+  </div>
+  <div class="panel-body" id="train-panel-body">
+    <div style="margin-bottom:12px">
+      <div class="field-label" style="margin-bottom:6px">Kategoria pociągu</div>
+      <div id="category-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
+    </div>
+    <div style="margin-bottom:12px">
+      <div class="field-label" style="margin-bottom:6px">Prędkość maks. (km/h)</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="range" id="speed-slider" min="60" max="350" step="10" value="160"
+          style="flex:1;accent-color:var(--amber);cursor:pointer"
+          oninput="onSpeedChange(this.value)">
+        <span id="speed-display" style="font-family:'DM Mono',monospace;font-size:13px;color:var(--amber);width:52px;text-align:right;flex-shrink:0">160 km/h</span>
+      </div>
+    </div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-faint);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Domyślne zatrzymania</div>
+    <div id="stop-rule-desc" style="font-size:11px;color:var(--text-dim);line-height:1.6;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:2px"></div>
+  </div>
+</div>
+
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const GEOJSON_PATH = 'railway.geojson';
@@ -676,6 +706,7 @@ function buildGraph(d) {
   const isolated = stations.filter(s => !graph[s.id] || graph[s.id].length === 0);
   if (isolated.length) console.warn('Still isolated:', isolated.map(s => s.name));
   else console.log('All stations connected!');
+  initTrainPanel();
 }
 
 // ── DIJKSTRA ──────────────────────────────────────────────────────────────────
@@ -690,13 +721,15 @@ function dijkstra(s, e, passThroughSet=new Set()) {
     pq.sort((a,b)=>a[0]-b[0]);const[d,u]=pq.shift();
     if(vis.has(u))continue;vis.add(u);if(u===e)break;
     for(const edge of(graph[u]||[])){
-      const spd=parseFloat(edge.maxspeed)||160;
-      const tm=segmentTime(edge.dist, spd, !passThroughSet.has(edge.to));
+      const spd=Math.min(parseFloat(edge.maxspeed)||160, trainMaxSpeed);
       const toSt=stations.find(x=>x.id===edge.to);
-      let dw;
-      if(edge.to===e || edge.to===s) dw=0; // no dwell at endpoints
-      else if(passThroughSet.has(edge.to)) dw=PASS_THROUGH_DWELL;
-      else dw=toSt?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN;
+      const stops=edge.to!==e&&edge.to!==s?shouldStop(toSt):true;
+      const tm=segmentTime(edge.dist, spd, stops);
+      let dw=0;
+      if(edge.to!==e&&edge.to!==s){
+        if(!stops) dw=PASS_THROUGH_DWELL;
+        else dw=toSt?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN;
+      }
       const c=d+tm+dw;
       if(c<dist[edge.to]){dist[edge.to]=c;prev[edge.to]=u;pline[edge.to]=edge.colour;pq.push([c,edge.to])}
     }
@@ -813,9 +846,15 @@ function stitchGeom(path) {
 }
 
 function togglePassThrough(stId) {
-  if(passThroughSet.has(stId)) passThroughSet.delete(stId);
-  else passThroughSet.add(stId);
-  findRoute(); // re-run with updated stop set
+  const st = stations.find(s => s.id === stId);
+  const defaultStop = shouldStop(st);
+  // Cycle: default → forced opposite → back to default
+  if (manualOverrides[stId] === undefined) {
+    manualOverrides[stId] = !defaultStop; // force opposite of default
+  } else {
+    delete manualOverrides[stId]; // back to default
+  }
+  findRoute();
 }
 
 function findRoute() {
@@ -842,11 +881,11 @@ function findRoute() {
   const items=path.map((p,i)=>{
     const st=stations.find(s=>s.id===p.id);
     const isF=i===0,isL=i===path.length-1;
-    const isPT=passThroughSet.has(p.id)&&!isF&&!isL;
+    const isPT=!isF&&!isL&&!shouldStop(st);
     if(!isF){
       const pr=path[i-1],edge=graph[pr.id]?.find(e=>e.to===p.id);
       if(edge){
-        const spd=parseFloat(edge.maxspeed)||160;
+        const spd=Math.min(parseFloat(edge.maxspeed)||160, trainMaxSpeed);
         elapsed+=segmentTime(edge.dist,spd,!isPT);
         if(!isL&&!isPT) elapsed+=(st?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN);
       }
@@ -855,7 +894,8 @@ function findRoute() {
     const dwLabel=isPT?'przejazd bez zatrzymania':(isF||isL)?'':`postój ${st?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN} min`;
     const trackSeg=!isL?'<div class="stop-line-seg"></div>':'';
     const dotClass=isF?' origin':isL?' destination':'';
-    const toggleBtn=(!isF&&!isL)?`<button class="stop-toggle-btn ${isPT?'passing':'stopping'}" onclick="togglePassThrough('${p.id}')">${isPT?'Przejeżdża':'Zatrzymuje'}</button>`:'';
+    const isOverride=manualOverrides[p.id]!==undefined;
+    const toggleBtn=(!isF&&!isL)?`<button class="stop-toggle-btn ${isPT?'passing':'stopping'}" onclick="togglePassThrough('${p.id}')" title="${isOverride?'Kliknij aby przywrócić domyślne':'Kliknij aby zmienić'}" style="${isOverride?'outline:1px solid var(--amber)':''}">${isPT?'Przejeżdża':'Zatrzymuje'}${isOverride?' *':''}</button>`:'';
     return`<li class="stop-item${isPT?' passing-through':''}">
       <div class="stop-track">
         <div class="stop-dot${dotClass}"></div>${trackSeg}
@@ -895,6 +935,114 @@ function clearRoute() {
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
+// ── TRAIN PARAMETERS ─────────────────────────────────────────────────────────
+const TRAIN_CATEGORIES = [
+  {
+    id: 'os',   label: 'Os',   name: 'Osobowy',
+    speed: 80,  color: '#4a8fd4',
+    desc: 'Zatrzymuje się na wszystkich stacjach i przystankach.',
+    stops: (st) => true  // stops everywhere
+  },
+  {
+    id: 'rj',   label: 'Rj',   name: 'Regionalny',
+    speed: 120, color: '#3daa6e',
+    desc: 'Zatrzymuje się na stacjach głównych i wybranych przystankach.',
+    stops: (st) => st.props.railway === 'station' || st.props.interchange === 'yes'
+  },
+  {
+    id: 'irj',  label: 'IRj',  name: 'InterRegionalny',
+    speed: 160, color: '#9b72cf',
+    desc: 'Zatrzymuje się wyłącznie na stacjach głównych.',
+    stops: (st) => st.props.railway === 'station'
+  },
+  {
+    id: 'ic',   label: 'IC',   name: 'InterCity',
+    speed: 200, color: '#e8a945',
+    desc: 'Zatrzymuje się tylko na stacjach węzłowych i głównych.',
+    stops: (st) => st.props.railway === 'station' && (st.props.station === 'main' || st.props.interchange === 'yes')
+  },
+  {
+    id: 'ex',   label: 'Ex',   name: 'Express',
+    speed: 250, color: '#d94f3d',
+    desc: 'Zatrzymuje się tylko na największych stacjach (station=main).',
+    stops: (st) => st.props.station === 'main'
+  },
+  {
+    id: 'kdp',  label: 'KDP',  name: 'Kolej Dużej Prędkości',
+    speed: 350, color: '#e8783d',
+    desc: 'Tylko stacje KDP — stacje main z interchange.',
+    stops: (st) => st.props.station === 'main' && st.props.interchange === 'yes'
+  },
+];
+
+let trainCategory = TRAIN_CATEGORIES[2]; // default: IRj
+let trainMaxSpeed = trainCategory.speed;
+// manualOverrides: stationId → true (force stop) | false (force pass)
+let manualOverrides = {};
+
+function initTrainPanel() {
+  const grid = document.getElementById('category-grid');
+  TRAIN_CATEGORIES.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.id = `cat-btn-${cat.id}`;
+    btn.textContent = `${cat.label} · ${cat.name}`;
+    btn.style.cssText = `padding:7px 8px;border-radius:2px;border:1px solid var(--border);
+      background:var(--bg);color:var(--text-dim);font-family:'DM Mono',monospace;
+      font-size:9px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;
+      transition:all .2s;text-align:left;`;
+    btn.onclick = () => selectCategory(cat.id);
+    grid.appendChild(btn);
+  });
+  selectCategory(trainCategory.id);
+}
+
+function selectCategory(id) {
+  trainCategory = TRAIN_CATEGORIES.find(c => c.id === id);
+  trainMaxSpeed = trainCategory.speed;
+  document.getElementById('speed-slider').value = trainMaxSpeed;
+  document.getElementById('speed-display').textContent = trainMaxSpeed + ' km/h';
+  document.getElementById('stop-rule-desc').textContent = trainCategory.desc;
+  // Update button styles
+  TRAIN_CATEGORIES.forEach(cat => {
+    const btn = document.getElementById(`cat-btn-${cat.id}`);
+    if (!btn) return;
+    if (cat.id === id) {
+      btn.style.borderColor = cat.color;
+      btn.style.color = cat.color;
+      btn.style.background = cat.color + '18';
+    } else {
+      btn.style.borderColor = 'var(--border)';
+      btn.style.color = 'var(--text-dim)';
+      btn.style.background = 'var(--bg)';
+    }
+  });
+  // Reset manual overrides when category changes, re-run route if active
+  manualOverrides = {};
+  if (origin && dest) findRoute();
+}
+
+function onSpeedChange(val) {
+  trainMaxSpeed = parseInt(val);
+  document.getElementById('speed-display').textContent = trainMaxSpeed + ' km/h';
+  if (origin && dest) findRoute();
+}
+
+function toggleTrainPanel() {
+  const body = document.getElementById('train-panel-body');
+  const arrow = document.getElementById('train-panel-arrow');
+  const hidden = body.style.display === 'none';
+  body.style.display = hidden ? '' : 'none';
+  arrow.textContent = hidden ? '▲' : '▼';
+}
+
+// Determine if a station should be passed through based on category + manual overrides
+function shouldStop(st) {
+  if (!st) return true;
+  if (manualOverrides[st.id] === true)  return true;
+  if (manualOverrides[st.id] === false) return false;
+  return trainCategory.stops(st);
+}
+
 fetch(GEOJSON_PATH)
   .then(r=>{if(!r.ok)throw new Error();return r.json()})
   .then(data=>{
