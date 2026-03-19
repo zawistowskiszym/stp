@@ -793,26 +793,23 @@ function highlight() {
 
 // ── ROUTE ─────────────────────────────────────────────────────────────────────
 function stitchGeom(path) {
-  const routeLatLngs=[];
-  for(let i=0;i<path.length-1;i++){
-    const fromSt=stations.find(s=>s.id===path[i].id);
-    const edge=graph[path[i].id]?.find(e=>e.to===path[i+1].id);
-    if(edge?.geom&&edge.geom.length>=2){
-      const g=edge.geom;
-      const fromLL=fromSt?.latlng||g[0];
-      const d2s=(g[0][0]-fromLL[0])**2+(g[0][1]-fromLL[1])**2;
-      const d2e=(g[g.length-1][0]-fromLL[0])**2+(g[g.length-1][1]-fromLL[1])**2;
-      const geom=d2e<d2s?[...g].reverse():g;
-      routeLatLngs.push(...geom.slice(routeLatLngs.length>0?1:0));
-    } else if(fromSt) routeLatLngs.push(fromSt.latlng);
+  // edge.geom is stored in from→to direction by addEdge, so we can trust it directly.
+  // Just concatenate, deduplicating the shared junction node between segments.
+  const pts = [];
+  for (let i = 0; i < path.length - 1; i++) {
+    const edge = graph[path[i].id]?.find(e => e.to === path[i+1].id);
+    if (!edge?.geom || edge.geom.length < 2) {
+      // Fallback: straight line between stations
+      const fromSt = stations.find(s => s.id === path[i].id);
+      if (fromSt && pts.length === 0) pts.push(fromSt.latlng);
+      continue;
+    }
+    const g = edge.geom;
+    // Skip first point if it's a duplicate of the last pushed point
+    const start = pts.length > 0 ? 1 : 0;
+    for (let k = start; k < g.length; k++) pts.push(g[k]);
   }
-  const lastSt=stations.find(s=>s.id===path[path.length-1].id);
-  if(lastSt&&routeLatLngs.length>0){
-    const last=routeLatLngs[routeLatLngs.length-1];
-    if((last[0]-lastSt.latlng[0])**2+(last[1]-lastSt.latlng[1])**2>1e-12)
-      routeLatLngs.push(lastSt.latlng);
-  }
-  return routeLatLngs;
+  return pts;
 }
 
 function togglePassThrough(stId) {
