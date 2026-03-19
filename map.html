@@ -1044,6 +1044,17 @@ const TRAIN_CATEGORIES = [
     desc: 'Szybka Kolej Skuszawyjicka — sieć podmiejska aglomeracji Skuszawyjic. Wszystkie przystanki.',
     stops: (st) => true
   },
+  {
+    id: 'aero', label: 'AERO', name: 'Aero',
+    speed: 160, color: '#5b9bd5',
+    desc: 'Pociągi lotniskowe. Zatrzymują się tylko na stacjach oznaczonych jako port lotniczy (aeroway=terminal lub name zawiera "Lotnisko"/"Port Lotniczy"/"Airport").',
+    stops: (st) => {
+      const p = st.props;
+      return p.aeroway === 'terminal' || p.station === 'airport' ||
+        /lotnisko|port lotniczy|airport/i.test(p.name || '') ||
+        p.railway === 'station' && (p.station === 'main' || p.interchange === 'yes');
+    }
+  },
 ];
 
 let trainCategory = TRAIN_CATEGORIES[3]; // default: IC
