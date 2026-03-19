@@ -518,8 +518,11 @@ function buildGraph(d) {
       const fr=snapped[i].st,to=snapped[i+1].st;
       let dist=0;for(let j=snapped[i].si;j<snapped[i+1].si&&j<coords.length-1;j++)dist+=cdist(coords[j],coords[j+1]);
       const ms=line.properties?.maxspeed||null,col=lineRef(line.properties);
-      graph[fr.id].push({to:to.id,dist,maxspeed:ms,colour:col});
-      graph[to.id].push({to:fr.id,dist,maxspeed:ms,colour:col});
+      const segCoords=coords.slice(snapped[i].si,snapped[i+1].si+1);
+      const fwd=segCoords.map(c=>[c[1],c[0]]);
+      const rev=[...fwd].reverse();
+      graph[fr.id].push({to:to.id,dist,maxspeed:ms,colour:col,geom:fwd});
+      graph[to.id].push({to:fr.id,dist,maxspeed:ms,colour:col,geom:rev});
     }
   });
 }
@@ -590,10 +593,18 @@ function findRoute() {
   }
   const{path,total}=res;
   // Animated route line
-  routeLayer=L.polyline(
-    path.map(p=>stations.find(s=>s.id===p.id)?.latlng).filter(Boolean),
-    {color:'#e8a945',weight:5,opacity:.95,lineJoin:'round',lineCap:'round',
-     dashArray:null}
+  // Stitch actual rail geometry for each edge in the path
+  const routeLatLngs=[];
+  for(let i=0;i<path.length-1;i++){
+    const edge=graph[path[i].id]?.find(e=>e.to===path[i+1].id);
+    if(edge?.geom) routeLatLngs.push(...edge.geom);
+    else{const st=stations.find(s=>s.id===path[i].id);if(st)routeLatLngs.push(st.latlng);}
+  }
+  // Add final destination
+  const lastSt=stations.find(s=>s.id===path[path.length-1].id);
+  if(lastSt)routeLatLngs.push(lastSt.latlng);
+  routeLayer=L.polyline(routeLatLngs,
+    {color:'#e8a945',weight:5,opacity:.95,lineJoin:'round',lineCap:'round'}
   ).addTo(map);
   map.fitBounds(routeLayer.getBounds(),{padding:[80,80]});
 
