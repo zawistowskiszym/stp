@@ -4,468 +4,182 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mapa Kolejowa — Koleje Królewskie</title>
-
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --red:    #c0392b;
-      --blue:   #2471a3;
-      --navy:   #1a2545;
-      --gold:   #d4ac0d;
-      --gray:   #7f8c8d;
-      --bg:     #f5f0e8;
-      --panel:  #ffffffee;
-      --border: #d0c8b8;
-      --text:   #1a1a1a;
-    }
-
-    html, body {
-      height: 100%;
-      font-family: 'Barlow', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    /* ── Header ── */
-    #header {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 0 20px;
-      height: 56px;
-      background: var(--navy);
-      border-bottom: 3px solid var(--red);
-      box-shadow: 0 2px 12px #0004;
-    }
-
-    #header .logo {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 22px;
-      letter-spacing: 2px;
-      color: #fff;
-      line-height: 1;
-    }
-
-    #header .logo span {
-      color: var(--red);
-    }
-
-    #header .subtitle {
-      font-size: 11px;
-      color: #aab;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      border-left: 1px solid #ffffff30;
-      padding-left: 16px;
-    }
-
-    #header .badge {
-      margin-left: auto;
-      font-size: 10px;
-      background: var(--red);
-      color: #fff;
-      padding: 3px 10px;
-      border-radius: 2px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-
-    /* ── Map ── */
-    #map {
-      position: fixed;
-      top: 56px; bottom: 0; left: 0; right: 0;
-      background: var(--bg);
-    }
-
-    /* ── Legend ── */
-    #legend {
-      position: absolute;
-      bottom: 24px;
-      left: 16px;
-      z-index: 900;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 14px 18px;
-      min-width: 200px;
-      box-shadow: 0 4px 20px #0002;
-    }
-
-    #legend h3 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 15px;
-      letter-spacing: 2px;
-      color: var(--navy);
-      margin-bottom: 10px;
-      border-bottom: 2px solid var(--red);
-      padding-bottom: 6px;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 7px;
-      font-size: 12px;
-    }
-
-    .legend-line {
-      width: 28px;
-      height: 4px;
-      border-radius: 2px;
-      flex-shrink: 0;
-    }
-
-    .legend-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      border: 2px solid var(--navy);
-      flex-shrink: 0;
-    }
-
-    .legend-interchange {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      border: 3px solid var(--navy);
-      flex-shrink: 0;
-    }
-
-    /* ── Info panel ── */
-    #info-panel {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      z-index: 900;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 16px 20px;
-      min-width: 220px;
-      max-width: 280px;
-      box-shadow: 0 4px 20px #0002;
-      display: none;
-    }
-
-    #info-panel h4 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px;
-      letter-spacing: 1.5px;
-      color: var(--navy);
-      margin-bottom: 4px;
-    }
-
-    #info-panel .info-type {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: var(--gray);
-      margin-bottom: 10px;
-    }
-
-    #info-panel .info-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      padding: 4px 0;
-      border-bottom: 1px solid var(--border);
-    }
-
-    #info-panel .info-row:last-child { border-bottom: none; }
-
-    #info-panel .info-label { color: var(--gray); }
-    #info-panel .info-value { font-weight: 600; color: var(--navy); }
-
-    #info-close {
-      float: right;
-      cursor: pointer;
-      font-size: 16px;
-      color: var(--gray);
-      line-height: 1;
-      margin-top: -2px;
-    }
-
-    #info-close:hover { color: var(--red); }
-
-    /* ── Leaflet overrides ── */
-    .leaflet-container {
-      font-family: 'Barlow', sans-serif;
-      background: var(--bg) !important;
-    }
-
-    .leaflet-control-zoom a {
-      font-family: 'Barlow', sans-serif;
-      font-weight: 600;
-      color: var(--navy);
-      border-color: var(--border) !important;
-    }
-
-    .leaflet-control-zoom a:hover {
-      background: var(--navy);
-      color: #fff;
-    }
-
-    .leaflet-popup-content-wrapper {
-      border-radius: 4px;
-      border: 1px solid var(--border);
-      box-shadow: 0 4px 20px #0002;
-      font-family: 'Barlow', sans-serif;
-    }
-
-    .leaflet-popup-content {
-      font-size: 13px;
-      color: var(--text);
-    }
-
-    .popup-name {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 17px;
-      letter-spacing: 1px;
-      color: var(--navy);
-      margin-bottom: 2px;
-    }
-
-    .popup-type {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: var(--gray);
-    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--red:#c0392b;--navy:#1a2545;--gold:#d4ac0d;--green:#1e8449;--gray:#7f8c8d;--bg:#f5f0e8;--panel:#ffffffee;--border:#d0c8b8;--text:#1a1a1a}
+    html,body{height:100%;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text)}
+    #header{position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;gap:16px;padding:0 20px;height:56px;background:var(--navy);border-bottom:3px solid var(--red);box-shadow:0 2px 12px #0004}
+    #header .logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#fff}
+    #header .logo span{color:var(--red)}
+    #header .subtitle{font-size:11px;color:#aab;letter-spacing:1.5px;text-transform:uppercase;border-left:1px solid #ffffff30;padding-left:16px}
+    #header .badge{margin-left:auto;font-size:10px;background:var(--red);color:#fff;padding:3px 10px;border-radius:2px;letter-spacing:1px;text-transform:uppercase;font-weight:600}
+    #map{position:fixed;top:56px;bottom:0;left:0;right:0;background:var(--bg)}
+    #planner{position:absolute;top:16px;left:16px;z-index:900;background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:16px 18px;width:260px;box-shadow:0 4px 20px #0002}
+    #planner h3{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--navy);margin-bottom:12px;border-bottom:2px solid var(--red);padding-bottom:6px}
+    .planner-row{margin-bottom:10px}
+    .planner-row label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--gray);display:block;margin-bottom:4px}
+    .station-btn{width:100%;padding:8px 10px;text-align:left;background:#f9f7f3;border:1px solid var(--border);border-radius:3px;font-family:'Barlow',sans-serif;font-size:13px;color:var(--navy);cursor:pointer;transition:background .15s}
+    .station-btn:hover{background:#eee8da}
+    .station-btn.selecting{border-color:var(--gold);background:#fffbe6}
+    .station-btn.origin.set{border-color:var(--green);color:var(--green);font-weight:600}
+    .station-btn.destination.set{border-color:var(--red);color:var(--red);font-weight:600}
+    #find-btn{width:100%;padding:9px;margin-top:4px;background:var(--navy);color:#fff;border:none;border-radius:3px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;cursor:pointer;transition:background .15s}
+    #find-btn:hover{background:var(--red)}
+    #find-btn:disabled{background:var(--gray);cursor:not-allowed}
+    #clear-btn{width:100%;padding:6px;margin-top:6px;background:transparent;color:var(--gray);border:1px solid var(--border);border-radius:3px;font-family:'Barlow',sans-serif;font-size:12px;cursor:pointer;transition:all .15s}
+    #clear-btn:hover{border-color:var(--red);color:var(--red)}
+    #results{position:absolute;bottom:24px;left:16px;z-index:900;background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:16px 18px;width:260px;box-shadow:0 4px 20px #0002;display:none;max-height:55vh;overflow-y:auto}
+    #results h3{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--navy);margin-bottom:10px;border-bottom:2px solid var(--red);padding-bottom:6px}
+    .result-summary{display:flex;gap:10px;margin-bottom:12px}
+    .result-stat{flex:1;background:#f9f7f3;border:1px solid var(--border);border-radius:3px;padding:8px;text-align:center}
+    .result-stat .val{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--navy);line-height:1}
+    .result-stat .lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--gray);margin-top:2px}
+    .stop-list{list-style:none}
+    .stop-item{display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
+    .stop-item:last-child{border-bottom:none}
+    .stop-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--navy);background:#fff;flex-shrink:0;margin-top:2px}
+    .stop-dot.origin{background:var(--green);border-color:var(--green)}
+    .stop-dot.destination{background:var(--red);border-color:var(--red)}
+    .stop-name{font-weight:600;color:var(--navy)}
+    .stop-time{font-size:11px;color:var(--gray);margin-top:1px}
+    .stop-line-tag{margin-left:auto;font-size:9px;padding:2px 6px;border-radius:2px;color:#fff;font-weight:600;flex-shrink:0;align-self:center}
+    .no-route{color:var(--red);font-size:13px;text-align:center;padding:12px 0}
+    #scale-info{position:absolute;bottom:24px;right:16px;z-index:900;background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:8px 14px;font-size:11px;color:var(--gray);box-shadow:0 2px 8px #0001}
+    #scale-info span{color:var(--navy);font-weight:600}
+    .leaflet-container{font-family:'Barlow',sans-serif;background:var(--bg)!important}
+    .leaflet-control-zoom a{font-family:'Barlow',sans-serif;font-weight:600;color:var(--navy);border-color:var(--border)!important}
+    .leaflet-control-zoom a:hover{background:var(--navy);color:#fff}
+    .leaflet-tooltip{font-family:'Barlow',sans-serif;font-size:11px;font-weight:600;color:var(--navy);background:transparent;border:none;box-shadow:none;padding:0;white-space:nowrap}
+    #map.selecting-station{cursor:crosshair!important}
   </style>
 </head>
 <body>
-
 <div id="header">
   <div class="logo">Koleje <span>Królewskie</span></div>
   <div class="subtitle">Mapa Sieci Kolejowej KDP 2025</div>
-  <div class="badge">Sieć Krajowa</div>
+  <div class="badge">Planer Tras</div>
 </div>
-
 <div id="map"></div>
-
-<div id="legend">
-  <h3>Legenda</h3>
-
-  <div class="legend-item">
-    <div class="legend-line" style="background:#c0392b"></div>
-    <span>KDP-1 Linia Północna</span>
+<div id="planner">
+  <h3>Planer Trasy</h3>
+  <div class="planner-row">
+    <label>📍 Stacja początkowa</label>
+    <button class="station-btn origin" id="btn-origin" onclick="startSelecting('origin')">Kliknij stację na mapie…</button>
   </div>
-  <div class="legend-item">
-    <div class="legend-line" style="background:#2471a3"></div>
-    <span>KDP-2 Linia Wschodnia</span>
+  <div class="planner-row">
+    <label>🏁 Stacja docelowa</label>
+    <button class="station-btn destination" id="btn-dest" onclick="startSelecting('destination')">Kliknij stację na mapie…</button>
   </div>
-  <div class="legend-item">
-    <div class="legend-line" style="background:#6c3483"></div>
-    <span>KDP-3 Linia Centralna</span>
-  </div>
-  <div class="legend-item">
-    <div class="legend-line" style="background:#d4ac0d"></div>
-    <span>KDP-4 Linia Południowa</span>
-  </div>
-  <div class="legend-item">
-    <div class="legend-line" style="background:#1e8449"></div>
-    <span>Linia Regionalna</span>
-  </div>
-
-  <div style="margin: 10px 0 6px; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--gray)">Stacje</div>
-
-  <div class="legend-item">
-    <div class="legend-interchange"></div>
-    <span>Stacja Węzłowa</span>
-  </div>
-  <div class="legend-item">
-    <div class="legend-dot"></div>
-    <span>Stacja Główna</span>
-  </div>
-  <div class="legend-item">
-    <div style="width:8px;height:8px;border-radius:50%;background:var(--navy);flex-shrink:0"></div>
-    <span>Przystanek</span>
-  </div>
+  <button id="find-btn" onclick="findRoute()" disabled>ZNAJDŹ TRASĘ</button>
+  <button id="clear-btn" onclick="clearRoute()">Wyczyść</button>
 </div>
-
-<div id="info-panel">
-  <span id="info-close" onclick="closeInfo()">✕</span>
-  <div id="info-name" class="popup-name"></div>
-  <div id="info-type" class="info-type"></div>
-  <div id="info-rows"></div>
-</div>
-
+<div id="results"><h3>Wynik</h3><div id="results-content"></div></div>
+<div id="scale-info">Skala: <span id="scale-val">obliczanie…</span></div>
 <script>
-// ── Map init ──────────────────────────────────────────────────────────────────
-const map = L.map('map', {
-  crs: L.CRS.Simple,         // flat projection — perfect for fictional maps
-  minZoom: 0,
-  maxZoom: 30,
-  zoomControl: true,
-});
-
-// ── Load your GeoJSON ─────────────────────────────────────────────────────────
-// Replace 'railway.geojson' with the path to your exported JOSM file.
-// If it's in the same folder as this HTML, just keep the filename.
-const GEOJSON_PATH = 'railway.geojson';
-
-// ── Line colour mapping ───────────────────────────────────────────────────────
-// Edit these to match the `name` or `ref` tags you set in JOSM.
-const LINE_COLORS = {
-  'KDP-1': '#c0392b',
-  'KDP-2': '#2471a3',
-  'KDP-3': '#6c3483',
-  'KDP-4': '#d4ac0d',
-  'regional': '#1e8449',
-  'default': '#555555',
-};
-
-function getLineColor(props) {
-  if (!props) return LINE_COLORS.default;
-  const ref = props.ref || props.name || '';
-  for (const key of Object.keys(LINE_COLORS)) {
-    if (ref.includes(key)) return LINE_COLORS[key];
-  }
-  return LINE_COLORS.default;
-}
-
-// ── Station marker style ──────────────────────────────────────────────────────
-function stationIcon(type) {
-  const sizes = {
-    interchange: { r: 9, stroke: 3 },
-    main:        { r: 6, stroke: 2 },
-    stop:        { r: 4, stroke: 1.5 },
-  };
-  const s = sizes[type] || sizes.stop;
-  return L.circleMarker([0,0], {
-    radius: s.r,
-    color: '#1a2545',
-    weight: s.stroke,
-    fillColor: type === 'interchange' ? '#fff' : '#1a2545',
-    fillOpacity: 1,
-  });
-}
-
-// ── Info panel ────────────────────────────────────────────────────────────────
-function showInfo(props) {
-  const panel = document.getElementById('info-panel');
-  document.getElementById('info-name').textContent = props.name || 'Bez nazwy';
-
-  const typeMap = {
-    station: 'Stacja Kolejowa',
-    halt: 'Przystanek',
-    junction: 'Węzeł',
-    rail: 'Linia KDP',
-  };
-  document.getElementById('info-type').textContent =
-    typeMap[props.railway] || props.railway || '';
-
-  const skip = ['name','railway'];
-  const rows = Object.entries(props)
-    .filter(([k,v]) => !skip.includes(k) && v != null && v !== '')
-    .map(([k,v]) => `
-      <div class="info-row">
-        <span class="info-label">${k}</span>
-        <span class="info-value">${v}</span>
-      </div>`)
-    .join('');
-
-  document.getElementById('info-rows').innerHTML = rows || '<div class="info-row"><span class="info-label">Brak danych</span></div>';
-  panel.style.display = 'block';
-}
-
-function closeInfo() {
-  document.getElementById('info-panel').style.display = 'none';
-}
-
-// ── GeoJSON rendering ─────────────────────────────────────────────────────────
-fetch(GEOJSON_PATH)
-  .then(r => {
-    if (!r.ok) throw new Error('Nie można wczytać pliku GeoJSON');
-    return r.json();
-  })
-  .then(data => {
-    const layer = L.geoJSON(data, {
-
-      // Style lines
-      style(feature) {
-        if (feature.geometry.type !== 'LineString' &&
-            feature.geometry.type !== 'MultiLineString') return {};
-        return {
-          color: getLineColor(feature.properties),
-          weight: 3.5,
-          opacity: 0.95,
-          lineJoin: 'round',
-          lineCap: 'round',
-        };
-      },
-
-      // Style points
-      pointToLayer(feature, latlng) {
-        const p = feature.properties || {};
-        let type = 'stop';
-        if (p.railway === 'station') {
-          type = p.interchange === 'yes' || p.station === 'main'
-            ? 'interchange' : 'main';
-        }
-        const marker = stationIcon(type);
-        marker.setLatLng(latlng);
-        return marker;
-      },
-
-      // Interactions
-      onEachFeature(feature, layer) {
-        const p = feature.properties || {};
-        if (!p.name) return;
-
-        // Tooltip (always visible label for stations)
-        if (p.railway === 'station' || p.railway === 'halt') {
-          layer.bindTooltip(p.name, {
-            permanent: true,
-            direction: 'right',
-            offset: [8, 0],
-            className: '',
-          });
-        }
-
-        // Click → info panel
-        layer.on('click', () => showInfo(p));
-
-        // Hover highlight for lines
-        if (feature.geometry.type === 'LineString' ||
-            feature.geometry.type === 'MultiLineString') {
-          layer.on('mouseover', () => layer.setStyle({ weight: 6, opacity: 1 }));
-          layer.on('mouseout',  () => layer.setStyle({ weight: 3.5, opacity: 0.95 }));
-        }
-      }
-    }).addTo(map);
-
-    // Fit map to data
-    if (layer.getBounds().isValid()) {
-      map.fitBounds(layer.getBounds(), { padding: [40, 40] });
+const GEOJSON_PATH='railway.geojson';
+const LINE_COLORS={red:'#c0392b',blue:'#2471a3',purple:'#6c3483',yellow:'#d4ac0d',green:'#1e8449',orange:'#e67e22',brown:'#7b4f2e',default:'#555555'};
+const DWELL_MAIN=3,DWELL_HALT=1,TARGET_WIDTH_KM=500,SNAP=0.005;
+const map=L.map('map',{crs:L.CRS.Simple,minZoom:-3,maxZoom:10});
+let stations=[],graph={},routeLayer=null,origin=null,dest=null,selecting=null,scale=null;
+function lineRef(p){if(!p)return'default';return p.colour||'default'}
+function cdist(a,b){const dx=a[0]-b[0],dy=a[1]-b[1];return Math.sqrt(dx*dx+dy*dy)}
+function fmt(m){if(m<60)return Math.round(m)+' min';const h=Math.floor(m/60),mn=Math.round(m%60);return mn>0?h+' godz '+mn+' min':h+' godz'}
+function p2seg(p,a,b){const dx=b[0]-a[0],dy=b[1]-a[1];if(!dx&&!dy)return cdist(p,a);const t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/(dx*dx+dy*dy)));return cdist(p,[a[0]+t*dx,a[1]+t*dy])}
+function autoScale(d){let mn=Infinity,mx=-Infinity;function w(c){if(typeof c[0]==='number'){if(c[0]<mn)mn=c[0];if(c[0]>mx)mx=c[0]}else c.forEach(w)}d.features.forEach(f=>{if(f.geometry)w(f.geometry.coordinates)});const s=mx-mn;return s>0?TARGET_WIDTH_KM/s:10}
+function buildGraph(d){
+  const lines=d.features.filter(f=>f.geometry&&(f.geometry.type==='LineString'||f.geometry.type==='MultiLineString'));
+  const pts=d.features.filter(f=>f.geometry&&f.geometry.type==='Point'&&f.properties&&(f.properties.railway==='station'||f.properties.railway==='halt'));
+  pts.forEach((f,i)=>{const[lng,lat]=f.geometry.coordinates,id=f.properties.name||'st_'+i;stations.push({id,name:f.properties.name||id,latlng:[lat,lng],props:f.properties});graph[id]=[]});
+  lines.forEach(line=>{
+    const ref=lineRef(line.properties);
+    let coords=line.geometry.type==='LineString'?line.geometry.coordinates:line.geometry.coordinates.flat();
+    const snapped=[];
+    stations.forEach(st=>{
+      const[slat,slng]=st.latlng;let md=Infinity,mi=-1;
+      for(let i=0;i<coords.length-1;i++){const d=p2seg([slng,slat],coords[i],coords[i+1]);if(d<md){md=d;mi=i}}
+      if(md<SNAP)snapped.push({st,si:mi});
+    });
+    snapped.sort((a,b)=>a.si-b.si);
+    for(let i=0;i<snapped.length-1;i++){
+      const fr=snapped[i].st,to=snapped[i+1].st;
+      let dist=0;for(let j=snapped[i].si;j<snapped[i+1].si&&j<coords.length-1;j++)dist+=cdist(coords[j],coords[j+1]);
+      graph[fr.id].push({to:to.id,dist,maxspeed:line.properties?.maxspeed||null,colour:lineRef(line.properties)});graph[to.id].push({to:fr.id,dist,maxspeed:line.properties?.maxspeed||null,colour:lineRef(line.properties)});
     }
-  })
-  .catch(err => {
-    console.error(err);
-    // Friendly fallback message on map
-    document.getElementById('map').innerHTML += `
-      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-        text-align:center;color:#555;font-family:'Barlow',sans-serif;">
-        <div style="font-size:48px;margin-bottom:12px">🗺️</div>
-        <div style="font-size:18px;font-weight:600">Nie znaleziono pliku railway.geojson</div>
-        <div style="font-size:13px;margin-top:6px;color:#999">
-          Umieść plik GeoJSON wyeksportowany z JOSM obok tego pliku HTML<br>
-          i nazwij go <code>railway.geojson</code>
-        </div>
-      </div>`;
   });
+}
+function dijkstra(s,e){
+  const dist={},prev={},pline={},vis=new Set();
+  Object.keys(graph).forEach(id=>dist[id]=Infinity);dist[s]=0;
+  const pq=[[0,s]];
+  while(pq.length){pq.sort((a,b)=>a[0]-b[0]);const[d,u]=pq.shift();if(vis.has(u))continue;vis.add(u);if(u===e)break;
+    for(const edge of(graph[u]||[])){const spd=parseFloat(edge.maxspeed)||160,tm=(edge.dist*scale/spd)*60,dw=stations.find(x=>x.id===edge.to)?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN,c=d+tm+dw;if(c<dist[edge.to]){dist[edge.to]=c;prev[edge.to]=u;pline[edge.to]=edge.colour;pq.push([c,edge.to])}}}
+  if(dist[e]===Infinity)return null;
+  const path=[];let cur=e;while(cur){path.unshift({id:cur,ref:pline[cur]||null});cur=prev[cur]}
+  return{path,total:dist[e]};
+}
+function startSelecting(mode){selecting=mode;map.getContainer().classList.add('selecting-station');document.getElementById(mode==='origin'?'btn-origin':'btn-dest').classList.add('selecting')}
+function onStationClick(st){
+  if(!selecting)return;
+  map.getContainer().classList.remove('selecting-station');
+  if(selecting==='origin'){origin=st;const b=document.getElementById('btn-origin');b.textContent=st.name;b.classList.remove('selecting');b.classList.add('set')}
+  else{dest=st;const b=document.getElementById('btn-dest');b.textContent=st.name;b.classList.remove('selecting');b.classList.add('set')}
+  selecting=null;document.getElementById('find-btn').disabled=!(origin&&dest);highlight();
+}
+function highlight(){stations.forEach(st=>{if(!st.marker)return;if(st===origin)st.marker.setStyle({fillColor:'#1e8449',color:'#1e8449',fillOpacity:1});else if(st===dest)st.marker.setStyle({fillColor:'#c0392b',color:'#c0392b',fillOpacity:1});else st.marker.setStyle({fillColor:'#1a2545',color:'#1a2545',fillOpacity:1})})}
+function findRoute(){
+  if(!origin||!dest)return;
+  if(routeLayer){map.removeLayer(routeLayer);routeLayer=null}
+  const res=dijkstra(origin.id,dest.id);
+  const rd=document.getElementById('results'),rc=document.getElementById('results-content');
+  if(!res){rc.innerHTML='<div class="no-route">Nie znaleziono trasy.<br><small>Sprawdź tagi stacji w JOSM lub zwiększ SNAP_THRESHOLD.</small></div>';rd.style.display='block';return}
+  const{path,total}=res;
+  routeLayer=L.polyline(path.map(p=>stations.find(s=>s.id===p.id)?.latlng).filter(Boolean),{color:'#f39c12',weight:6,opacity:.9,lineJoin:'round',lineCap:'round'}).addTo(map);
+  map.fitBounds(routeLayer.getBounds(),{padding:[60,60]});
+  let elapsed=0,totalKm=0;
+  const items=path.map((p,i)=>{
+    const st=stations.find(s=>s.id===p.id),isF=i===0,isL=i===path.length-1;
+    if(!isF){const pr=path[i-1],edge=graph[pr.id]?.find(e=>e.to===p.id);if(edge){elapsed+=(edge.dist*scale/(parseFloat(edge.maxspeed)||160))*60;}}
+    const dw=st?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN;
+    const h=Math.floor(elapsed/60),m=Math.round(elapsed%60),ts=isF?'Odjazd':'+'+( h>0?h+'godz ':'')+m+' min';
+    return`<li class="stop-item"><div class="stop-dot${isF?' origin':isL?' destination':''}"></div><div><div class="stop-name">${st?.name||p.id}</div><div class="stop-time">${ts}${!isL?' · postój '+dw+' min':''}</div></div></li>`;
+  }).join('');
+  for(let i=0;i<path.length-1;i++){const e=graph[path[i].id]?.find(x=>x.to===path[i+1].id);if(e)totalKm+=e.dist*scale}
+  rc.innerHTML=`<div class="result-summary"><div class="result-stat"><div class="val">${fmt(total)}</div><div class="lbl">Czas</div></div><div class="result-stat"><div class="val">${Math.round(totalKm)} km</div><div class="lbl">Dystans</div></div><div class="result-stat"><div class="val">${path.length}</div><div class="lbl">Stacji</div></div></div><ul class="stop-list">${items}</ul>`;
+  rd.style.display='block';
+}
+function clearRoute(){
+  origin=null;dest=null;selecting=null;
+  if(routeLayer){map.removeLayer(routeLayer);routeLayer=null}
+  document.getElementById('btn-origin').textContent='Kliknij stację na mapie…';
+  document.getElementById('btn-dest').textContent='Kliknij stację na mapie…';
+  ['btn-origin','btn-dest'].forEach(id=>document.getElementById(id).classList.remove('set','selecting'));
+  document.getElementById('find-btn').disabled=true;document.getElementById('results').style.display='none';highlight();
+}
+fetch(GEOJSON_PATH).then(r=>{if(!r.ok)throw new Error();return r.json()}).then(data=>{
+  scale=autoScale(data);document.getElementById('scale-val').textContent='1 jedn. ≈ '+scale.toFixed(1)+' km';
+  buildGraph(data);
+  L.geoJSON(data,{
+    style(f){if(!f.geometry)return{};const t=f.geometry.type;if(t!=='LineString'&&t!=='MultiLineString')return{};return{color:LINE_COLORS[lineRef(f.properties)]||LINE_COLORS.default,weight:3.5,opacity:.95,lineJoin:'round',lineCap:'round'}},
+    pointToLayer(f,ll){const p=f.properties||{};if(p.railway!=='station'&&p.railway!=='halt')return null;const big=p.interchange==='yes'||p.station==='main';return L.circleMarker(ll,{radius:big?9:p.railway==='halt'?4:6,color:'#1a2545',weight:big?3:2,fillColor:'#1a2545',fillOpacity:1})},
+    onEachFeature(f,layer){
+      const p=f.properties||{};
+      if(p.railway==='station'||p.railway==='halt'){
+        if(p.name)layer.bindTooltip(p.name,{permanent:true,direction:'right',offset:[8,0]});
+        const st=stations.find(s=>s.id===(p.name||''));if(st)st.marker=layer;
+        layer.on('click',()=>{if(selecting&&st)onStationClick(st)});
+        layer.on('mouseover',function(){if(selecting)this.setStyle({fillColor:'#f39c12',color:'#f39c12'})});
+        layer.on('mouseout',function(){if(st!==origin&&st!==dest)this.setStyle({fillColor:'#1a2545',color:'#1a2545'})});
+      }
+      const t=f.geometry?.type;
+      if(t==='LineString'||t==='MultiLineString'){layer.on('mouseover',()=>layer.setStyle({weight:6,opacity:1}));layer.on('mouseout',()=>layer.setStyle({weight:3.5,opacity:.95}))}
+    }
+  }).addTo(map);
+  const b=L.geoJSON(data).getBounds();if(b.isValid())map.fitBounds(b,{padding:[40,40]});
+}).catch(()=>{document.getElementById('map').innerHTML+='<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#555;font-family:Barlow,sans-serif"><div style="font-size:48px;margin-bottom:12px">🗺️</div><div style="font-size:18px;font-weight:600">Nie znaleziono pliku railway.geojson</div><div style="font-size:13px;margin-top:6px;color:#999">Umieść plik GeoJSON obok tego pliku HTML i nazwij go <code>railway.geojson</code></div></div>'});
 </script>
 </body>
 </html>
