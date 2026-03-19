@@ -395,6 +395,31 @@
 
     #map.selecting-station { cursor: crosshair !important; }
 
+    .via-item { display:flex; align-items:center; gap:6px; margin:4px 0; }
+    .via-btn { flex:1; padding:8px 10px; text-align:left; background:var(--bg);
+      border:1px solid var(--border); border-radius:2px; font-family:'DM Sans',sans-serif;
+      font-size:13px; color:var(--text-dim); cursor:pointer; transition:all .2s; }
+    .via-btn:hover { border-color:var(--border2); color:var(--text); }
+    .via-btn.selecting { border-color:var(--amber); color:var(--amber); }
+    .via-btn.set { border-color:#8b6fbf; color:#b99de0; font-weight:500; }
+    .via-remove { width:24px; height:24px; border-radius:2px; background:transparent;
+      border:1px solid var(--border); color:var(--text-faint); cursor:pointer;
+      font-size:14px; line-height:1; transition:all .2s; flex-shrink:0; }
+    .via-remove:hover { border-color:var(--red); color:var(--red); }
+
+    /* Stop/passthrough toggle in results */
+    .stop-toggle { display:flex; align-items:center; gap:6px; margin-top:3px; }
+    .stop-toggle-btn {
+      font-family:'DM Mono',monospace; font-size:9px; letter-spacing:1px;
+      text-transform:uppercase; padding:2px 8px; border-radius:2px; cursor:pointer;
+      border:1px solid var(--border); background:transparent;
+      color:var(--text-faint); transition:all .2s;
+    }
+    .stop-toggle-btn.stopping { border-color:var(--green); color:var(--green); background:#3daa6e15; }
+    .stop-toggle-btn.passing  { border-color:var(--gray);  color:var(--gray);  background:#55555515; }
+    .stop-item.passing-through { opacity:0.55; }
+    .stop-item.passing-through .stop-dot { background:transparent !important; border-style:dashed !important; }
+
     /* Panel slide-in animation */
     .panel { animation: slideIn 0.3s ease; }
     @keyframes slideIn {
@@ -438,6 +463,11 @@
       <div class="field-label"><div class="dot origin"></div>Stacja początkowa</div>
       <button class="station-btn origin" id="btn-origin" onclick="startSelecting('origin')">Kliknij stację na mapie…</button>
     </div>
+
+    <!-- Via waypoints -->
+    <div id="via-list"></div>
+    <button id="add-via-btn" onclick="addVia()" style="width:100%;padding:6px;margin:4px 0;background:transparent;color:var(--text-faint);border:1px dashed var(--border);border-radius:2px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--amber)';this.style.color='var(--amber)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-faint)'">+ Dodaj Via</button>
+
     <div class="connector-line"></div>
     <div class="field-group">
       <div class="field-label"><div class="dot dest"></div>Stacja docelowa</div>
@@ -468,13 +498,44 @@ const LINE_COLORS = {
   yellow:'#e8a945', green:'#3daa6e', orange:'#e8783d',
   brown:'#a07850', cyan:'#3daabb', default:'#5a6a80'
 };
-const DWELL_MAIN = 3, DWELL_HALT = 1, SNAP = 0.005;
+// Time estimation constants
+const SNAP = 0.005;
+const ACCEL_RATE = 0.6;      // km/s² — typical train acceleration
+const DECEL_RATE = 0.7;      // km/s² — typical train braking
+const MIN_STOP_DWELL = 0.5;  // minutes minimum dwell at any stop
+const DWELL_HALT = 1.0;      // minutes dwell at halt
+const DWELL_MAIN = 2.5;      // minutes dwell at main station
+const PASS_THROUGH_DWELL = 0; // minutes for pass-through (no stop)
+
+// Realistic segment time: accounts for acceleration + cruise + deceleration
+function segmentTime(distKm, maxspeedKmh, willStop) {
+  if (distKm <= 0) return 0;
+  const vmax = maxspeedKmh / 3600; // km/s
+  // Distance needed to accelerate to vmax then brake to 0
+  const accelDist = (vmax * vmax) / (2 * ACCEL_RATE);
+  const decelDist = (vmax * vmax) / (2 * DECEL_RATE);
+  const fullDist = accelDist + decelDist;
+  let timeSec;
+  if (distKm >= fullDist) {
+    // Enough distance to reach full speed
+    const cruiseDist = distKm - fullDist;
+    const accelTime = vmax / ACCEL_RATE;
+    const decelTime = vmax / DECEL_RATE;
+    const cruiseTime = cruiseDist / vmax;
+    timeSec = accelTime + cruiseTime + decelTime;
+  } else {
+    // Too short — triangle profile, never reaches max speed
+    const vpeak = Math.sqrt(distKm * 2 * (ACCEL_RATE * DECEL_RATE) / (ACCEL_RATE + DECEL_RATE));
+    timeSec = vpeak / ACCEL_RATE + vpeak / DECEL_RATE;
+  }
+  return timeSec / 60; // return minutes
+}
 
 // ── MAP ───────────────────────────────────────────────────────────────────────
 const map = L.map('map', { minZoom: 3, maxZoom: 20 });
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
-let stations=[], graph={}, routeLayer=null, origin=null, dest=null, selecting=null;
+let stations=[], graph={}, routeLayer=null, origin=null, dest=null, selecting=null, viaStations=[], passThroughSet=new Set();
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function lineRef(p) { if(!p) return 'default'; return p.colour||'default'; }
@@ -618,7 +679,10 @@ function buildGraph(d) {
 }
 
 // ── DIJKSTRA ──────────────────────────────────────────────────────────────────
-function dijkstra(s,e) {
+// viaStations: ordered list of station IDs that must be visited
+// passThroughSet: Set of station IDs that don't stop (dwell=0)
+// stopSet: Set of station IDs that must stop (overrides passThrough)
+function dijkstra(s, e, passThroughSet=new Set()) {
   const dist={},prev={},pline={},vis=new Set();
   Object.keys(graph).forEach(id=>dist[id]=Infinity);dist[s]=0;
   const pq=[[0,s]];
@@ -626,8 +690,13 @@ function dijkstra(s,e) {
     pq.sort((a,b)=>a[0]-b[0]);const[d,u]=pq.shift();
     if(vis.has(u))continue;vis.add(u);if(u===e)break;
     for(const edge of(graph[u]||[])){
-      const spd=parseFloat(edge.maxspeed)||160,tm=(edge.dist/spd)*60;
-      const dw=stations.find(x=>x.id===edge.to)?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN;
+      const spd=parseFloat(edge.maxspeed)||160;
+      const tm=segmentTime(edge.dist, spd, !passThroughSet.has(edge.to));
+      const toSt=stations.find(x=>x.id===edge.to);
+      let dw;
+      if(edge.to===e || edge.to===s) dw=0; // no dwell at endpoints
+      else if(passThroughSet.has(edge.to)) dw=PASS_THROUGH_DWELL;
+      else dw=toSt?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN;
       const c=d+tm+dw;
       if(c<dist[edge.to]){dist[edge.to]=c;prev[edge.to]=u;pline[edge.to]=edge.colour;pq.push([c,edge.to])}
     }
@@ -637,13 +706,27 @@ function dijkstra(s,e) {
   return{path,total:dist[e]};
 }
 
+// Multi-leg dijkstra: route through ordered waypoints
+function dijkstraVia(waypoints, passThroughSet=new Set()) {
+  if(waypoints.length < 2) return null;
+  let fullPath=[], totalTime=0;
+  for(let i=0;i<waypoints.length-1;i++){
+    const res=dijkstra(waypoints[i], waypoints[i+1], passThroughSet);
+    if(!res) return null;
+    totalTime+=res.total;
+    if(i===0) fullPath=[...res.path];
+    else fullPath=[...fullPath, ...res.path.slice(1)]; // skip duplicate junction
+  }
+  return {path:fullPath, total:totalTime};
+}
+
 // ── SELECTION ─────────────────────────────────────────────────────────────────
 function startSelecting(mode) {
   selecting=mode;
   map.getContainer().classList.add('selecting-station');
-  document.getElementById(mode==='origin'?'btn-origin':'btn-dest').classList.add('selecting');
-  const hint=document.getElementById('select-hint');
-  hint.style.display='block';
+  const btnId = mode==='origin'?'btn-origin':mode==='destination'?'btn-dest':`via-btn-${mode.split('_')[1]}`;
+  document.getElementById(btnId)?.classList.add('selecting');
+  document.getElementById('select-hint').style.display='block';
 }
 
 function onStationClick(st) {
@@ -653,13 +736,50 @@ function onStationClick(st) {
   if(selecting==='origin'){
     origin=st;const b=document.getElementById('btn-origin');
     b.textContent=st.name;b.classList.remove('selecting');b.classList.add('set');
-  } else {
+  } else if(selecting==='destination'){
     dest=st;const b=document.getElementById('btn-dest');
     b.textContent=st.name;b.classList.remove('selecting');b.classList.add('set');
+  } else if(selecting.startsWith('via_')){
+    const idx=parseInt(selecting.split('_')[1]);
+    viaStations[idx]=st;
+    const b=document.getElementById(`via-btn-${idx}`);
+    if(b){b.textContent=st.name;b.classList.remove('selecting');b.classList.add('set');}
   }
   selecting=null;
   document.getElementById('find-btn').disabled=!(origin&&dest);
   highlight();
+}
+
+function addVia() {
+  const idx=viaStations.length;
+  viaStations.push(null);
+  const list=document.getElementById('via-list');
+  const item=document.createElement('div');
+  item.className='via-item';
+  item.id=`via-item-${idx}`;
+  item.innerHTML=`
+    <button class="via-btn" id="via-btn-${idx}" onclick="startSelecting('via_${idx}')">Via: kliknij stację…</button>
+    <button class="via-remove" onclick="removeVia(${idx})">×</button>`;
+  list.appendChild(item);
+}
+
+function removeVia(idx) {
+  viaStations.splice(idx,1);
+  renderViaList();
+}
+
+function renderViaList() {
+  const list=document.getElementById('via-list');
+  list.innerHTML='';
+  viaStations.forEach((st,idx)=>{
+    const item=document.createElement('div');
+    item.className='via-item';
+    item.id=`via-item-${idx}`;
+    item.innerHTML=`
+      <button class="via-btn${st?' set':''}" id="via-btn-${idx}" onclick="startSelecting('via_${idx}')">${st?st.name:'Via: kliknij stację…'}</button>
+      <button class="via-remove" onclick="removeVia(${idx})">×</button>`;
+    list.appendChild(item);
+  });
 }
 
 function highlight() {
@@ -672,74 +792,92 @@ function highlight() {
 }
 
 // ── ROUTE ─────────────────────────────────────────────────────────────────────
-function findRoute() {
-  if(!origin||!dest)return;
-  if(routeLayer){map.removeLayer(routeLayer);routeLayer=null}
-  const res=dijkstra(origin.id,dest.id);
-  const rd=document.getElementById('results'),rc=document.getElementById('results-content');
-  if(!res){
-    rc.innerHTML='<div class="no-route">BRAK TRASY<br><span style="font-size:9px;color:#4a5568">Sprawdź tagi stacji w JOSM<br>lub zwiększ SNAP w pliku HTML</span></div>';
-    rd.classList.add('show');return;
-  }
-  const{path,total}=res;
-  // Animated route line
-  // Stitch actual rail geometry for each edge in the path
+function stitchGeom(path) {
   const routeLatLngs=[];
   for(let i=0;i<path.length-1;i++){
     const fromSt=stations.find(s=>s.id===path[i].id);
-    const toSt=stations.find(s=>s.id===path[i+1].id);
     const edge=graph[path[i].id]?.find(e=>e.to===path[i+1].id);
-    if(edge?.geom && edge.geom.length>=2){
-      // Always orient: first point nearest fromSt, last point nearest toSt
+    if(edge?.geom&&edge.geom.length>=2){
       const g=edge.geom;
       const fromLL=fromSt?.latlng||g[0];
-      const d2start=(g[0][0]-fromLL[0])**2+(g[0][1]-fromLL[1])**2;
-      const d2end=(g[g.length-1][0]-fromLL[0])**2+(g[g.length-1][1]-fromLL[1])**2;
-      const geom=d2end<d2start?[...g].reverse():g;
-      // Skip first point if it duplicates the last pushed point
-      const skip=routeLatLngs.length>0?1:0;
-      routeLatLngs.push(...geom.slice(skip));
-    } else if(fromSt){
-      routeLatLngs.push(fromSt.latlng);
-    }
+      const d2s=(g[0][0]-fromLL[0])**2+(g[0][1]-fromLL[1])**2;
+      const d2e=(g[g.length-1][0]-fromLL[0])**2+(g[g.length-1][1]-fromLL[1])**2;
+      const geom=d2e<d2s?[...g].reverse():g;
+      routeLatLngs.push(...geom.slice(routeLatLngs.length>0?1:0));
+    } else if(fromSt) routeLatLngs.push(fromSt.latlng);
   }
-  // Add final destination
   const lastSt=stations.find(s=>s.id===path[path.length-1].id);
   if(lastSt&&routeLatLngs.length>0){
     const last=routeLatLngs[routeLatLngs.length-1];
     if((last[0]-lastSt.latlng[0])**2+(last[1]-lastSt.latlng[1])**2>1e-12)
       routeLatLngs.push(lastSt.latlng);
   }
-  routeLayer=L.polyline(routeLatLngs,
+  return routeLatLngs;
+}
+
+function togglePassThrough(stId) {
+  if(passThroughSet.has(stId)) passThroughSet.delete(stId);
+  else passThroughSet.add(stId);
+  findRoute(); // re-run with updated stop set
+}
+
+function findRoute() {
+  if(!origin||!dest)return;
+  if(routeLayer){map.removeLayer(routeLayer);routeLayer=null}
+
+  // Build ordered waypoints: origin → vias → dest
+  const waypoints=[origin.id, ...viaStations.filter(Boolean).map(s=>s.id), dest.id];
+  const res=dijkstraVia(waypoints, passThroughSet);
+  const rd=document.getElementById('results'),rc=document.getElementById('results-content');
+
+  if(!res){
+    rc.innerHTML='<div class="no-route">BRAK TRASY<br><span style="font-size:9px;color:#4a5568">Sprawdź tagi lub via stacje</span></div>';
+    rd.classList.add('show');return;
+  }
+
+  const{path,total}=res;
+  routeLayer=L.polyline(stitchGeom(path),
     {color:'#e8a945',weight:5,opacity:.95,lineJoin:'round',lineCap:'round'}
   ).addTo(map);
   map.fitBounds(routeLayer.getBounds(),{padding:[80,80]});
 
   let elapsed=0,totalKm=0;
   const items=path.map((p,i)=>{
-    const st=stations.find(s=>s.id===p.id),isF=i===0,isL=i===path.length-1;
-    if(!isF){const pr=path[i-1],edge=graph[pr.id]?.find(e=>e.to===p.id);if(edge)elapsed+=(edge.dist/(parseFloat(edge.maxspeed)||160))*60;}
-    const dw=st?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN;
-    const h=Math.floor(elapsed/60),m=Math.round(elapsed%60);
+    const st=stations.find(s=>s.id===p.id);
+    const isF=i===0,isL=i===path.length-1;
+    const isPT=passThroughSet.has(p.id)&&!isF&&!isL;
+    if(!isF){
+      const pr=path[i-1],edge=graph[pr.id]?.find(e=>e.to===p.id);
+      if(edge){
+        const spd=parseFloat(edge.maxspeed)||160;
+        elapsed+=segmentTime(edge.dist,spd,!isPT);
+        if(!isL&&!isPT) elapsed+=(st?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN);
+      }
+    }
     const ts=isF?'Odjazd':'+'+fmt(elapsed);
+    const dwLabel=isPT?'przejazd bez zatrzymania':(isF||isL)?'':`postój ${st?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN} min`;
     const trackSeg=!isL?'<div class="stop-line-seg"></div>':'';
-    return`<li class="stop-item">
+    const dotClass=isF?' origin':isL?' destination':'';
+    const toggleBtn=(!isF&&!isL)?`<button class="stop-toggle-btn ${isPT?'passing':'stopping'}" onclick="togglePassThrough('${p.id}')">${isPT?'Przejeżdża':'Zatrzymuje'}</button>`:'';
+    return`<li class="stop-item${isPT?' passing-through':''}">
       <div class="stop-track">
-        <div class="stop-dot${isF?' origin':isL?' destination':''}"></div>
-        ${trackSeg}
+        <div class="stop-dot${dotClass}"></div>${trackSeg}
       </div>
       <div class="stop-info">
         <div class="stop-name">${st?.name||p.id}</div>
-        <div class="stop-time">${ts}${!isL?' · '+dw+' min postoju':''}</div>
+        <div class="stop-time">${ts}${dwLabel?' · '+dwLabel:''}</div>
+        ${toggleBtn?`<div class="stop-toggle">${toggleBtn}</div>`:''}
       </div>
     </li>`;
   }).join('');
+
   for(let i=0;i<path.length-1;i++){const e=graph[path[i].id]?.find(x=>x.to===path[i+1].id);if(e)totalKm+=e.dist;}
+  const stopsCount=path.filter((p,i)=>i>0&&i<path.length-1&&!passThroughSet.has(p.id)).length;
   rc.innerHTML=`
     <div class="result-summary">
       <div class="result-stat"><div class="val">${fmt(total)}</div><div class="lbl">Czas</div></div>
       <div class="result-stat"><div class="val">${Math.round(totalKm)}</div><div class="lbl">km</div></div>
-      <div class="result-stat"><div class="val">${path.length}</div><div class="lbl">Stacji</div></div>
+      <div class="result-stat"><div class="val">${stopsCount}</div><div class="lbl">Postojów</div></div>
     </div>
     <ul class="stop-list">${items}</ul>`;
   rd.classList.add('show');
@@ -747,10 +885,12 @@ function findRoute() {
 
 function clearRoute() {
   origin=null;dest=null;selecting=null;
+  viaStations=[];passThroughSet=new Set();
   if(routeLayer){map.removeLayer(routeLayer);routeLayer=null}
   document.getElementById('btn-origin').textContent='Kliknij stację na mapie…';
   document.getElementById('btn-dest').textContent='Kliknij stację na mapie…';
   ['btn-origin','btn-dest'].forEach(id=>document.getElementById(id).classList.remove('set','selecting'));
+  document.getElementById('via-list').innerHTML='';
   document.getElementById('find-btn').disabled=true;
   document.getElementById('results').classList.remove('show');
   document.getElementById('select-hint').style.display='none';
