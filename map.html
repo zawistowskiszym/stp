@@ -512,13 +512,14 @@ function buildGraph(d) {
     graph[id] = [];
   });
 
-  // Build a coord→stationId lookup for O(1) exact matching
-  // Key: "lng_7dp,lat_7dp" — 7 decimal places ~1cm precision, handles JOSM float drift
-  const coordKey = (c) => c[0].toFixed(7) + ',' + c[1].toFixed(7);
+  // Build a coord→stationId lookup
+  // Use rounded integers (6 decimal places = ~11cm) as keys to avoid float string drift
+  const coordKey = (c) => Math.round(c[0]*1e6) + ',' + Math.round(c[1]*1e6);
   const coordToStation = {};
   stations.forEach(st => {
     const [lat, lng] = st.latlng;
-    coordToStation[coordKey([lng, lat])] = st.id;
+    const key = coordKey([lng, lat]);
+    coordToStation[key] = st.id;
   });
 
   lines.forEach(line => {
