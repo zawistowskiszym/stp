@@ -395,6 +395,85 @@
 
     #map.selecting-station { cursor: crosshair !important; }
 
+    /* ── Train metadata fields ── */
+    .meta-row { display:flex; gap:8px; margin-bottom:10px; }
+    .meta-field { flex:1; }
+    .meta-field label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px;
+      text-transform:uppercase; color:var(--text-faint); display:block; margin-bottom:4px; }
+    .meta-input { width:100%; padding:7px 10px; background:var(--bg); border:1px solid var(--border);
+      border-radius:2px; font-family:'DM Mono',monospace; font-size:12px; color:var(--text);
+      outline:none; transition:border-color .2s; }
+    .meta-input:focus { border-color:var(--amber); }
+    .meta-input::placeholder { color:var(--text-faint); }
+
+    /* ── Action buttons row ── */
+    .action-row { display:flex; gap:6px; margin-top:4px; }
+    #save-btn { flex:1; padding:9px; background:var(--amber); color:#0e1117; border:none;
+      border-radius:2px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:2px;
+      text-transform:uppercase; font-weight:500; cursor:pointer; transition:all .2s; }
+    #save-btn:hover { background:#f0b955; }
+    #save-btn:disabled { background:var(--surface2); color:var(--text-faint); cursor:not-allowed; }
+    #export-btn { padding:9px 12px; background:transparent; color:var(--text-dim);
+      border:1px solid var(--border); border-radius:2px; font-family:'DM Mono',monospace;
+      font-size:10px; letter-spacing:1px; cursor:pointer; transition:all .2s; }
+    #export-btn:hover { border-color:var(--amber); color:var(--amber); }
+
+    /* ── Saved trains sidebar ── */
+    #trains-sidebar {
+      position:fixed; top:60px; right:0; width:320px; bottom:0; z-index:800;
+      background:var(--surface); border-left:1px solid var(--border);
+      display:flex; flex-direction:column; transform:translateX(100%);
+      transition:transform .3s cubic-bezier(.4,0,.2,1);
+      box-shadow:-4px 0 30px #00000060;
+    }
+    #trains-sidebar.open { transform:translateX(0); }
+    #sidebar-header { padding:16px 20px; border-bottom:1px solid var(--border);
+      background:var(--surface2); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+    #sidebar-title { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:2.5px;
+      text-transform:uppercase; color:var(--amber); }
+    #sidebar-close { background:transparent; border:none; color:var(--text-dim);
+      cursor:pointer; font-size:18px; line-height:1; padding:2px 6px; transition:color .2s; }
+    #sidebar-close:hover { color:var(--red); }
+    #trains-list { flex:1; overflow-y:auto; padding:12px; }
+    #trains-list::-webkit-scrollbar { width:3px; }
+    #trains-list::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+    .train-card { background:var(--surface2); border:1px solid var(--border);
+      border-radius:3px; padding:12px 14px; margin-bottom:8px; cursor:pointer;
+      transition:all .2s; position:relative; }
+    .train-card:hover { border-color:var(--border2); background:#1e2535ee; }
+    .train-card.active { border-color:var(--amber); }
+    .train-card-header { display:flex; align-items:baseline; gap:8px; margin-bottom:4px; }
+    .train-number { font-family:'DM Mono',monospace; font-size:13px; color:var(--amber); font-weight:500; }
+    .train-name { font-size:12px; color:var(--text-dim); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .train-meta { font-family:'DM Mono',monospace; font-size:10px; color:var(--text-faint);
+      display:flex; gap:10px; margin-top:3px; }
+    .train-route-preview { font-size:11px; color:var(--text-dim); margin-top:5px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .train-card-actions { display:flex; gap:6px; margin-top:8px; }
+    .tc-btn { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:1px;
+      text-transform:uppercase; padding:4px 8px; border-radius:2px; cursor:pointer;
+      border:1px solid var(--border); background:transparent; color:var(--text-dim); transition:all .2s; }
+    .tc-btn:hover { border-color:var(--amber); color:var(--amber); }
+    .tc-btn.del:hover { border-color:var(--red); color:var(--red); }
+    .no-trains { text-align:center; padding:40px 20px; }
+    .no-trains-icon { font-size:32px; opacity:.3; margin-bottom:10px; }
+    .no-trains-text { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1.5px;
+      text-transform:uppercase; color:var(--text-faint); }
+
+    /* ── Sidebar toggle button in header ── */
+    #trains-toggle-btn { margin-left:12px; padding:5px 14px; background:transparent;
+      border:1px solid var(--border2); border-radius:2px; color:var(--text-dim);
+      font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1.5px;
+      text-transform:uppercase; cursor:pointer; transition:all .2s; display:flex; align-items:center; gap:6px; }
+    #trains-toggle-btn:hover { border-color:var(--amber); color:var(--amber); }
+    #trains-toggle-btn .count-badge { background:var(--amber); color:#0e1117;
+      font-size:9px; padding:1px 6px; border-radius:10px; font-weight:700; }
+
+    /* ── Sidebar overlay (mobile) ── */
+    #sidebar-overlay { display:none; position:fixed; inset:0; z-index:799;
+      background:#00000050; }
+    #sidebar-overlay.show { display:block; }
+
     .via-item { display:flex; align-items:center; gap:6px; margin:4px 0; }
     .via-btn { flex:1; padding:8px 10px; text-align:left; background:var(--bg);
       border:1px solid var(--border); border-radius:2px; font-family:'DM Sans',sans-serif;
@@ -446,6 +525,9 @@
       <div class="status-dot"></div>
       System aktywny
     </div>
+    <button id="trains-toggle-btn" onclick="toggleSidebar()">
+      🚆 Rozkład <span class="count-badge" id="trains-count">0</span>
+    </button>
   </div>
 </div>
 
@@ -473,8 +555,35 @@
       <div class="field-label"><div class="dot dest"></div>Stacja docelowa</div>
       <button class="station-btn destination" id="btn-dest" onclick="startSelecting('destination')">Kliknij stację na mapie…</button>
     </div>
+    <!-- Train metadata -->
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+      <div class="meta-row">
+        <div class="meta-field" style="max-width:90px">
+          <label>Nr pociągu</label>
+          <input class="meta-input" id="train-number" placeholder="np. 1234" type="text">
+        </div>
+        <div class="meta-field">
+          <label>Nazwa (opcjonalnie)</label>
+          <input class="meta-input" id="train-name" placeholder='np. "Bałtyk"' type="text">
+        </div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-field" style="max-width:110px">
+          <label>Odjazd</label>
+          <input class="meta-input" id="train-departure" placeholder="HH:MM" type="time">
+        </div>
+        <div class="meta-field">
+          <label>Data</label>
+          <input class="meta-input" id="train-date" type="date">
+        </div>
+      </div>
+    </div>
     <button id="find-btn" onclick="findRoute()" disabled>Znajdź trasę</button>
-    <button id="clear-btn" onclick="clearRoute()">Wyczyść</button>
+    <div class="action-row">
+      <button id="save-btn" onclick="saveRoute()" disabled title="Najpierw wyznacz trasę">Zapisz pociąg</button>
+      <button id="export-btn" onclick="exportAll()" title="Eksportuj wszystkie trasy do JSON">JSON</button>
+    </div>
+    <button id="clear-btn" onclick="clearRoute()" style="width:100%;padding:6px;margin-top:6px;background:transparent;color:var(--text-faint);border:1px solid var(--border);border-radius:2px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-faint)'">Wyczyść</button>
   </div>
 </div>
 
@@ -720,6 +829,7 @@ function buildGraph(d) {
   if (isolated.length) console.warn('Still isolated:', isolated.map(s => s.name));
   else console.log('All stations connected!');
   initTrainPanel();
+  loadSavedTrains();
 }
 
 // ── DIJKSTRA ──────────────────────────────────────────────────────────────────
@@ -1009,6 +1119,9 @@ function findRoute() {
       <div class="result-stat"><div class="val">${stopsCount}</div><div class="lbl">Postojów</div></div>
     </div>
     <ul class="stop-list">${items}</ul>`;
+  // Store result for saving
+  currentRouteResult = { ...res, totalKm };
+  document.getElementById('save-btn').disabled = false;
   rd.classList.add('show');
 }
 
@@ -1021,12 +1134,253 @@ function clearRoute() {
   ['btn-origin','btn-dest'].forEach(id=>document.getElementById(id).classList.remove('set','selecting'));
   document.getElementById('via-list').innerHTML='';
   document.getElementById('find-btn').disabled=true;
+  document.getElementById('save-btn').disabled=true;
   document.getElementById('results').classList.remove('show');
   document.getElementById('select-hint').style.display='none';
+  document.getElementById('train-number').value='';
+  document.getElementById('train-name').value='';
+  document.getElementById('train-departure').value='';
+  document.getElementById('train-date').value='';
+  currentRouteResult=null;
+  activeTrainId=null;
+  highlightActiveCard();
   highlight();
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
+// ── SAVED TRAINS SYSTEM ───────────────────────────────────────────────────────
+const STORAGE_KEY = 'kk_trains_v1';
+let savedTrains = [];
+let activeTrainId = null;
+let currentRouteResult = null; // store last route for saving
+
+function loadSavedTrains() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    savedTrains = raw ? JSON.parse(raw) : [];
+  } catch(e) { savedTrains = []; }
+  renderTrainsList();
+  updateCountBadge();
+}
+
+function persistTrains() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(savedTrains));
+  updateCountBadge();
+}
+
+function updateCountBadge() {
+  const el = document.getElementById('trains-count');
+  if (el) el.textContent = savedTrains.length;
+}
+
+function toggleSidebar() {
+  const sb = document.getElementById('trains-sidebar');
+  const ov = document.getElementById('sidebar-overlay');
+  sb.classList.toggle('open');
+  ov.classList.toggle('show');
+}
+
+function saveRoute() {
+  if (!currentRouteResult || !origin || !dest) return;
+  const number = document.getElementById('train-number').value.trim();
+  const name   = document.getElementById('train-name').value.trim();
+  const dep    = document.getElementById('train-departure').value;
+  const date   = document.getElementById('train-date').value;
+
+  const train = {
+    id: Date.now().toString(),
+    number: number || '—',
+    name: name || '',
+    departure: dep || '',
+    date: date || '',
+    category: trainCategory.id,
+    categoryLabel: trainCategory.label,
+    categoryColor: trainCategory.color,
+    maxspeed: trainMaxSpeed,
+    origin: origin.id,
+    dest: dest.id,
+    via: viaStations.filter(Boolean).map(s => s.id),
+    passThroughList: [...passThroughSet],
+    manualOverrides: {...manualOverrides},
+    path: currentRouteResult.path.map(p => p.id),
+    totalMinutes: Math.round(currentRouteResult.total),
+    totalKm: currentRouteResult.totalKm,
+    savedAt: new Date().toISOString(),
+  };
+
+  // If editing existing train, replace it
+  const exIdx = savedTrains.findIndex(t => t.id === activeTrainId);
+  if (exIdx !== -1) {
+    train.id = activeTrainId;
+    savedTrains[exIdx] = train;
+  } else {
+    savedTrains.unshift(train);
+    activeTrainId = train.id;
+  }
+
+  persistTrains();
+  renderTrainsList();
+  highlightActiveCard();
+
+  // Visual feedback
+  const btn = document.getElementById('save-btn');
+  btn.textContent = 'Zapisano ✓';
+  btn.style.background = 'var(--green)';
+  setTimeout(() => { btn.textContent = 'Zapisz pociąg'; btn.style.background = ''; }, 1500);
+}
+
+function loadTrain(id) {
+  const train = savedTrains.find(t => t.id === id);
+  if (!train) return;
+  activeTrainId = id;
+
+  // Restore metadata fields
+  document.getElementById('train-number').value = train.number === '—' ? '' : train.number;
+  document.getElementById('train-name').value = train.name || '';
+  document.getElementById('train-departure').value = train.departure || '';
+  document.getElementById('train-date').value = train.date || '';
+
+  // Restore train params
+  selectCategory(train.category);
+  trainMaxSpeed = train.maxspeed;
+  document.getElementById('speed-slider').value = trainMaxSpeed;
+  document.getElementById('speed-display').textContent = trainMaxSpeed + ' km/h';
+
+  // Restore stations
+  const originSt = stations.find(s => s.id === train.origin);
+  const destSt   = stations.find(s => s.id === train.dest);
+  if (!originSt || !destSt) { alert('Nie można wczytać trasy — stacje nie istnieją w aktualnym GeoJSON.'); return; }
+
+  origin = originSt;
+  dest   = destSt;
+  document.getElementById('btn-origin').textContent = originSt.name;
+  document.getElementById('btn-origin').classList.add('set');
+  document.getElementById('btn-dest').textContent = destSt.name;
+  document.getElementById('btn-dest').classList.add('set');
+
+  // Restore via
+  viaStations = (train.via || []).map(id => stations.find(s => s.id === id)).filter(Boolean);
+  renderViaList();
+
+  // Restore overrides
+  passThroughSet = new Set(train.passThroughList || []);
+  manualOverrides = train.manualOverrides || {};
+
+  document.getElementById('find-btn').disabled = false;
+  highlightActiveCard();
+  findRoute();
+  toggleSidebar();
+}
+
+function deleteTrain(id, e) {
+  e.stopPropagation();
+  if (!confirm('Usunąć ten pociąg z rozkładu?')) return;
+  savedTrains = savedTrains.filter(t => t.id !== id);
+  if (activeTrainId === id) { activeTrainId = null; }
+  persistTrains();
+  renderTrainsList();
+}
+
+function duplicateTrain(id, e) {
+  e.stopPropagation();
+  const train = savedTrains.find(t => t.id === id);
+  if (!train) return;
+  const copy = { ...train, id: Date.now().toString(), number: train.number + ' (kopia)', savedAt: new Date().toISOString() };
+  savedTrains.unshift(copy);
+  persistTrains();
+  renderTrainsList();
+}
+
+function highlightActiveCard() {
+  document.querySelectorAll('.train-card').forEach(c => {
+    c.classList.toggle('active', c.dataset.id === activeTrainId);
+  });
+}
+
+function fmtTime(minutes) {
+  if (!minutes) return '—';
+  const h = Math.floor(minutes/60), m = Math.round(minutes%60);
+  return m > 0 ? h+'h '+m+'min' : h+'h';
+}
+
+function addArrivalTime(departure, addMinutes) {
+  if (!departure || !addMinutes) return '';
+  const [hh, mm] = departure.split(':').map(Number);
+  const total = hh*60 + mm + addMinutes;
+  const ah = Math.floor(total/60) % 24;
+  const am = total % 60;
+  return `→ ${String(ah).padStart(2,'0')}:${String(am).padStart(2,'0')}`;
+}
+
+function renderTrainsList() {
+  const list = document.getElementById('trains-list');
+  if (!savedTrains.length) {
+    list.innerHTML = '<div class="no-trains"><div class="no-trains-icon">🚆</div><div class="no-trains-text">Brak zapisanych pociągów</div></div>';
+    return;
+  }
+
+  list.innerHTML = savedTrains.map(t => {
+    const arr = addArrivalTime(t.departure, t.totalMinutes);
+    const depStr = t.departure ? t.departure + (arr ? ' ' + arr : '') : '';
+    const dateStr = t.date ? ' · ' + t.date : '';
+    const kmStr = t.totalKm ? Math.round(t.totalKm) + ' km' : '';
+    const timeStr = fmtTime(t.totalMinutes);
+    const preview = [t.origin, '→', t.dest].join(' ');
+
+    return `<div class="train-card" data-id="${t.id}" onclick="loadTrain('${t.id}')">
+      <div class="train-card-header">
+        <span class="train-number" style="color:${t.categoryColor}">[${t.categoryLabel}] ${t.number}</span>
+        <span class="train-name">${t.name}</span>
+      </div>
+      <div class="train-meta">
+        ${depStr ? '<span>🕐 ' + depStr + dateStr + '</span>' : ''}
+        ${kmStr ? '<span>📍 ' + kmStr + '</span>' : ''}
+        ${timeStr ? '<span>⏱ ' + timeStr + '</span>' : ''}
+      </div>
+      <div class="train-route-preview">${preview}</div>
+      <div class="train-card-actions" onclick="event.stopPropagation()">
+        <button class="tc-btn" onclick="loadTrain('${t.id}')">Wczytaj</button>
+        <button class="tc-btn" onclick="duplicateTrain('${t.id}', event)">Duplikuj</button>
+        <button class="tc-btn del" onclick="deleteTrain('${t.id}', event)">Usuń</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  highlightActiveCard();
+}
+
+function exportAll() {
+  if (!savedTrains.length) { alert('Brak tras do eksportu.'); return; }
+  const blob = new Blob([JSON.stringify(savedTrains, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `kk_rozklad_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importTrains(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if (!Array.isArray(imported)) throw new Error();
+      const count = imported.length;
+      // Merge — skip duplicates by id
+      const existingIds = new Set(savedTrains.map(t => t.id));
+      imported.forEach(t => { if (!existingIds.has(t.id)) savedTrains.unshift(t); });
+      persistTrains();
+      renderTrainsList();
+      alert(`Zaimportowano ${count} pociągów.`);
+    } catch { alert('Nieprawidłowy plik JSON.'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
 // ── TRAIN PARAMETERS ─────────────────────────────────────────────────────────
 const TRAIN_CATEGORIES = [
   {
@@ -1207,5 +1561,29 @@ fetch(GEOJSON_PATH)
       </div>`;
   });
 </script>
+<!-- Sidebar overlay -->
+<div id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<!-- Saved trains sidebar -->
+<div id="trains-sidebar">
+  <div id="sidebar-header">
+    <div id="sidebar-title">Rozkład Jazdy</div>
+    <button id="sidebar-close" onclick="toggleSidebar()">✕</button>
+  </div>
+  <div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-shrink:0">
+    <label style="flex:1;padding:7px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:2px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--amber)';this.style.color='var(--amber)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">
+      Importuj JSON
+      <input type="file" accept=".json" style="display:none" onchange="importTrains(event)">
+    </label>
+    <button onclick="exportAll()" style="flex:1;padding:7px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--amber)';this.style.color='var(--amber)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">Eksportuj JSON</button>
+  </div>
+  <div id="trains-list">
+    <div class="no-trains">
+      <div class="no-trains-icon">🚆</div>
+      <div class="no-trains-text">Brak zapisanych pociągów</div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

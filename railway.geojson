@@ -443,7 +443,7 @@
                 "electrified": "contact_line",
                 "railway": "rail",
                 "gauge": "1435",
-                "maxspeed": "80"
+                "maxspeed": "60"
             },
             "geometry": {
                 "type": "LineString",
@@ -1506,7 +1506,8 @@
                 "usage": "main",
                 "electrified": "contact_line",
                 "railway": "rail",
-                "gauge": "1435"
+                "gauge": "1435",
+                "maxspeed": "80"
             },
             "geometry": {
                 "type": "LineString",
@@ -1747,7 +1748,7 @@
                 "electrified": "contact_line",
                 "railway": "rail",
                 "gauge": "1435",
-                "maxspeed": "160"
+                "maxspeed": "120"
             },
             "geometry": {
                 "type": "LineString",
@@ -2812,7 +2813,7 @@
                 "electrified": "contact_line",
                 "railway": "rail",
                 "gauge": "1435",
-                "maxspeed": "140"
+                "maxspeed": "160"
             },
             "geometry": {
                 "type": "LineString",
@@ -3289,7 +3290,8 @@
                 "usage": "main",
                 "electrified": "contact_line",
                 "railway": "rail",
-                "gauge": "1435"
+                "gauge": "1435",
+                "maxspeed": "80"
             },
             "geometry": {
                 "type": "LineString",
@@ -4492,7 +4494,7 @@
                 "electrified": "contact_line",
                 "railway": "rail",
                 "gauge": "1435",
-                "maxspeed": "80"
+                "maxspeed": "60"
             },
             "geometry": {
                 "type": "LineString",
