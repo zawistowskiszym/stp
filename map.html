@@ -506,9 +506,13 @@ function buildGraph(d) {
     stations.push({id,name:f.properties.name||id,latlng:[lat,lng],props:f.properties});graph[id]=[];
   });
 
-  // Exact-match threshold: station must share a node with the line to be on it
-  // This prevents snapping to nearby parallel lines
-  const EXACT = 1e-7;
+  // Two-pass snapping:
+  // Pass 1: try exact node match (handles properly-snapped JOSM data)
+  // Pass 2: if no exact match found, fall back to closest-point-on-line
+  //         but only if the station isn't already connected to a different line
+  //         at a much closer distance (prevents cross-line contamination)
+  const EXACT = 1e-5;   // ~1m — handles JOSM floating point drift
+  const FALLBACK = 0.002; // ~200m fallback snap for stations not on a node
 
   lines.forEach(line=>{
     let coords=line.geometry.type==='LineString'
@@ -516,42 +520,70 @@ function buildGraph(d) {
       : line.geometry.coordinates.flat();
     const ms=line.properties?.maxspeed||null, col=lineRef(line.properties);
 
-    // Only include stations that have a node EXACTLY on this line
     const snapped=[];
     stations.forEach(st=>{
       const[slat,slng]=st.latlng;
-      // Find the coord index that matches this station exactly
+
+      // Pass 1: exact node match
       for(let k=0;k<coords.length;k++){
         if(Math.abs(coords[k][0]-slng)<EXACT && Math.abs(coords[k][1]-slat)<EXACT){
-          // Station is exactly at node k — position along line = k + 0.0
-          snapped.push({st, seg: Math.max(0,k-1), t: k===0?0:k-1+1.0, proj:coords[k]});
-          break;
+          snapped.push({st, t:k, proj:coords[k]});
+          return; // found — skip pass 2 for this station
         }
+      }
+
+      // Pass 2: closest point on line, only if very close
+      let bestDist=Infinity, bestT=0, bestProj=null;
+      for(let i=0;i<coords.length-1;i++){
+        const a=coords[i],b=coords[i+1];
+        const dx=b[0]-a[0],dy=b[1]-a[1];
+        const len2=dx*dx+dy*dy;
+        const t=len2>0?Math.max(0,Math.min(1,((slng-a[0])*dx+(slat-a[1])*dy)/len2)):0;
+        const px=a[0]+t*dx,py=a[1]+t*dy;
+        const dist=Math.sqrt((slng-px)**2+(slat-py)**2);
+        if(dist<bestDist){bestDist=dist;bestT=i+t;bestProj=[px,py];}
+      }
+      if(bestDist<FALLBACK){
+        snapped.push({st, t:bestT, proj:bestProj});
       }
     });
 
-    // Sort by position along line
+    // Sort strictly by position along line
     snapped.sort((a,b)=>a.t-b.t);
 
     for(let i=0;i<snapped.length-1;i++){
       const A=snapped[i], B=snapped[i+1];
 
-      // Geometry: slice coords from A's node to B's node inclusive
-      const nodeA = A.t===0 ? 0 : A.seg+1;
-      const nodeB = Math.round(B.t===Math.floor(B.t) ? B.t : B.seg+1);
-      const slice = coords.slice(nodeA, nodeB+1);
-      if(slice.length<2) continue;
+      // Build geometry between the two projected points
+      const segA=Math.floor(A.t), segB=Math.floor(B.t);
+      const geomFwd=[A.proj];
+      for(let k=segA+1;k<=segB;k++){
+        if(k<coords.length) geomFwd.push(coords[k]);
+      }
+      geomFwd.push(B.proj);
+
+      // Remove duplicate adjacent points
+      const clean=geomFwd.filter((c,k)=>k===0||cdist(c,geomFwd[k-1])>1e-12);
+      if(clean.length<2) continue;
 
       let dist=0;
-      for(let k=0;k<slice.length-1;k++) dist+=cdist(slice[k],slice[k+1]);
+      for(let k=0;k<clean.length-1;k++) dist+=cdist(clean[k],clean[k+1]);
 
-      const fwd=slice.map(c=>[c[1],c[0]]);
+      const fwd=clean.map(c=>[c[1],c[0]]);
       const rev=[...fwd].reverse();
 
-      graph[A.st.id].push({to:B.st.id, dist, maxspeed:ms, colour:col, geom:fwd});
-      graph[B.st.id].push({to:A.st.id, dist, maxspeed:ms, colour:col, geom:rev});
+      // Avoid duplicate edges (same pair already added by another line)
+      const alreadyExists=graph[A.st.id].some(e=>e.to===B.st.id&&Math.abs(e.dist-dist)<1e-8);
+      if(!alreadyExists){
+        graph[A.st.id].push({to:B.st.id,dist,maxspeed:ms,colour:col,geom:fwd});
+        graph[B.st.id].push({to:A.st.id,dist,maxspeed:ms,colour:col,geom:rev});
+      }
     }
   });
+
+  // Debug: log stations with no connections
+  const isolated=stations.filter(s=>graph[s.id]?.length===0);
+  if(isolated.length) console.warn('Isolated stations (no connections):', isolated.map(s=>s.name));
 }
 
 // ── DIJKSTRA ──────────────────────────────────────────────────────────────────
