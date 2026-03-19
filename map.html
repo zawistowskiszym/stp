@@ -566,7 +566,29 @@ function buildGraph(d) {
   });
 
   const isolated = stations.filter(s => graph[s.id]?.length === 0);
-  if (isolated.length) console.warn('Isolated stations (fix in JOSM — node not on line):', isolated.map(s => s.name));
+  if (isolated.length) {
+    console.warn('Isolated stations:', isolated.map(s => s.name));
+    // For each isolated station, find the closest line node and show the coord difference
+    isolated.forEach(st => {
+      const [lat, lng] = st.latlng;
+      let bestDist = Infinity, bestCoord = null, bestLine = null;
+      lines.forEach(line => {
+        let coords = line.geometry.type === 'LineString'
+          ? line.geometry.coordinates
+          : line.geometry.coordinates.flat();
+        coords.forEach(c => {
+          const d = Math.sqrt((c[0]-lng)**2 + (c[1]-lat)**2);
+          if (d < bestDist) { bestDist = d; bestCoord = c; bestLine = line.properties?.name||'unnamed'; }
+        });
+      });
+      console.warn(
+        `  "${st.name}": station=[${lng.toFixed(8)},${lat.toFixed(8)}]`,
+        `closest line node=[${bestCoord[0].toFixed(8)},${bestCoord[1].toFixed(8)}]`,
+        `delta=[${Math.abs(bestCoord[0]-lng).toExponential(2)},${Math.abs(bestCoord[1]-lat).toExponential(2)}]`,
+        `line="${bestLine}"`
+      );
+    });
+  }
 }
 
 // ── DIJKSTRA ──────────────────────────────────────────────────────────────────
