@@ -1422,18 +1422,36 @@ function getTrainSchedule(train) {
     const sid = train.path[i];
     const st = stations.find(s => s.id === sid);
     const isFirst = i === 0, isLast = i === train.path.length - 1;
-    const isPT = train.passThroughList?.includes(sid) && !isFirst && !isLast;
+    // A station is pass-through if explicitly in passThroughList,
+    // OR if the saved category says it shouldn't stop there
+    // (unless manually overridden to stop)
+    const cat = TRAIN_CATEGORIES.find(c => c.id === train.category);
+    const manOv = train.manualOverrides || {};
+    let stops;
+    if (isFirst || isLast) {
+      stops = true;
+    } else if (manOv[sid] === true) {
+      stops = true;
+    } else if (manOv[sid] === false) {
+      stops = false;
+    } else if (train.passThroughList?.includes(sid)) {
+      stops = false;
+    } else {
+      stops = cat ? cat.stops(st || { props: {} }) : true;
+    }
+    const isPT = !stops;
+
     if (i > 0) {
       const edge = graph[train.path[i-1]]?.find(e => e.to === sid);
       if (edge) {
         const spd = Math.min(parseFloat(edge.maxspeed)||160, train.maxspeed||160);
-        elapsed += segmentTime(edge.dist, spd, !isPT);
-        if (!isLast && !isPT) elapsed += getDwellTime(st);
+        elapsed += segmentTime(edge.dist, spd, stops);
+        if (!isLast && stops) elapsed += getDwellTime(st);
       }
     }
     const arr = depBase + elapsed;
-    const dw = (isFirst || isLast || isPT) ? 0 : getDwellTime(st);
-    schedule.push({ stationId: sid, arrMinutes: arr, depMinutes: arr + dw });
+    const dw = (isFirst || isLast || !stops) ? 0 : getDwellTime(st);
+    schedule.push({ stationId: sid, arrMinutes: arr, depMinutes: arr + dw, isPT });
   }
   return schedule;
 }
@@ -1827,11 +1845,11 @@ function renderStationTimetable() {
     const idx = train.path.indexOf(stId);
     if (idx === -1) return;
     const isFirst = idx === 0, isLast = idx === train.path.length - 1;
-    const isPT = train.passThroughList?.includes(stId) && !isFirst && !isLast;
 
     const sch = getTrainSchedule(train);
     if (!sch) return;
     const stop = sch[idx];
+    const isPT = stop.isPT || false;
 
     // Arrival: from previous station name
     const prevId = idx > 0 ? train.path[idx-1] : null;
@@ -1846,6 +1864,9 @@ function renderStationTimetable() {
     if (search && !train.number.toLowerCase().includes(search) &&
         !(train.name||'').toLowerCase().includes(search) &&
         !(train.categoryLabel||'').toLowerCase().includes(search)) return;
+
+    // Don't show pass-through entries in the station timetable
+    if (isPT) return;
 
     entries.push({ train, idx, isFirst, isLast, isPT, arrStr, depStr, sortKey,
       arrMin: stop.arrMinutes, depMin: stop.depMinutes,
@@ -1960,7 +1981,10 @@ function printStationTimetable() {
 // ── SIMULATION ───────────────────────────────────────────────────────────────
 const SIM_DAY_MINUTES = 1440; // 24h
 let simRunning = false;
-let simSpeed = 5;         // minutes of sim time per real second
+let simSpeed = 1;         // default: real time (1 sim-min = 1 real second... wait, no)
+// Note: speed=1 means 1× real time: 1 real second = 1/60 sim-minute
+// So simSpeed is in sim-minutes per real second: 1× = 1/60, 5× = 5/60, etc.
+// We store it as a multiplier where 1 = real time
 let simCurrentMin = 0;    // current sim time in minutes (0–1439)
 let simRafId = null;
 let simLastTs = null;
@@ -1982,6 +2006,7 @@ function buildSimSchedule(train) {
     const edge   = graph[fromId]?.find(e => e.to === toId);
     if (!edge?.geom) continue;
 
+    // Use depMinutes from schedule — for pass-through stations dep=arr (no dwell)
     const startMin = sch[i].depMinutes;
     const endMin   = sch[i + 1].arrMinutes;
     if (endMin <= startMin) continue;
@@ -2081,14 +2106,15 @@ function simUpdateClock(minutes) {
   document.getElementById('sim-clock').textContent =
     `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
   document.getElementById('sim-slider').value = Math.round(minutes) % SIM_DAY_MINUTES;
+  document.getElementById('sim-date-label').textContent = simSpeed === 1 ? 'Czas rzeczywisty' : `Przyspieszenie ${simSpeed}×`;
 }
 
 // ── Main simulation tick ────────────────────────────────────────────────────
 function simTick(ts) {
   if (!simRunning) return;
   if (simLastTs !== null) {
-    const realElapsed = (ts - simLastTs) / 1000; // seconds
-    simCurrentMin = (simCurrentMin + realElapsed * simSpeed) % SIM_DAY_MINUTES;
+    const realElapsed = (ts - simLastTs) / 1000; // real seconds elapsed
+    simCurrentMin = (simCurrentMin + (realElapsed / 60) * simSpeed) % SIM_DAY_MINUTES;
   }
   simLastTs = ts;
   simUpdateClock(simCurrentMin);
@@ -2135,7 +2161,8 @@ function simTogglePlay() {
 function simSetSpeed(s) {
   simSpeed = s;
   document.querySelectorAll('.sim-speed-btn').forEach(b => {
-    b.classList.toggle('active', b.textContent === s + '×');
+    const label = s === 1 ? '▶ Real' : s + '×';
+    b.classList.toggle('active', b.textContent === label);
   });
 }
 
@@ -2143,9 +2170,9 @@ function simReset() {
   simRunning = false;
   if (simRafId) cancelAnimationFrame(simRafId);
   document.getElementById('sim-play-btn').textContent = '▶';
-  // Start at earliest departure
-  const deps = savedTrains.filter(t=>t.departure).map(t=>timeToMinutes(t.departure)).filter(Boolean);
-  simCurrentMin = deps.length ? Math.min(...deps) : 0;
+  // Start at current real clock time
+  const now = new Date();
+  simCurrentMin = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
   simLastTs = null;
   simUpdateClock(simCurrentMin);
   // Clear all markers
@@ -2187,6 +2214,11 @@ function startSimulation() {
   document.getElementById('map').style.bottom = '54px';
   simActive = true;
   simReset();
+  // Auto-play at real time
+  simRunning = true;
+  document.getElementById('sim-play-btn').textContent = '⏸';
+  simLastTs = null;
+  simRafId = requestAnimationFrame(simTick);
 }
 
 function toggleSimulation() {
@@ -2823,7 +2855,7 @@ function printTimetable(trainId) {
     const st = stations.find(s => s.id === sid);
     const s = sch[i];
     const isFirst = i === 0, isLast = i === train.path.length-1;
-    const isPT = train.passThroughList?.includes(sid) && !isFirst && !isLast;
+    const isPT = s.isPT || false;
     const dw = getDwellTime(st);
 
     const arrMin = s.arrMinutes;
@@ -3149,15 +3181,15 @@ fetch(GEOJSON_PATH)
   <div class="sim-section">
     <div>
       <div id="sim-clock">00:00</div>
-      <div id="sim-date-label">Symulacja zatrzymana</div>
+      <div id="sim-date-label">Czas rzeczywisty</div>
     </div>
   </div>
   <div class="sim-section">
     <button class="sim-btn" id="sim-play-btn" onclick="simTogglePlay()" title="Play/Pause">▶</button>
     <button class="sim-btn" onclick="simReset()" title="Reset">⏮</button>
     <div id="sim-speed-btns">
-      <button class="sim-speed-btn" onclick="simSetSpeed(1)">1×</button>
-      <button class="sim-speed-btn active" onclick="simSetSpeed(5)">5×</button>
+      <button class="sim-speed-btn active" onclick="simSetSpeed(1)">▶ Real</button>
+      <button class="sim-speed-btn" onclick="simSetSpeed(5)">5×</button>
       <button class="sim-speed-btn" onclick="simSetSpeed(10)">10×</button>
       <button class="sim-speed-btn" onclick="simSetSpeed(60)">60×</button>
     </div>
