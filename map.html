@@ -432,6 +432,40 @@
       font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text-faint);
       padding:5px 14px; border-bottom:1px solid var(--border2); }
 
+    /* ── Conflict blocker ── */
+    #conflict-overlay { display:none; position:fixed; inset:0; z-index:2000;
+      background:#00000090; backdrop-filter:blur(4px); align-items:center; justify-content:center; }
+    #conflict-overlay.visible { display:flex; }
+    #conflict-modal { background:var(--surface); border:1px solid var(--red);
+      border-radius:4px; width:560px; max-width:90vw; max-height:80vh;
+      display:flex; flex-direction:column; box-shadow:0 20px 60px #00000080; overflow:hidden; }
+    #conflict-modal-header { background:#d94f3d18; border-bottom:1px solid var(--red);
+      padding:16px 20px; display:flex; align-items:center; gap:12px; flex-shrink:0; }
+    #conflict-modal-header .icon { font-size:22px; }
+    #conflict-modal-header h3 { font-family:'DM Mono',monospace; font-size:12px;
+      letter-spacing:2px; text-transform:uppercase; color:var(--red); }
+    #conflict-modal-body { padding:16px 20px; overflow-y:auto; flex:1; }
+    #conflict-modal-footer { padding:12px 20px; border-top:1px solid var(--border);
+      display:flex; justify-content:flex-end; gap:8px; flex-shrink:0; }
+    .conflict-entry { padding:10px 14px; background:var(--bg); border:1px solid var(--border);
+      border-radius:3px; margin-bottom:8px; }
+    .conflict-entry:last-child { margin-bottom:0; }
+    .conflict-entry .ce-trains { font-family:'DM Mono',monospace; font-size:12px;
+      color:var(--red); font-weight:500; margin-bottom:5px; }
+    .conflict-entry .ce-detail { font-size:12px; color:var(--text-dim); line-height:1.7; }
+    .conflict-entry .ce-seg { color:var(--text); font-weight:500; }
+    #conflict-force-btn { padding:8px 18px; background:transparent; color:var(--red);
+      border:1px solid var(--red); border-radius:2px; font-family:'DM Mono',monospace;
+      font-size:10px; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer;
+      transition:all .2s; }
+    #conflict-force-btn:hover { background:#d94f3d20; }
+    #conflict-cancel-btn { padding:8px 18px; background:var(--amber); color:#0e1117;
+      border:none; border-radius:2px; font-family:'DM Mono',monospace;
+      font-size:10px; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer;
+      transition:all .2s; }
+    #conflict-cancel-btn:hover { background:#f0b955; }
+    .save-btn-conflict { outline:2px solid var(--red) !important; }
+
     /* ── Capacity table ── */
     #capacity-panel { position:fixed; top:60px; left:0; right:0; bottom:0; z-index:700;
       background:var(--bg); display:none; flex-direction:column; overflow:hidden; }
@@ -1398,7 +1432,7 @@ function saveRoute() {
   const date   = document.getElementById('train-date').value;
 
   const train = {
-    id: Date.now().toString(),
+    id: activeTrainId || Date.now().toString(),
     number: number || '—',
     name: name || '',
     departure: dep || '',
@@ -1418,21 +1452,31 @@ function saveRoute() {
     savedAt: new Date().toISOString(),
   };
 
-  // If editing existing train, replace it
-  const exIdx = savedTrains.findIndex(t => t.id === activeTrainId);
+  // Run conflict check if train has a departure time
+  if (train.departure) {
+    const conflicts = checkConflicts(train);
+    if (conflicts.length > 0) {
+      showConflictModal(conflicts, train);
+      return; // block save — user must choose
+    }
+  }
+
+  commitSave(train);
+}
+
+function commitSave(train) {
+  const exIdx = savedTrains.findIndex(t => t.id === train.id);
   if (exIdx !== -1) {
-    train.id = activeTrainId;
     savedTrains[exIdx] = train;
   } else {
     savedTrains.unshift(train);
-    activeTrainId = train.id;
   }
+  activeTrainId = train.id;
 
   persistTrains();
   renderTrainsList();
   highlightActiveCard();
 
-  // Visual feedback
   const btn = document.getElementById('save-btn');
   btn.textContent = 'Zapisano ✓';
   btn.style.background = 'var(--green)';
@@ -1865,6 +1909,157 @@ function printStationTimetable() {
     window.print();
     setTimeout(() => { frame.style.display='none'; frame.innerHTML=''; }, 500);
   }, 150);
+}
+
+// ── CONFLICT DETECTION ────────────────────────────────────────────────────────
+// Detects same-direction overlaps on a double-track system.
+// Two trains conflict if they occupy the same physical track segment
+// travelling in the SAME direction at overlapping times.
+
+let pendingSaveData = null; // holds train object waiting for force-save confirmation
+
+// Returns a canonical direction-aware key for a coord pair.
+// Uses the STORED order in edge.geom as the reference direction.
+// We assign "direction" as the index of the first coordinate in the edge's geom array.
+function getEdgeDirection(fromId, toId) {
+  // Try direct edge first
+  const edge = graph[fromId]?.find(e => e.to === toId);
+  if (edge?.geom?.length >= 2) {
+    // Direction = hash of first coord — same for all trains using this edge forward
+    const c = edge.geom[0];
+    return `${Math.round(c[0]*1e6)},${Math.round(c[1]*1e6)}`;
+  }
+  // Reverse edge
+  const rev = graph[toId]?.find(e => e.to === fromId);
+  if (rev?.geom?.length >= 2) {
+    const c = rev.geom[rev.geom.length - 1];
+    return `${Math.round(c[0]*1e6)},${Math.round(c[1]*1e6)}`;
+  }
+  return null;
+}
+
+// Build list of {segKey, dirKey, startMin, endMin} for a train
+function buildTrainOccupancy(train) {
+  const sch = getTrainSchedule(train);
+  if (!sch) return [];
+  const occupancy = [];
+  for (let i = 0; i < train.path.length - 1; i++) {
+    const fromId = train.path[i];
+    const toId   = train.path[i + 1];
+    const segKey = [fromId, toId].sort().join('|');
+    const dirKey = getEdgeDirection(fromId, toId);
+    if (!dirKey) continue;
+    occupancy.push({
+      segKey, dirKey, fromId, toId,
+      startMin: sch[i].depMinutes,
+      endMin:   sch[i + 1].arrMinutes,
+    });
+  }
+  return occupancy;
+}
+
+// Check candidate train against all saved trains for same-direction conflicts
+// Returns array of conflict objects, or empty array if clear
+function checkConflicts(candidateTrain) {
+  const candOcc = buildTrainOccupancy(candidateTrain);
+  if (!candOcc.length) return [];
+
+  const conflicts = [];
+
+  savedTrains.forEach(existing => {
+    if (existing.id === candidateTrain.id) return; // skip self (editing)
+    // Date check: skip only if BOTH have dates AND they differ
+    if (candidateTrain.date && existing.date && candidateTrain.date !== existing.date) return;
+
+    const existOcc = buildTrainOccupancy(existing);
+    if (!existOcc.length) return;
+
+    // Build lookup map for existing: segKey+dirKey → [{startMin,endMin}]
+    const existMap = {};
+    existOcc.forEach(o => {
+      const k = o.segKey + '::' + o.dirKey;
+      if (!existMap[k]) existMap[k] = [];
+      existMap[k].push(o);
+    });
+
+    // Check each candidate segment
+    const seenPairs = new Set();
+    candOcc.forEach(co => {
+      const k = co.segKey + '::' + co.dirKey;
+      const matches = existMap[k] || [];
+      matches.forEach(eo => {
+        // Minimum safe headway on this segment (SBL)
+        const edge = graph[co.fromId]?.find(e => e.to === co.toId)
+                   || graph[co.toId]?.find(e => e.to === co.fromId);
+        const spd = parseFloat(edge?.maxspeed) || 160;
+        const minHeadway = sblHeadwayMin(spd); // minutes
+
+        // Check if the gap between the two trains is less than min headway
+        const gap = Math.abs(co.startMin - eo.startMin);
+        const overlap = Math.max(0, Math.min(co.endMin, eo.endMin) - Math.max(co.startMin, eo.startMin));
+
+        if (overlap > 0 || gap < minHeadway) {
+          const pairKey = [existing.id, co.segKey].join('|');
+          if (seenPairs.has(pairKey)) return;
+          seenPairs.add(pairKey);
+
+          const fromSt = stations.find(s => s.id === co.fromId);
+          const toSt   = stations.find(s => s.id === co.toId);
+          conflicts.push({
+            existing,
+            fromName: fromSt?.name || co.fromId,
+            toName:   toSt?.name   || co.toId,
+            overlap: Math.round(overlap),
+            gap: Math.round(gap),
+            minHeadway: Math.round(minHeadway * 10) / 10,
+            candTime: `${pad(Math.floor(co.startMin/60))}:${pad(co.startMin%60)}–${pad(Math.floor(co.endMin/60))}:${pad(co.endMin%60)}`,
+            existTime: `${pad(Math.floor(eo.startMin/60))}:${pad(eo.startMin%60)}–${pad(Math.floor(eo.endMin/60))}:${pad(eo.endMin%60)}`,
+          });
+        }
+      });
+    });
+  });
+
+  return conflicts;
+}
+
+function showConflictModal(conflicts, trainData) {
+  pendingSaveData = trainData;
+  const body = document.getElementById('conflict-modal-body');
+  body.innerHTML = conflicts.map(c => `
+    <div class="conflict-entry">
+      <div class="ce-trains">
+        Kolizja z: [${c.existing.categoryLabel}] ${c.existing.number}
+        ${c.existing.name ? '"' + c.existing.name + '"' : ''}
+        ${c.existing.departure ? '· ' + c.existing.departure : ''}
+      </div>
+      <div class="ce-detail">
+        Odcinek: <span class="ce-seg">${c.fromName} → ${c.toName}</span><br>
+        ${c.overlap > 0
+          ? `Nakładanie: <strong style="color:var(--red)">${c.overlap} min</strong>`
+          : `Odstęp: <strong style="color:var(--amber)">${c.gap} min</strong> (min. wymagane: ${c.minHeadway} min)`
+        }<br>
+        Nowy pociąg: ${c.candTime} &nbsp;·&nbsp; Istniejący: ${c.existTime}
+      </div>
+    </div>`).join('');
+  document.getElementById('conflict-overlay').classList.add('visible');
+}
+
+function closeConflictModal() {
+  document.getElementById('conflict-overlay').classList.remove('visible');
+  pendingSaveData = null;
+  // Highlight save button to draw attention
+  const btn = document.getElementById('save-btn');
+  btn.classList.add('save-btn-conflict');
+  setTimeout(() => btn.classList.remove('save-btn-conflict'), 2000);
+}
+
+function forceSave() {
+  document.getElementById('conflict-overlay').classList.remove('visible');
+  if (pendingSaveData) {
+    commitSave(pendingSaveData);
+    pendingSaveData = null;
+  }
 }
 
 // ── CAPACITY TABLE ───────────────────────────────────────────────────────────
@@ -2656,6 +2851,24 @@ fetch(GEOJSON_PATH)
   </div>
   <div id="capacity-scroll">
     <div class="cap-empty">Wczytaj pociągi aby zobaczyć przepustowość</div>
+  </div>
+</div>
+
+<!-- Conflict blocker modal -->
+<div id="conflict-overlay">
+  <div id="conflict-modal">
+    <div id="conflict-modal-header">
+      <span class="icon">⛔</span>
+      <div>
+        <h3>Wykryto konflikty torowe</h3>
+        <div style="font-size:12px;color:var(--text-dim);margin-top:2px">Pociąg koliduje z istniejącymi kursami na tych samych odcinkach</div>
+      </div>
+    </div>
+    <div id="conflict-modal-body"></div>
+    <div id="conflict-modal-footer">
+      <button id="conflict-force-btn" onclick="forceSave()">Zapisz mimo to</button>
+      <button id="conflict-cancel-btn" onclick="closeConflictModal()">Wróć do edycji</button>
+    </div>
   </div>
 </div>
 
