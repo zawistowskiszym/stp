@@ -395,6 +395,74 @@
 
     #map.selecting-station { cursor: crosshair !important; }
 
+    /* ── Tab bar in header ── */
+    #tab-bar { display:flex; gap:2px; margin-left:16px; }
+    .tab-btn { padding:6px 16px; background:transparent; border:1px solid var(--border);
+      border-radius:2px; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1.5px;
+      text-transform:uppercase; color:var(--text-dim); cursor:pointer; transition:all .2s; }
+    .tab-btn:hover { border-color:var(--border2); color:var(--text); }
+    .tab-btn.active { border-color:var(--amber); color:var(--amber); background:#e8a94510; }
+
+    /* ── Conflict badge on map ── */
+    .conflict-marker { position:absolute; z-index:1000; }
+    .conflict-pill { background:#d94f3d; color:#fff; font-family:'DM Mono',monospace;
+      font-size:9px; padding:2px 6px; border-radius:2px; white-space:nowrap; pointer-events:none; }
+
+    /* ── Timetable panel ── */
+    #timetable-panel { position:fixed; top:60px; left:0; right:0; bottom:0; z-index:700;
+      background:var(--bg); display:none; flex-direction:column; overflow:hidden; }
+    #timetable-panel.visible { display:flex; }
+    #timetable-toolbar { padding:12px 20px; background:var(--surface);
+      border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; flex-shrink:0; }
+    #timetable-toolbar h2 { font-family:'DM Mono',monospace; font-size:12px;
+      letter-spacing:2px; text-transform:uppercase; color:var(--amber); }
+    #timetable-scroll { flex:1; overflow:auto; padding:20px; }
+    #timetable-svg { display:block; }
+    .tt-filter { padding:5px 10px; background:var(--surface2); border:1px solid var(--border);
+      border-radius:2px; color:var(--text); font-family:'DM Mono',monospace; font-size:11px;
+      outline:none; }
+    .tt-filter:focus { border-color:var(--amber); }
+
+    /* ── Conflict panel ── */
+    #conflict-panel { position:absolute; top:80px; right:340px; z-index:900;
+      background:var(--surface); border:1px solid var(--red); border-radius:3px;
+      width:280px; max-height:50vh; overflow-y:auto; display:none; }
+    #conflict-panel.visible { display:block; animation:slideIn .3s ease; }
+    #conflict-panel .panel-header { background:#d94f3d18; }
+    .conflict-item { padding:10px 14px; border-bottom:1px solid var(--border); font-size:12px; }
+    .conflict-item:last-child { border-bottom:none; }
+    .conflict-item .c-trains { font-family:'DM Mono',monospace; font-size:11px;
+      color:var(--red); margin-bottom:3px; font-weight:500; }
+    .conflict-item .c-detail { color:var(--text-dim); font-size:11px; line-height:1.5; }
+    #conflict-btn { padding:5px 14px; background:transparent; border:1px solid var(--border);
+      border-radius:2px; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1px;
+      color:var(--text-dim); cursor:pointer; transition:all .2s; }
+    #conflict-btn.has-conflicts { border-color:var(--red); color:var(--red); animation:pulse-red 2s infinite; }
+    @keyframes pulse-red { 0%,100%{box-shadow:0 0 0 0 #d94f3d40} 50%{box-shadow:0 0 0 4px #d94f3d00} }
+
+    /* ── Dwell time editor ── */
+    #dwell-panel { position:absolute; bottom:20px; right:20px; z-index:900;
+      background:var(--surface); border:1px solid var(--border); border-radius:3px;
+      width:260px; display:none; max-height:60vh; overflow:hidden; flex-direction:column; }
+    #dwell-panel.visible { display:flex; }
+    #dwell-list { overflow-y:auto; flex:1; }
+    #dwell-list::-webkit-scrollbar { width:3px; }
+    #dwell-list::-webkit-scrollbar-thumb { background:var(--border2); }
+    .dwell-item { display:flex; align-items:center; gap:8px; padding:7px 14px;
+      border-bottom:1px solid var(--border); }
+    .dwell-item:last-child { border-bottom:none; }
+    .dwell-name { flex:1; font-size:12px; color:var(--text-dim);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .dwell-input { width:52px; padding:4px 6px; background:var(--bg);
+      border:1px solid var(--border); border-radius:2px; font-family:'DM Mono',monospace;
+      font-size:11px; color:var(--amber); text-align:right; outline:none; }
+    .dwell-input:focus { border-color:var(--amber); }
+    .dwell-unit { font-family:'DM Mono',monospace; font-size:10px; color:var(--text-faint); }
+    #dwell-btn { padding:5px 14px; background:transparent; border:1px solid var(--border);
+      border-radius:2px; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1px;
+      color:var(--text-dim); cursor:pointer; transition:all .2s; }
+    #dwell-btn:hover { border-color:var(--amber); color:var(--amber); }
+
     /* ── Train metadata fields ── */
     .meta-row { display:flex; gap:8px; margin-bottom:10px; }
     .meta-field { flex:1; }
@@ -525,9 +593,17 @@
       <div class="status-dot"></div>
       System aktywny
     </div>
-    <button id="trains-toggle-btn" onclick="toggleSidebar()">
-      🚆 Rozkład <span class="count-badge" id="trains-count">0</span>
-    </button>
+    <div id="tab-bar">
+      <button class="tab-btn active" id="tab-map" onclick="switchTab('map')">Mapa</button>
+      <button class="tab-btn" id="tab-timetable" onclick="switchTab('timetable')">Rozkład jazdy</button>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <button id="dwell-btn" onclick="toggleDwellPanel()">⏱ Czasy postoju</button>
+      <button id="conflict-btn" onclick="toggleConflictPanel()">✓ Konflikty</button>
+      <button id="trains-toggle-btn" onclick="toggleSidebar()">
+        🚆 Pociągi <span class="count-badge" id="trains-count">0</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -830,6 +906,7 @@ function buildGraph(d) {
   else console.log('All stations connected!');
   initTrainPanel();
   loadSavedTrains();
+  loadDwellTimes();
 }
 
 // ── DIJKSTRA ──────────────────────────────────────────────────────────────────
@@ -883,7 +960,7 @@ function dijkstra(s, e, passThroughSet=new Set()) {
       let dw=0;
       if(edge.to!==e&&edge.to!==s){
         if(!stops) dw=PASS_THROUGH_DWELL;
-        else dw=toSt?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN;
+        else dw=getDwellTime(toSt);
       }
       // Direction reversal penalty
       const prevEdgeObj = prevEdge[u];
@@ -1076,7 +1153,7 @@ function findRoute() {
       if(edge){
         const spd=Math.min(parseFloat(edge.maxspeed)||160, trainMaxSpeed);
         elapsed+=segmentTime(edge.dist,spd,!isPT);
-        if(!isL&&!isPT) elapsed+=(st?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN);
+        if(!isL&&!isPT) elapsed+=getDwellTime(st);
       }
     }
     // Check reversal AT this station: incoming edge vs outgoing edge
@@ -1091,7 +1168,8 @@ function findRoute() {
       }
     }
     const ts=isF?'Odjazd':'+'+fmt(elapsed);
-    const dwLabel=isPT?'przejazd bez zatrzymania':(isF||isL)?'':`postój ${st?.props?.railway==='halt'?DWELL_HALT:DWELL_MAIN} min`;
+    const dw=getDwellTime(st);
+    const dwLabel=isPT?'przejazd bez zatrzymania':(isF||isL)?'':`postój ${dw} min`;
     const trackSeg=!isL?'<div class="stop-line-seg"></div>':'';
     const dotClass=isF?' origin':isL?' destination':'';
     const reversalBadge=reversalHere?`<span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--amber);background:#e8a94520;border:1px solid var(--amber);border-radius:2px;padding:1px 5px;letter-spacing:1px">↩ ZMIANA KIERUNKU +30 min</span>`:'';
@@ -1222,6 +1300,7 @@ function saveRoute() {
   renderTrainsList();
   highlightActiveCard();
 
+  runConflictCheck();
   // Visual feedback
   const btn = document.getElementById('save-btn');
   btn.textContent = 'Zapisano ✓';
@@ -1379,6 +1458,354 @@ function importTrains(e) {
   };
   reader.readAsText(file);
   e.target.value = '';
+}
+
+// ── DWELL TIME EDITOR ────────────────────────────────────────────────────────
+const DWELL_STORAGE_KEY = 'kk_dwell_times_v1';
+let customDwellTimes = {}; // stationId → minutes
+
+function loadDwellTimes() {
+  try {
+    const raw = localStorage.getItem(DWELL_STORAGE_KEY);
+    customDwellTimes = raw ? JSON.parse(raw) : {};
+  } catch(e) { customDwellTimes = {}; }
+}
+
+function saveDwellTimes() {
+  localStorage.setItem(DWELL_STORAGE_KEY, JSON.stringify(customDwellTimes));
+}
+
+function getDwellTime(st) {
+  if (!st) return DWELL_HALT;
+  if (customDwellTimes[st.id] !== undefined) return customDwellTimes[st.id];
+  return st.props?.railway === 'halt' ? DWELL_HALT : DWELL_MAIN;
+}
+
+function toggleDwellPanel() {
+  const p = document.getElementById('dwell-panel');
+  p.classList.toggle('visible');
+  if (p.classList.contains('visible')) renderDwellList();
+}
+
+function renderDwellList() {
+  const list = document.getElementById('dwell-list');
+  if (!stations.length) { list.innerHTML = '<div style="padding:12px 14px;font-size:12px;color:var(--text-faint)">Wczytaj GeoJSON najpierw.</div>'; return; }
+  const sorted = [...stations].sort((a,b) => {
+    // Main stations first, then alphabetical
+    const aMain = a.props?.railway === 'station' ? 0 : 1;
+    const bMain = b.props?.railway === 'station' ? 0 : 1;
+    return aMain - bMain || a.name.localeCompare(b.name, 'pl');
+  });
+  list.innerHTML = sorted.map(st => {
+    const defaultVal = st.props?.railway === 'halt' ? DWELL_HALT : DWELL_MAIN;
+    const val = customDwellTimes[st.id] !== undefined ? customDwellTimes[st.id] : defaultVal;
+    const isCustom = customDwellTimes[st.id] !== undefined;
+    const typeLabel = st.props?.railway === 'station' ? '●' : '○';
+    return `<div class="dwell-item">
+      <span class="dwell-name" title="${st.name}" style="${isCustom?'color:var(--amber)':''}">${typeLabel} ${st.name}</span>
+      <input class="dwell-input" type="number" min="0" max="60" step="0.5"
+        value="${val}" data-sid="${encodeURIComponent(st.id)}"
+        onchange="onDwellChange(this)" style="${isCustom?'border-color:var(--amber)':''}">
+      <span class="dwell-unit">min</span>
+    </div>`;
+  }).join('');
+}
+
+function onDwellChange(input) {
+  const sid = decodeURIComponent(input.dataset.sid);
+  const val = parseFloat(input.value);
+  const st = stations.find(s => s.id === sid);
+  const defaultVal = st?.props?.railway === 'halt' ? DWELL_HALT : DWELL_MAIN;
+  if (isNaN(val) || val === defaultVal) {
+    delete customDwellTimes[sid];
+    input.style.borderColor = '';
+    input.closest('.dwell-item').querySelector('.dwell-name').style.color = '';
+  } else {
+    customDwellTimes[sid] = val;
+    input.style.borderColor = 'var(--amber)';
+    input.closest('.dwell-item').querySelector('.dwell-name').style.color = 'var(--amber)';
+  }
+  saveDwellTimes();
+  if (origin && dest) findRoute();
+}
+
+function resetDwellTimes() {
+  if (!confirm('Zresetować wszystkie niestandardowe czasy postoju?')) return;
+  customDwellTimes = {};
+  saveDwellTimes();
+  renderDwellList();
+  if (origin && dest) findRoute();
+}
+
+// ── CONFLICT DETECTION ────────────────────────────────────────────────────────
+let conflictLayers = [];
+
+function timeToMinutes(timeStr) {
+  if (!timeStr) return null;
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function getTrainSchedule(train) {
+  // Returns [{stationId, arrMinutes, depMinutes}] for each stop
+  const depBase = timeToMinutes(train.departure);
+  if (depBase === null) return null;
+  if (!train.path || train.path.length < 2) return null;
+
+  const schedule = [];
+  let elapsed = 0;
+
+  for (let i = 0; i < train.path.length; i++) {
+    const sid = train.path[i];
+    const st = stations.find(s => s.id === sid);
+    const isFirst = i === 0, isLast = i === train.path.length - 1;
+    const isPT = train.passThroughList?.includes(sid) && !isFirst && !isLast;
+
+    if (i > 0) {
+      const prevId = train.path[i-1];
+      const edge = graph[prevId]?.find(e => e.to === sid);
+      if (edge) {
+        const spd = Math.min(parseFloat(edge.maxspeed)||160, train.maxspeed||160);
+        elapsed += segmentTime(edge.dist, spd, !isPT);
+        if (!isLast && !isPT) elapsed += getDwellTime(st);
+      }
+    }
+
+    const arr = depBase + elapsed;
+    const dw = (isFirst || isLast || isPT) ? 0 : getDwellTime(st);
+    schedule.push({ stationId: sid, arrMinutes: arr, depMinutes: arr + dw });
+  }
+  return schedule;
+}
+
+function detectConflicts() {
+  const trainsWithTime = savedTrains.filter(t => t.departure && t.path?.length >= 2);
+  const conflicts = [];
+
+  // For each pair of trains
+  for (let a = 0; a < trainsWithTime.length; a++) {
+    for (let b = a + 1; b < trainsWithTime.length; b++) {
+      const tA = trainsWithTime[a];
+      const tB = trainsWithTime[b];
+
+      // Only compare same date or no date
+      if (tA.date && tB.date && tA.date !== tB.date) continue;
+
+      const schA = getTrainSchedule(tA);
+      const schB = getTrainSchedule(tB);
+      if (!schA || !schB) continue;
+
+      // Check each segment of A against each segment of B
+      for (let i = 0; i < tA.path.length - 1; i++) {
+        for (let j = 0; j < tB.path.length - 1; j++) {
+          const segA = [tA.path[i], tA.path[i+1]];
+          const segB = [tB.path[j], tB.path[j+1]];
+          // Same segment (either direction)
+          if (!((segA[0]===segB[0]&&segA[1]===segB[1])||(segA[0]===segB[1]&&segA[1]===segB[0]))) continue;
+
+          // Time overlap check
+          const aStart = schA[i].depMinutes;
+          const aEnd   = schA[i+1].arrMinutes;
+          const bStart = schB[j].depMinutes;
+          const bEnd   = schB[j+1].arrMinutes;
+
+          const overlap = Math.max(0, Math.min(aEnd,bEnd) - Math.max(aStart,bStart));
+          if (overlap > 0) {
+            conflicts.push({
+              trainA: tA, trainB: tB,
+              segment: segA,
+              overlapMinutes: Math.round(overlap),
+              timeA: `${pad(Math.floor(aStart/60))}:${pad(aStart%60)}–${pad(Math.floor(aEnd/60))}:${pad(aEnd%60)}`,
+              timeB: `${pad(Math.floor(bStart/60))}:${pad(bStart%60)}–${pad(Math.floor(bEnd/60))}:${pad(bEnd%60)}`,
+            });
+          }
+        }
+      }
+    }
+  }
+  return conflicts;
+}
+
+function pad(n) { return String(Math.round(n)).padStart(2,'0'); }
+
+function toggleConflictPanel() {
+  const p = document.getElementById('conflict-panel');
+  p.classList.toggle('visible');
+  if (p.classList.contains('visible')) runConflictCheck();
+}
+
+function runConflictCheck() {
+  const conflicts = detectConflicts();
+  const btn = document.getElementById('conflict-btn');
+  const list = document.getElementById('conflict-list');
+
+  btn.classList.toggle('has-conflicts', conflicts.length > 0);
+  btn.textContent = conflicts.length > 0 ? `⚠ ${conflicts.length} Konflikt${conflicts.length>1?'ów':''}` : '✓ Konflikty';
+
+  // Clear old conflict layers
+  conflictLayers.forEach(l => map.removeLayer(l));
+  conflictLayers = [];
+
+  if (!conflicts.length) {
+    list.innerHTML = '<div style="padding:16px 14px;text-align:center;font-family:DM Mono,monospace;font-size:10px;letter-spacing:1.5px;color:var(--green)">BRAK KONFLIKTÓW</div>';
+    return;
+  }
+
+  list.innerHTML = conflicts.map((c,i) => `
+    <div class="conflict-item">
+      <div class="c-trains">[${c.trainA.categoryLabel}] ${c.trainA.number} ✕ [${c.trainB.categoryLabel}] ${c.trainB.number}</div>
+      <div class="c-detail">
+        Odcinek: ${c.segment[0]} → ${c.segment[1]}<br>
+        ${c.trainA.number}: ${c.timeA}<br>
+        ${c.trainB.number}: ${c.timeB}<br>
+        Nakładanie: <strong style="color:var(--red)">${c.overlapMinutes} min</strong>
+      </div>
+    </div>`).join('');
+
+  // Highlight conflicting segments on map
+  const seenSegs = new Set();
+  conflicts.forEach(c => {
+    const key = [c.segment[0],c.segment[1]].sort().join('|');
+    if (seenSegs.has(key)) return;
+    seenSegs.add(key);
+    const edge = graph[c.segment[0]]?.find(e => e.to === c.segment[1]);
+    if (!edge?.geom) return;
+    const latlngs = edge.geom.map(g => [g[1], g[0]]);
+    const layer = L.polyline(latlngs, { color:'#d94f3d', weight:6, opacity:.8,
+      dashArray:'8,6', className:'conflict-layer' }).addTo(map);
+    conflictLayers.push(layer);
+  });
+}
+
+// ── TIMETABLE VIEW ────────────────────────────────────────────────────────────
+let currentTab = 'map';
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('timetable-panel').classList.toggle('visible', tab === 'timetable');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (tab === 'timetable') renderTimetable();
+}
+
+function renderTimetable() {
+  const svg = document.getElementById('timetable-svg');
+  const dateFilter = document.getElementById('tt-date-filter').value;
+  const stFilter = document.getElementById('tt-station-filter').value.toLowerCase().trim();
+
+  let trains = savedTrains.filter(t => t.departure && t.path?.length >= 2);
+  if (dateFilter) trains = trains.filter(t => !t.date || t.date === dateFilter);
+
+  if (!trains.length) {
+    svg.innerHTML = '<text x="20" y="40" fill="#4a5568" font-family="DM Mono" font-size="12">Brak tras z określoną godziną odjazdu.</text>';
+    svg.setAttribute('width', 400); svg.setAttribute('height', 80);
+    return;
+  }
+
+  // Collect all unique stations in path order
+  const stationOrder = [];
+  const seenSt = new Set();
+  trains.forEach(t => {
+    t.path.forEach(sid => {
+      if (!seenSt.has(sid)) { seenSt.add(sid); stationOrder.push(sid); }
+    });
+  });
+
+  // Apply station filter
+  const filteredStations = stFilter
+    ? stationOrder.filter(sid => {
+        const st = stations.find(s => s.id === sid);
+        return st?.name.toLowerCase().includes(stFilter);
+      })
+    : stationOrder;
+
+  if (!filteredStations.length) {
+    svg.innerHTML = '<text x="20" y="40" fill="#4a5568" font-family="DM Mono" font-size="12">Brak wyników dla podanego filtra.</text>';
+    return;
+  }
+
+  // Layout
+  const PAD_LEFT = 160, PAD_TOP = 50, PAD_RIGHT = 40, PAD_BOTTOM = 30;
+  const ST_H = 28; // px per station row
+  const MIN_W = 2.5; // px per minute
+  const svgH = PAD_TOP + filteredStations.length * ST_H + PAD_BOTTOM;
+
+  // Find time range
+  let minT = Infinity, maxT = -Infinity;
+  const schedules = {};
+  trains.forEach(t => {
+    const sch = getTrainSchedule(t);
+    if (!sch) return;
+    schedules[t.id] = sch;
+    sch.forEach(s => { minT = Math.min(minT, s.arrMinutes); maxT = Math.max(maxT, s.depMinutes); });
+  });
+
+  minT = Math.floor(minT/60)*60;
+  maxT = Math.ceil(maxT/60)*60 + 60;
+  const timeSpan = maxT - minT;
+  const svgW = PAD_LEFT + timeSpan * MIN_W + PAD_RIGHT;
+
+  let out = `<svg id="timetable-svg" width="${svgW}" height="${svgH}" xmlns="http://www.w3.org/2000/svg" style="background:#0e1117">`;
+
+  // Grid lines + hour labels
+  for (let t = minT; t <= maxT; t += 60) {
+    const x = PAD_LEFT + (t - minT) * MIN_W;
+    out += `<line x1="${x}" y1="${PAD_TOP-10}" x2="${x}" y2="${svgH-PAD_BOTTOM}" stroke="#2a3347" stroke-width="1"/>`;
+    out += `<text x="${x+3}" y="${PAD_TOP-14}" fill="#4a5568" font-family="DM Mono" font-size="10">${pad(Math.floor(t/60))}:00</text>`;
+  }
+  // 30-min minor lines
+  for (let t = minT; t <= maxT; t += 30) {
+    if (t % 60 === 0) continue;
+    const x = PAD_LEFT + (t - minT) * MIN_W;
+    out += `<line x1="${x}" y1="${PAD_TOP}" x2="${x}" y2="${svgH-PAD_BOTTOM}" stroke="#1e2535" stroke-width="1"/>`;
+  }
+
+  // Station rows
+  filteredStations.forEach((sid, ri) => {
+    const y = PAD_TOP + ri * ST_H;
+    const st = stations.find(s => s.id === sid);
+    const isMain = st?.props?.railway === 'station';
+    out += `<line x1="${PAD_LEFT}" y1="${y + ST_H/2}" x2="${svgW - PAD_RIGHT}" y2="${y + ST_H/2}" stroke="${isMain?'#2a3347':'#1a2030'}" stroke-width="${isMain?1:.5}"/>`;
+    out += `<text x="${PAD_LEFT-8}" y="${y+ST_H/2+4}" fill="${isMain?'#8896aa':'#4a5568'}" font-family="DM Mono" font-size="${isMain?10:9}" text-anchor="end">${st?.name||sid}</text>`;
+    if (isMain) out += `<line x1="0" y1="${y+ST_H/2}" x2="${PAD_LEFT}" y2="${y+ST_H/2}" stroke="#3a4560" stroke-width=".5"/>`;
+  });
+
+  // Train lines
+  trains.forEach((train, ti) => {
+    const sch = schedules[train.id];
+    if (!sch) return;
+    const color = train.categoryColor || '#e8a945';
+
+    // Build polyline points for stations in our filtered order
+    const points = [];
+    sch.forEach(s => {
+      const ri = filteredStations.indexOf(s.stationId);
+      if (ri === -1) return;
+      const y = PAD_TOP + ri * ST_H + ST_H/2;
+      const xArr = PAD_LEFT + (s.arrMinutes - minT) * MIN_W;
+      const xDep = PAD_LEFT + (s.depMinutes - minT) * MIN_W;
+      points.push({ xArr, xDep, y, sid: s.stationId });
+    });
+
+    // Draw line segments
+    for (let i = 0; i < points.length - 1; i++) {
+      out += `<line x1="${points[i].xDep}" y1="${points[i].y}" x2="${points[i+1].xArr}" y2="${points[i+1].y}" stroke="${color}" stroke-width="2" opacity=".85"/>`;
+    }
+    // Draw stop ticks
+    points.forEach(p => {
+      if (p.xDep > p.xArr + 1) {
+        out += `<line x1="${p.xArr}" y1="${p.y-5}" x2="${p.xDep}" y2="${p.y-5}" stroke="${color}" stroke-width="3" stroke-linecap="round"/>`;
+      }
+      out += `<circle cx="${p.xArr}" cy="${p.y}" r="3" fill="${color}"/>`;
+    });
+    // Train label at first stop
+    if (points.length > 0) {
+      out += `<text x="${points[0].xArr+4}" y="${points[0].y-8}" fill="${color}" font-family="DM Mono" font-size="9" opacity=".9">${train.number}${train.name?' '+train.name:''}</text>`;
+    }
+  });
+
+  out += '</svg>';
+  document.getElementById('timetable-scroll').innerHTML = out;
 }
 
 // ── TRAIN PARAMETERS ─────────────────────────────────────────────────────────
@@ -1561,6 +1988,39 @@ fetch(GEOJSON_PATH)
       </div>`;
   });
 </script>
+<!-- Timetable panel -->
+<div id="timetable-panel">
+  <div id="timetable-toolbar">
+    <h2>Rozkład Jazdy — Wykres Czasu</h2>
+    <input class="tt-filter" id="tt-date-filter" type="date" onchange="renderTimetable()" title="Filtruj po dacie">
+    <input class="tt-filter" id="tt-station-filter" placeholder="Filtruj stację…" oninput="renderTimetable()" style="width:180px">
+    <button onclick="renderTimetable()" style="padding:5px 14px;background:var(--amber);color:#0e1117;border:none;border-radius:2px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;cursor:pointer">Odśwież</button>
+  </div>
+  <div id="timetable-scroll">
+    <svg id="timetable-svg"></svg>
+  </div>
+</div>
+
+<!-- Conflict panel -->
+<div id="conflict-panel" class="panel">
+  <div class="panel-header">
+    <div class="panel-title" style="color:var(--red)">Konflikty torowe</div>
+  </div>
+  <div id="conflict-list" style="padding:8px 0"></div>
+</div>
+
+<!-- Dwell time editor panel -->
+<div id="dwell-panel" class="panel">
+  <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between">
+    <div class="panel-title">Czasy Postoju</div>
+    <button onclick="resetDwellTimes()" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:3px 8px;background:transparent;border:1px solid var(--border);color:var(--text-faint);border-radius:2px;cursor:pointer">Reset</button>
+  </div>
+  <div class="panel-body" style="padding:8px 0;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);padding:8px 14px 4px">
+    Czas postoju per stacja (min)
+  </div>
+  <div id="dwell-list"></div>
+</div>
+
 <!-- Sidebar overlay -->
 <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
