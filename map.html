@@ -432,6 +432,39 @@
       font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text-faint);
       padding:5px 14px; border-bottom:1px solid var(--border2); }
 
+    /* ── Capacity table ── */
+    #capacity-panel { position:fixed; top:60px; left:0; right:0; bottom:0; z-index:700;
+      background:var(--bg); display:none; flex-direction:column; overflow:hidden; }
+    #capacity-panel.visible { display:flex; }
+    #capacity-toolbar { padding:10px 20px; background:var(--surface);
+      border-bottom:1px solid var(--border); display:flex; align-items:center;
+      gap:12px; flex-shrink:0; flex-wrap:wrap; }
+    #capacity-toolbar h2 { font-family:'DM Mono',monospace; font-size:12px;
+      letter-spacing:2px; text-transform:uppercase; color:var(--amber); }
+    #capacity-scroll { flex:1; overflow:auto; padding:24px 32px; }
+    .cap-table { width:100%; border-collapse:collapse; max-width:1100px; }
+    .cap-table thead tr { border-bottom:2px solid var(--amber); }
+    .cap-table th { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px;
+      text-transform:uppercase; color:var(--amber); padding:8px 14px; text-align:left; }
+    .cap-table td { padding:9px 14px; border-bottom:1px solid var(--border);
+      font-size:12px; color:var(--text-dim); vertical-align:middle; }
+    .cap-table tbody tr:hover td { background:var(--surface2); }
+    .cap-bar-wrap { width:120px; height:8px; background:var(--surface2);
+      border-radius:2px; overflow:hidden; display:inline-block; vertical-align:middle; }
+    .cap-bar { height:100%; border-radius:2px; transition:width .3s; }
+    .cap-pct { font-family:'DM Mono',monospace; font-size:11px; font-weight:500;
+      margin-left:8px; vertical-align:middle; }
+    .cap-ok   { color:var(--green); }
+    .cap-warn { color:var(--amber); }
+    .cap-over { color:var(--red); }
+    .cap-mono { font-family:'DM Mono',monospace; }
+    .cap-segment-name { font-size:13px; color:var(--text); }
+    .cap-sort-btn { background:transparent; border:none; color:var(--text-faint);
+      cursor:pointer; font-size:10px; padding:0 4px; transition:color .15s; }
+    .cap-sort-btn:hover, .cap-sort-btn.active { color:var(--amber); }
+    .cap-empty { text-align:center; padding:80px 0; font-family:'DM Mono',monospace;
+      font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--text-faint); }
+
     /* ── Headway calculator ── */
     #headway-panel { position:absolute; top:80px; right:20px; z-index:900;
       width:300px; display:none; }
@@ -657,6 +690,7 @@
     <div id="tab-bar">
       <button class="tab-btn active" id="tab-map" onclick="switchTab('map')">Mapa</button>
       <button class="tab-btn" id="tab-timetable" onclick="switchTab('timetable')">Rozkład jazdy</button>
+      <button class="tab-btn" id="tab-capacity" onclick="switchTab('capacity')">Przepustowość</button>
     </div>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
       <button class="tt-btn" onclick="toggleHeatmap()" id="heatmap-btn">🌡 Obciążenie</button>
@@ -1642,14 +1676,15 @@ let selectedTimetableStation = null;
 function switchTab(tab) {
   currentTab = tab;
   document.getElementById('timetable-panel').classList.toggle('visible', tab === 'timetable');
+  document.getElementById('capacity-panel').classList.toggle('visible', tab === 'capacity');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
-  // Hide map-only panels when in timetable view
+  // Hide map-only panels when not on map tab
   const mapOnly = ['planner', 'train-panel', 'results', 'headway-panel', 'dwell-panel', 'heatmap-legend'];
   mapOnly.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
-    if (tab === 'timetable') {
+    if (tab !== 'map') {
       el.dataset.hiddenByTab = el.style.display || '';
       el.style.display = 'none';
     } else if (el.dataset.hiddenByTab !== undefined) {
@@ -1661,6 +1696,7 @@ function switchTab(tab) {
     populateStationSelect();
     if (selectedTimetableStation) renderStationTimetable();
   }
+  if (tab === 'capacity') renderCapacityTable();
 }
 
 function populateStationSelect() {
@@ -1829,6 +1865,231 @@ function printStationTimetable() {
     window.print();
     setTimeout(() => { frame.style.display='none'; frame.innerHTML=''; }, 500);
   }, 150);
+}
+
+// ── CAPACITY TABLE ───────────────────────────────────────────────────────────
+let capSortCol = 'pct';
+let capSortDir = -1; // -1 = desc
+
+// UIC 406: theoretical capacity = 60 min / minimum headway
+// Minimum headway modelled as: longest single-segment travel time * 1.4 (safety factor)
+// For headway method: capacity = 60 / min_headway_minutes
+function theoreticalCapacity(fromId, toId, method) {
+  const edge = graph[fromId]?.find(e => e.to === toId)
+             || graph[toId]?.find(e => e.to === fromId);
+  if (!edge) return null;
+  const spd = parseFloat(edge.maxspeed) || 160;
+  const travelMin = segmentTime(edge.dist, spd, true);
+
+  if (method === 'UIC') {
+    // UIC 406: infrastructure occupation time per train including safety buffer
+    // Typical: travel time + 2 min safety + 1 min buffer = travel * 1.5 min
+    const occupancy = travelMin * 1.5 + 2;
+    return Math.floor(60 / occupancy);
+  } else {
+    // Headway method: minimum separation = travel time + 3 min safety
+    const minHeadway = travelMin + 3;
+    return Math.floor(60 / minHeadway);
+  }
+}
+
+function buildCapacityData() {
+  const method = document.getElementById('cap-method').value;
+
+  // Count trains per edge with schedule
+  const edgeData = {}; // key → {fromId, toId, trains:[], scheduled, distKm, maxspeedKmh}
+
+  savedTrains.forEach(train => {
+    if (!train.path?.length) return;
+    const sch = train.departure ? getTrainSchedule(train) : null;
+
+    for (let i = 0; i < train.path.length - 1; i++) {
+      const fromId = train.path[i];
+      const toId   = train.path[i + 1];
+      const key    = [fromId, toId].sort().join('|');
+
+      if (!edgeData[key]) {
+        const edge = graph[fromId]?.find(e => e.to === toId)
+                   || graph[toId]?.find(e => e.to === fromId);
+        edgeData[key] = {
+          fromId, toId, key,
+          trains: [],
+          distKm: edge?.dist || 0,
+          maxspeedKmh: parseFloat(edge?.maxspeed) || 160,
+        };
+      }
+
+      // Per-hour bucket using departure time on this segment
+      let hourBucket = null;
+      if (sch && sch[i]) {
+        hourBucket = Math.floor(sch[i].depMinutes / 60) % 24;
+      }
+      edgeData[key].trains.push({ train, hourBucket });
+    }
+  });
+
+  // Build rows with capacity calculations
+  return Object.values(edgeData).map(seg => {
+    const cap = theoreticalCapacity(seg.fromId, seg.toId, method);
+    const scheduled = seg.trains.length;
+
+    // Peak hour: find the hour with most trains
+    const hourCounts = {};
+    seg.trains.forEach(t => {
+      if (t.hourBucket !== null) {
+        hourCounts[t.hourBucket] = (hourCounts[t.hourBucket] || 0) + 1;
+      }
+    });
+    const peakHour = Object.entries(hourCounts).sort((a,b) => b[1]-a[1])[0];
+    const peakCount = peakHour ? peakHour[1] : scheduled;
+    const peakHourLabel = peakHour ? `${String(peakHour[0]).padStart(2,'0')}:00` : '—';
+
+    const pct = cap ? Math.round((peakCount / cap) * 100) : null;
+    const fromSt = stations.find(s => s.id === seg.fromId);
+    const toSt   = stations.find(s => s.id === seg.toId);
+
+    return {
+      ...seg,
+      fromName: fromSt?.name || seg.fromId,
+      toName:   toSt?.name   || seg.toId,
+      cap, scheduled, peakCount, peakHourLabel, pct,
+    };
+  });
+}
+
+function capBarColor(pct) {
+  if (pct === null) return '#4a5568';
+  if (pct <= 50)  return '#3daa6e';
+  if (pct <= 75)  return '#e8a945';
+  if (pct <= 100) return '#e8783d';
+  return '#d94f3d';
+}
+
+function renderCapacityTable() {
+  const scroll = document.getElementById('capacity-scroll');
+  const filter = document.getElementById('cap-filter').value.toLowerCase().trim();
+  const overloadedOnly = document.getElementById('cap-overloaded-only').checked;
+
+  if (!savedTrains.length) {
+    scroll.innerHTML = '<div class="cap-empty">Brak zapisanych pociągów</div>';
+    return;
+  }
+
+  let rows = buildCapacityData();
+
+  if (filter) rows = rows.filter(r =>
+    r.fromName.toLowerCase().includes(filter) ||
+    r.toName.toLowerCase().includes(filter));
+  if (overloadedOnly) rows = rows.filter(r => r.pct !== null && r.pct > 75);
+
+  rows.sort((a, b) => {
+    const av = a[capSortCol] ?? -1;
+    const bv = b[capSortCol] ?? -1;
+    return (av < bv ? -1 : av > bv ? 1 : 0) * capSortDir;
+  });
+
+  if (!rows.length) {
+    scroll.innerHTML = '<div class="cap-empty">Brak wyników</div>';
+    return;
+  }
+
+  const totalEdges = rows.length;
+  const overloaded = rows.filter(r => r.pct !== null && r.pct > 100).length;
+  const warning    = rows.filter(r => r.pct !== null && r.pct > 75 && r.pct <= 100).length;
+  const avgPct     = Math.round(rows.filter(r=>r.pct!==null).reduce((s,r)=>s+r.pct,0) / rows.filter(r=>r.pct!==null).length) || 0;
+
+  function sortBtn(col, label) {
+    const active = capSortCol === col ? ' active' : '';
+    const arrow  = capSortCol === col ? (capSortDir === 1 ? ' ▲' : ' ▼') : '';
+    return `<button class="cap-sort-btn${active}" onclick="capSort('${col}')">${label}${arrow}</button>`;
+  }
+
+  const summary = `
+    <div style="display:flex;gap:24px;margin-bottom:20px;max-width:1100px">
+      ${[
+        ['Odcinki', totalEdges, 'var(--text)'],
+        ['Przeciążone (>100%)', overloaded, overloaded > 0 ? 'var(--red)' : 'var(--green)'],
+        ['Ostrzeżenia (75–100%)', warning, warning > 0 ? 'var(--amber)' : 'var(--green)'],
+        ['Śr. wykorzystanie', avgPct + '%', avgPct > 75 ? 'var(--amber)' : 'var(--green)'],
+      ].map(([label, val, color]) => `
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:10px 16px;flex:1">
+          <div style="font-family:'Playfair Display',serif;font-size:22px;color:${color};line-height:1">${val}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);margin-top:3px">${label}</div>
+        </div>`).join('')}
+    </div>`;
+
+  const tableRows = rows.map(r => {
+    const pctClass = r.pct === null ? '' : r.pct > 100 ? 'cap-over' : r.pct > 75 ? 'cap-warn' : 'cap-ok';
+    const barW = r.pct === null ? 0 : Math.min(r.pct, 100);
+    const barColor = capBarColor(r.pct);
+    const pctLabel = r.pct === null ? '—' : r.pct + '%';
+    const travelMin = segmentTime(r.distKm, r.maxspeedKmh, true);
+
+    return `<tr>
+      <td class="cap-segment-name">${r.fromName}</td>
+      <td class="cap-segment-name">${r.toName}</td>
+      <td class="cap-mono" style="color:var(--text)">${Math.round(r.distKm)} km</td>
+      <td class="cap-mono" style="color:var(--text)">${r.maxspeedKmh} km/h</td>
+      <td class="cap-mono" style="color:var(--text)">${travelMin.toFixed(1)} min</td>
+      <td class="cap-mono" style="color:var(--text)">${r.cap ?? '—'}</td>
+      <td class="cap-mono">${r.scheduled}</td>
+      <td class="cap-mono" style="color:var(--text-dim)">${r.peakCount} <span style="font-size:10px;color:var(--text-faint)">(${r.peakHourLabel})</span></td>
+      <td>
+        <span class="cap-bar-wrap"><span class="cap-bar" style="width:${barW}%;background:${barColor}"></span></span>
+        <span class="cap-pct ${pctClass}">${pctLabel}</span>
+      </td>
+    </tr>`;
+  }).join('');
+
+  scroll.innerHTML = summary + `
+    <table class="cap-table">
+      <thead><tr>
+        <th>${sortBtn('fromName','Od')}</th>
+        <th>${sortBtn('toName','Do')}</th>
+        <th>${sortBtn('distKm','Długość')}</th>
+        <th>${sortBtn('maxspeedKmh','Vmax')}</th>
+        <th>Czas przej.</th>
+        <th>${sortBtn('cap','Max poc./h')}</th>
+        <th>${sortBtn('scheduled','Zapl. łącznie')}</th>
+        <th>${sortBtn('peakCount','Szczyt')}</th>
+        <th>${sortBtn('pct','Wykorzystanie')}</th>
+      </tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>`;
+}
+
+function capSort(col) {
+  if (capSortCol === col) capSortDir *= -1;
+  else { capSortCol = col; capSortDir = -1; }
+  renderCapacityTable();
+}
+
+function printCapacityTable() {
+  const content = document.getElementById('capacity-scroll').innerHTML;
+  const frame = document.getElementById('print-frame');
+  frame.style.display = 'block';
+  frame.innerHTML = `
+    <style>
+      body { font-family:'DM Mono',monospace; background:#fff; color:#111; padding:20px; margin:0; }
+      .cap-table { width:100%; border-collapse:collapse; font-size:11px; }
+      .cap-table th { font-size:8px; letter-spacing:2px; text-transform:uppercase; color:#888;
+        padding:6px 10px; border-bottom:2px solid #111; text-align:left; }
+      .cap-table td { padding:6px 10px; border-bottom:1px solid #eee; }
+      .cap-bar-wrap, .cap-sort-btn { display:none; }
+      .cap-pct { font-weight:700; }
+      .cap-ok   { color:#1e8449; }
+      .cap-warn { color:#b7770d; }
+      .cap-over { color:#c0392b; }
+      h2 { font-size:16px; margin-bottom:4px; }
+      .print-hdr { font-size:9px; color:#aaa; border-bottom:1px solid #ddd;
+        padding-bottom:8px; margin-bottom:16px; display:flex; justify-content:space-between; }
+    </style>
+    <div class="print-hdr">
+      <span>Koleje Królewskie · Zdolność Przepustowa Odcinków</span>
+      <span>${new Date().toLocaleDateString('pl-PL')} ${new Date().toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'})}</span>
+    </div>
+    ${content}`;
+  setTimeout(() => { window.print(); setTimeout(() => { frame.style.display='none'; frame.innerHTML=''; }, 500); }, 150);
 }
 
 // ── HEADWAY CALCULATOR ───────────────────────────────────────────────────────
@@ -2345,6 +2606,31 @@ fetch(GEOJSON_PATH)
     Czas postoju per stacja (min)
   </div>
   <div id="dwell-list"></div>
+</div>
+
+<!-- Capacity table panel -->
+<div id="capacity-panel">
+  <div id="capacity-toolbar">
+    <h2>Zdolność Przepustowa Odcinków</h2>
+    <div style="display:flex;align-items:center;gap:8px">
+      <label style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint)">Metoda:</label>
+      <select id="cap-method" onchange="renderCapacityTable()" style="padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none">
+        <option value="UIC">UIC 406 (kompresja)</option>
+        <option value="headway">Interwał minimalny</option>
+      </select>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <label style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint)">Filtruj:</label>
+      <input id="cap-filter" type="text" placeholder="nazwa odcinka…" oninput="renderCapacityTable()" style="padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;width:180px">
+    </div>
+    <label style="display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-faint);cursor:pointer">
+      <input type="checkbox" id="cap-overloaded-only" onchange="renderCapacityTable()"> Tylko przeciążone
+    </label>
+    <button onclick="printCapacityTable()" style="margin-left:auto;padding:6px 16px;background:var(--amber);color:#0e1117;border:none;border-radius:2px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer">🖨 Drukuj</button>
+  </div>
+  <div id="capacity-scroll">
+    <div class="cap-empty">Wczytaj pociągi aby zobaczyć przepustowość</div>
+  </div>
 </div>
 
 <!-- Headway panel -->
