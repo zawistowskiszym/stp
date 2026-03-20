@@ -64,7 +64,7 @@
                 "name": "Aleja Wiktoriańska",
                 "lanes": "2",
                 "oneway": "yes",
-                "maxspeed": "50"
+                "maxspeed": "60"
             },
             "geometry": {
                 "type": "LineString",
@@ -474,7 +474,13 @@
         },
         {
             "type": "Feature",
-            "properties": null,
+            "properties": {
+                "highway": "secondary",
+                "name": "Wynalazek",
+                "lanes": "2",
+                "maxspeed": "50",
+                "oneway": "yes"
+            },
             "geometry": {
                 "type": "LineString",
                 "coordinates": [
@@ -568,7 +574,13 @@
         },
         {
             "type": "Feature",
-            "properties": null,
+            "properties": {
+                "highway": "secondary",
+                "noref": "yes",
+                "name": "Wynalazek",
+                "lanes": "4",
+                "maxspeed": "50"
+            },
             "geometry": {
                 "type": "LineString",
                 "coordinates": [
@@ -739,7 +751,7 @@
                 "noref": "yes",
                 "name": "Aleja Wiktoriańska",
                 "lanes": "2",
-                "maxspeed": "50",
+                "maxspeed": "60",
                 "oneway": "yes"
             },
             "geometry": {
@@ -860,7 +872,12 @@
         },
         {
             "type": "Feature",
-            "properties": null,
+            "properties": {
+                "highway": "unclassified",
+                "name": "Zapasowa",
+                "lanes": "2",
+                "maxspeed": "50"
+            },
             "geometry": {
                 "type": "LineString",
                 "coordinates": [
@@ -1376,7 +1393,13 @@
         },
         {
             "type": "Feature",
-            "properties": null,
+            "properties": {
+                "highway": "secondary",
+                "name": "Wynalazek",
+                "lanes": "2",
+                "maxspeed": "50",
+                "oneway": "yes"
+            },
             "geometry": {
                 "type": "LineString",
                 "coordinates": [
@@ -1401,7 +1424,14 @@
         },
         {
             "type": "Feature",
-            "properties": null,
+            "properties": {
+                "highway": "secondary",
+                "noref": "yes",
+                "name": "Aleja Karola III",
+                "lanes": "2",
+                "maxspeed": "60",
+                "oneway": "yes"
+            },
             "geometry": {
                 "type": "LineString",
                 "coordinates": [
@@ -1434,7 +1464,14 @@
         },
         {
             "type": "Feature",
-            "properties": null,
+            "properties": {
+                "highway": "secondary",
+                "noref": "yes",
+                "name": "Aleja Karola III",
+                "lanes": "2",
+                "maxspeed": "60",
+                "oneway": "yes"
+            },
             "geometry": {
                 "type": "LineString",
                 "coordinates": [
