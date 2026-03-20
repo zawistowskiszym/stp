@@ -165,6 +165,19 @@
         {
             "type": "Feature",
             "properties": {
+                "name": "Magnatów"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.69707985179,
+                    -1.85027920913
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "name": "Jegórka",
                 "railway": "halt"
             },
@@ -1072,6 +1085,10 @@
                         -1.80836513410
                     ],
                     [
+                        -1.72727644123,
+                        -1.80457011242
+                    ],
+                    [
                         -1.72754553221,
                         -1.80414222540
                     ],
@@ -1084,6 +1101,10 @@
                         -1.79255933987
                     ],
                     [
+                        -1.72593764893,
+                        -1.78155572092
+                    ],
+                    [
                         -1.72585552901,
                         -1.78109703724
                     ],
@@ -1092,16 +1113,32 @@
                         -1.76866940753
                     ],
                     [
+                        -1.72247998422,
+                        -1.76337928362
+                    ],
+                    [
                         -1.72163064173,
                         -1.75587960046
+                    ],
+                    [
+                        -1.72326081270,
+                        -1.74873527030
                     ],
                     [
                         -1.72476921910,
                         -1.74212455704
                     ],
                     [
+                        -1.72903825420,
+                        -1.73572395338
+                    ],
+                    [
                         -1.73201208995,
                         -1.73126524124
+                    ],
+                    [
+                        -1.73779429687,
+                        -1.72140595349
                     ],
                     [
                         -1.74022067691,
@@ -1309,6 +1346,34 @@
         {
             "type": "Feature",
             "properties": {
+                "name": "Miauocin",
+                "railway": "station"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.71336754419,
+                    -1.86584142889
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Szerock",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.72593764893,
+                    -1.78155572092
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "usage": "main",
                 "electrified": "contact_line",
                 "railway": "rail",
@@ -1384,16 +1449,16 @@
                         -1.81148717697
                     ],
                     [
-                        -1.67689059106,
-                        -1.81203766161
+                        -1.67663658014,
+                        -1.81209285376
                     ],
                     [
-                        -1.67759978883,
-                        -1.81231667431
+                        -1.67669297419,
+                        -1.81229758447
                     ],
                     [
-                        -1.67818072743,
-                        -1.81248257373
+                        -1.67681092288,
+                        -1.81242992287
                     ]
                 ]
             }
@@ -2652,28 +2717,20 @@
                         -1.81240716491
                     ],
                     [
+                        -1.67681092288,
+                        -1.81242992287
+                    ],
+                    [
+                        -1.67697817818,
+                        -1.81244239836
+                    ],
+                    [
                         -1.67751679760,
                         -1.81248257373
                     ],
                     [
                         -1.67818072743,
                         -1.81248257373
-                    ],
-                    [
-                        -1.68007066026,
-                        -1.81248257373
-                    ],
-                    [
-                        -1.68292631676,
-                        -1.81248257373
-                    ],
-                    [
-                        -1.68507679124,
-                        -1.81250304419
-                    ],
-                    [
-                        -1.68559145308,
-                        -1.81250794328
                     ]
                 ]
             }
@@ -2689,6 +2746,20 @@
                 "coordinates": [
                     -2.91533086595,
                     -1.60535351731
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "halt",
+                "name": "Chocimów"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.72727644123,
+                    -1.80457011242
                 ]
             }
         },
@@ -2896,6 +2967,20 @@
                 "coordinates": [
                     -1.76891112235,
                     -1.24966561690
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Dworek Miauski",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.70801999010,
+                    -1.86177648987
                 ]
             }
         },
@@ -3627,6 +3712,20 @@
                 "coordinates": [
                     -1.67083977604,
                     -1.79616403071
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "halt",
+                "name": "Most Bobra"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68147771986,
+                    -1.82422104240
                 ]
             }
         },
@@ -4934,6 +5033,20 @@
         {
             "type": "Feature",
             "properties": {
+                "name": "Żwajec",
+                "railway": "station"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.73779429687,
+                    -1.72140595349
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "name": "Lipowo Port",
                 "railway": "halt"
             },
@@ -4942,6 +5055,20 @@
                 "coordinates": [
                     -2.66845811436,
                     -1.73750212329
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "halt",
+                "name": "Kabor"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68232275174,
+                    -1.83036945082
                 ]
             }
         },
@@ -5210,6 +5337,21 @@
                 "coordinates": [
                     -2.74258651738,
                     -1.70198979535
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "station": "main",
+                "name": "Skuszawyjice Centralne ŚREDNICOWA",
+                "railway": "station"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68327146460,
+                    -1.81248585921
                 ]
             }
         },
@@ -5817,6 +5959,20 @@
                 "coordinates": [
                     -2.74192201580,
                     -1.74314420665
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "halt",
+                "name": "Traktówka"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.72247998422,
+                    -1.76337928362
                 ]
             }
         },
@@ -6456,6 +6612,20 @@
         {
             "type": "Feature",
             "properties": {
+                "name": "Wilagrów Mieszkaniowy",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68788115347,
+                    -1.82616191437
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "railway": "station",
                 "station": "main",
                 "name": "Nota Główna"
@@ -6618,6 +6788,20 @@
         {
             "type": "Feature",
             "properties": {
+                "name": "Paski",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.72326081270,
+                    -1.74873527030
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "usage": "main",
                 "electrified": "contact_line",
                 "railway": "rail",
@@ -6703,6 +6887,10 @@
                     [
                         -1.68783035144,
                         -1.82183323629
+                    ],
+                    [
+                        -1.68788115347,
+                        -1.82616191437
                     ],
                     [
                         -1.68789070870,
@@ -6840,6 +7028,20 @@
         {
             "type": "Feature",
             "properties": {
+                "railway": "halt",
+                "name": "Franców"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.72903825420,
+                    -1.73572395338
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "name": "Biała-Zdrojowa",
                 "railway": "station"
             },
@@ -6937,6 +7139,21 @@
         {
             "type": "Feature",
             "properties": {
+                "railway": "station",
+                "name": "Skuszawyjice Wschodnie ŚREDNICOWA",
+                "station": "main"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.67697817818,
+                    -1.81244239836
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
                 "name": "Wraków",
                 "railway": "station",
                 "station": "main"
@@ -6946,6 +7163,20 @@
                 "coordinates": [
                     -0.10325590543,
                     -2.23363940091
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "railway": "halt",
+                "name": "Piwniczańska"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.69152455355,
+                    -1.84145734778
                 ]
             }
         },
@@ -7058,6 +7289,20 @@
                 "coordinates": [
                     -2.72931314272,
                     -1.72171398812
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Nowy Port",
+                "railway": "halt"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.68504535152,
+                    -1.83439318324
                 ]
             }
         },
@@ -8521,20 +8766,40 @@
                         -1.83395887165
                     ],
                     [
+                        -1.68504535152,
+                        -1.83439318324
+                    ],
+                    [
                         -1.69010781195,
                         -1.83951802874
+                    ],
+                    [
+                        -1.69152455355,
+                        -1.84145734778
                     ],
                     [
                         -1.69552671164,
                         -1.84693572521
                     ],
                     [
+                        -1.69707985179,
+                        -1.85027920913
+                    ],
+                    [
                         -1.69858956799,
                         -1.85352920719
                     ],
                     [
+                        -1.70801999010,
+                        -1.86177648987
+                    ],
+                    [
                         -1.70895615872,
                         -1.86259520480
+                    ],
+                    [
+                        -1.71336754419,
+                        -1.86584142889
                     ],
                     [
                         -1.71967615594,
@@ -9134,6 +9399,10 @@
                         -1.82484957115
                     ],
                     [
+                        -1.68147771986,
+                        -1.82422104240
+                    ],
+                    [
                         -1.68117596385,
                         -1.82296436246
                     ],
@@ -9176,6 +9445,45 @@
                     [
                         -1.67559291003,
                         -1.80736230729
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "usage": "main",
+                "electrified": "contact_line",
+                "railway": "rail",
+                "gauge": "1435",
+                "maxspeed": "80"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -1.67818072743,
+                        -1.81248257373
+                    ],
+                    [
+                        -1.68007066026,
+                        -1.81248257373
+                    ],
+                    [
+                        -1.68292631676,
+                        -1.81248257373
+                    ],
+                    [
+                        -1.68327146460,
+                        -1.81248585921
+                    ],
+                    [
+                        -1.68507679124,
+                        -1.81250304419
+                    ],
+                    [
+                        -1.68559145308,
+                        -1.81250794328
                     ]
                 ]
             }
