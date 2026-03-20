@@ -1578,49 +1578,120 @@ function getTrainSchedule(train) {
   return schedule;
 }
 
+// Build a map of physical coord-pair → canonical key (direction-independent)
+// Each edge's geometry gives us real track coordinate pairs to compare
+function edgeCoordKey(c1, c2) {
+  // Canonical: sort so A→B and B→A give the same key
+  const k1 = `${Math.round(c1[0]*1e6)},${Math.round(c1[1]*1e6)}`;
+  const k2 = `${Math.round(c2[0]*1e6)},${Math.round(c2[1]*1e6)}`;
+  return k1 < k2 ? k1+'|'+k2 : k2+'|'+k1;
+}
+
+// For a train path, return a list of physical coord segments with timing
+// Each entry: { coordKey, fromStation, toStation, startMin, endMin, geomPair, direction }
+function getPhysicalSegments(train, schedule) {
+  const segments = [];
+  for (let i = 0; i < train.path.length - 1; i++) {
+    const fromId = train.path[i];
+    const toId   = train.path[i + 1];
+    const edge = graph[fromId]?.find(e => e.to === toId);
+    if (!edge?.geom || edge.geom.length < 2) continue;
+
+    // Orient geometry: geom is raw [lng,lat], may need reversing based on direction
+    const g = edge.geom;
+    const fromSt = stations.find(s => s.id === fromId);
+    const fromLL = fromSt?.latlng; // [lat,lng]
+    let oriented = g;
+    if (fromLL) {
+      const d2s = (g[0][0]-fromLL[1])**2 + (g[0][1]-fromLL[0])**2;
+      const d2e = (g[g.length-1][0]-fromLL[1])**2 + (g[g.length-1][1]-fromLL[0])**2;
+      if (d2e < d2s) oriented = [...g].reverse();
+    }
+
+    const startMin = schedule[i].depMinutes;
+    const endMin   = schedule[i+1].arrMinutes;
+    const totalCoords = oriented.length - 1;
+
+    // Split edge into individual coordinate-pair segments with interpolated timing
+    for (let k = 0; k < oriented.length - 1; k++) {
+      const c1 = oriented[k], c2 = oriented[k+1];
+      const tStart = startMin + (endMin - startMin) * (k / totalCoords);
+      const tEnd   = startMin + (endMin - startMin) * ((k+1) / totalCoords);
+      segments.push({
+        coordKey: edgeCoordKey(c1, c2),
+        fromStation: fromId,
+        toStation: toId,
+        startMin: tStart,
+        endMin: tEnd,
+        c1, c2,
+        // Direction: +1 if going c1→c2 as stored, -1 if reversed
+        direction: oriented === g ? 1 : -1,
+      });
+    }
+  }
+  return segments;
+}
+
 function detectConflicts() {
   const trainsWithTime = savedTrains.filter(t => t.departure && t.path?.length >= 2);
   const conflicts = [];
 
-  // For each pair of trains
   for (let a = 0; a < trainsWithTime.length; a++) {
     for (let b = a + 1; b < trainsWithTime.length; b++) {
       const tA = trainsWithTime[a];
       const tB = trainsWithTime[b];
-
-      // Only compare same date or no date
       if (tA.date && tB.date && tA.date !== tB.date) continue;
 
       const schA = getTrainSchedule(tA);
       const schB = getTrainSchedule(tB);
       if (!schA || !schB) continue;
 
-      // Check each segment of A against each segment of B
-      for (let i = 0; i < tA.path.length - 1; i++) {
-        for (let j = 0; j < tB.path.length - 1; j++) {
-          const segA = [tA.path[i], tA.path[i+1]];
-          const segB = [tB.path[j], tB.path[j+1]];
-          // Same segment (either direction)
-          if (!((segA[0]===segB[0]&&segA[1]===segB[1])||(segA[0]===segB[1]&&segA[1]===segB[0]))) continue;
+      const segsA = getPhysicalSegments(tA, schA);
+      const segsB = getPhysicalSegments(tB, schB);
 
-          // Time overlap check
-          const aStart = schA[i].depMinutes;
-          const aEnd   = schA[i+1].arrMinutes;
-          const bStart = schB[j].depMinutes;
-          const bEnd   = schB[j+1].arrMinutes;
+      // Build lookup: coordKey → [segB entries]
+      const mapB = {};
+      segsB.forEach(s => {
+        if (!mapB[s.coordKey]) mapB[s.coordKey] = [];
+        mapB[s.coordKey].push(s);
+      });
 
-          const overlap = Math.max(0, Math.min(aEnd,bEnd) - Math.max(aStart,bStart));
-          if (overlap > 0) {
-            conflicts.push({
-              trainA: tA, trainB: tB,
-              segment: segA,
-              overlapMinutes: Math.round(overlap),
-              timeA: `${pad(Math.floor(aStart/60))}:${pad(aStart%60)}–${pad(Math.floor(aEnd/60))}:${pad(aEnd%60)}`,
-              timeB: `${pad(Math.floor(bStart/60))}:${pad(bStart%60)}–${pad(Math.floor(bEnd/60))}:${pad(bEnd%60)}`,
-            });
-          }
-        }
-      }
+      // For each physical coord segment of A, check B
+      const reportedPairs = new Set();
+      segsA.forEach(sA => {
+        const matches = mapB[sA.coordKey] || [];
+        matches.forEach(sB => {
+          // Double-track: only same-direction travel can conflict
+          const sameDir = sA.direction === sB.direction;
+          if (!sameDir) return;
+
+          const overlap = Math.max(0, Math.min(sA.endMin, sB.endMin) - Math.max(sA.startMin, sB.startMin));
+          if (overlap <= 0) return;
+
+          // Deduplicate by station-pair
+          const pairKey = [tA.id, tB.id, sA.fromStation, sA.toStation].join('|');
+          if (reportedPairs.has(pairKey)) return;
+          reportedPairs.add(pairKey);
+
+          // Find time window of the full edge (station→station) for display
+          const edgeSchA = schA.find(s => s.stationId === sA.fromStation);
+          const edgeSchB = schB.find(s => s.stationId === sB.fromStation);
+          const aS = edgeSchA?.depMinutes ?? sA.startMin;
+          const aE = schA.find(s => s.stationId === sA.toStation)?.arrMinutes ?? sA.endMin;
+          const bS = edgeSchB?.depMinutes ?? sB.startMin;
+          const bE = schB.find(s => s.stationId === sB.toStation)?.arrMinutes ?? sB.endMin;
+
+          conflicts.push({
+            trainA: tA, trainB: tB,
+            segment: [sA.fromStation, sA.toStation],
+            overlapMinutes: Math.round(overlap),
+            sameDirection: sameDir,
+            timeA: `${pad(Math.floor(aS/60))}:${pad(aS%60)}–${pad(Math.floor(aE/60))}:${pad(aE%60)}`,
+            timeB: `${pad(Math.floor(bS/60))}:${pad(bS%60)}–${pad(Math.floor(bE/60))}:${pad(bE%60)}`,
+            geomSample: [sA.c1, sA.c2],
+          });
+        });
+      });
     }
   }
   return conflicts;
@@ -1651,28 +1722,34 @@ function runConflictCheck() {
     return;
   }
 
-  list.innerHTML = conflicts.map((c,i) => `
-    <div class="conflict-item">
+  list.innerHTML = conflicts.map((c,i) => {
+    const dirLabel = '';
+    const stA = stations.find(s=>s.id===c.segment[0]);
+    const stB = stations.find(s=>s.id===c.segment[1]);
+    return `<div class="conflict-item">
       <div class="c-trains">[${c.trainA.categoryLabel}] ${c.trainA.number} ✕ [${c.trainB.categoryLabel}] ${c.trainB.number}</div>
       <div class="c-detail">
-        Odcinek: ${c.segment[0]} → ${c.segment[1]}<br>
+        Odcinek: ${stA?.name||c.segment[0]} → ${stB?.name||c.segment[1]}<br>
         ${c.trainA.number}: ${c.timeA}<br>
         ${c.trainB.number}: ${c.timeB}<br>
         Nakładanie: <strong style="color:var(--red)">${c.overlapMinutes} min</strong>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
-  // Highlight conflicting segments on map
+  // Highlight conflicting segments on map using physical geom
   const seenSegs = new Set();
   conflicts.forEach(c => {
     const key = [c.segment[0],c.segment[1]].sort().join('|');
     if (seenSegs.has(key)) return;
     seenSegs.add(key);
-    const edge = graph[c.segment[0]]?.find(e => e.to === c.segment[1]);
+    const edge = graph[c.segment[0]]?.find(e => e.to === c.segment[1])
+               || graph[c.segment[1]]?.find(e => e.to === c.segment[0]);
     if (!edge?.geom) return;
     const latlngs = edge.geom.map(g => [g[1], g[0]]);
-    const layer = L.polyline(latlngs, { color:'#d94f3d', weight:6, opacity:.8,
-      dashArray:'8,6', className:'conflict-layer' }).addTo(map);
+    const color = '#d94f3d';
+    const layer = L.polyline(latlngs, { color, weight:6, opacity:.85,
+      dashArray:'8,6' }).addTo(map);
     conflictLayers.push(layer);
   });
 }
