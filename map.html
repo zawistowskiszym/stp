@@ -1644,6 +1644,19 @@ function switchTab(tab) {
   document.getElementById('timetable-panel').classList.toggle('visible', tab === 'timetable');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
+  // Hide map-only panels when in timetable view
+  const mapOnly = ['planner', 'train-panel', 'results', 'headway-panel', 'dwell-panel', 'heatmap-legend'];
+  mapOnly.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (tab === 'timetable') {
+      el.dataset.hiddenByTab = el.style.display || '';
+      el.style.display = 'none';
+    } else if (el.dataset.hiddenByTab !== undefined) {
+      el.style.display = el.dataset.hiddenByTab;
+      delete el.dataset.hiddenByTab;
+    }
+  });
   if (tab === 'timetable') {
     populateStationSelect();
     if (selectedTimetableStation) renderStationTimetable();
@@ -1953,19 +1966,34 @@ function renderHeatmap() {
   clearHeatmap();
   if (!savedTrains.length) return;
 
-  // Count usage per edge (direction-independent)
-  const edgeCounts = {};
+  // Count trains per hour per edge (direction-independent)
+  // For each train with a departure time, spread its usage across the hour windows it occupies
+  const edgeCounts = {};  // key → trains/hour (float)
   const edgeGeoms = {};
 
   savedTrains.forEach(t => {
     if (!t.path?.length) return;
+    const sch = t.departure ? getTrainSchedule(t) : null;
+
     for (let i = 0; i < t.path.length-1; i++) {
       const a = t.path[i], b = t.path[i+1];
       const key = [a,b].sort().join('|');
-      edgeCounts[key] = (edgeCounts[key]||0) + 1;
+
       if (!edgeGeoms[key]) {
         const edge = graph[a]?.find(e=>e.to===b) || graph[b]?.find(e=>e.to===a);
         if (edge?.geom) edgeGeoms[key] = edge.geom.map(c=>[c[1],c[0]]);
+      }
+
+      if (sch) {
+        // Time this train occupies the segment (in hours)
+        const segStart = sch[i].depMinutes;
+        const segEnd   = sch[i+1].arrMinutes;
+        const durationHours = Math.max((segEnd - segStart) / 60, 1/60);
+        // Contribution = 1 train / duration → trains per hour rate
+        edgeCounts[key] = (edgeCounts[key]||0) + (1 / durationHours);
+      } else {
+        // No schedule: count as 1 train (undated)
+        edgeCounts[key] = (edgeCounts[key]||0) + 1;
       }
     }
   });
@@ -1996,14 +2024,14 @@ function renderHeatmap() {
     const color = heatColor(count);
     const weight = 2 + Math.round((count/maxCount)*6);
     const layer = L.polyline(geom, { color, weight, opacity:0.85, lineJoin:'round', lineCap:'round' })
-      .bindTooltip(`${count} pociąg${count===1?'':'ów'}`, { sticky:true, className:'' })
+      .bindTooltip(`${count.toFixed(1)} poc./h`, { sticky:true, className:'' })
       .addTo(map);
     heatmapLayers.push(layer);
   });
 
   heatmapActive = true;
   document.getElementById('heatmap-legend').classList.add('visible');
-  document.getElementById('heatmap-label').textContent = `max: ${maxCount} pociągów`;
+  document.getElementById('heatmap-label').textContent = `max: ${maxCount.toFixed(1)} poc./h`;
   document.getElementById('heatmap-btn').style.color = 'var(--amber)';
   document.getElementById('heatmap-btn').style.borderColor = 'var(--amber)';
 }
