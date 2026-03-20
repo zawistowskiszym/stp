@@ -432,6 +432,51 @@
       font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text-faint);
       padding:5px 14px; border-bottom:1px solid var(--border2); }
 
+    /* ── Simulation ── */
+    #sim-bar { position:fixed; bottom:0; left:0; right:0; z-index:1100;
+      height:54px; background:var(--surface); border-top:1px solid var(--border);
+      display:none; align-items:center; gap:0; padding:0;
+      box-shadow:0 -4px 20px #00000060; }
+    #sim-bar.visible { display:flex; }
+    .sim-section { display:flex; align-items:center; gap:10px; padding:0 16px;
+      border-right:1px solid var(--border); height:100%; }
+    .sim-section:last-child { border-right:none; }
+    #sim-clock { font-family:'Playfair Display',serif; font-size:26px;
+      color:var(--amber); letter-spacing:2px; min-width:80px; }
+    #sim-date-label { font-family:'DM Mono',monospace; font-size:9px;
+      letter-spacing:2px; text-transform:uppercase; color:var(--text-faint); }
+    .sim-btn { width:32px; height:32px; border-radius:2px; background:var(--surface2);
+      border:1px solid var(--border); color:var(--text); font-size:14px;
+      cursor:pointer; transition:all .15s; display:flex; align-items:center; justify-content:center; }
+    .sim-btn:hover { border-color:var(--amber); color:var(--amber); }
+    .sim-btn.active { background:var(--amber); color:#0e1117; border-color:var(--amber); }
+    #sim-speed-btns { display:flex; gap:4px; }
+    .sim-speed-btn { padding:4px 10px; border-radius:2px; background:var(--surface2);
+      border:1px solid var(--border); color:var(--text-dim); font-family:'DM Mono',monospace;
+      font-size:10px; letter-spacing:1px; cursor:pointer; transition:all .15s; }
+    .sim-speed-btn:hover { border-color:var(--amber); color:var(--amber); }
+    .sim-speed-btn.active { background:var(--amber); color:#0e1117; border-color:var(--amber); }
+    #sim-timeline { flex:1; padding:0 16px; display:flex; align-items:center; gap:10px; }
+    #sim-slider { flex:1; accent-color:var(--amber); cursor:pointer; }
+    #sim-train-count { font-family:'DM Mono',monospace; font-size:10px;
+      color:var(--text-faint); letter-spacing:1px; white-space:nowrap; }
+    #sim-toggle-btn { padding:6px 18px; background:var(--amber); color:#0e1117;
+      border:none; border-radius:2px; font-family:'DM Mono',monospace; font-size:10px;
+      letter-spacing:2px; text-transform:uppercase; cursor:pointer; transition:all .2s; }
+    #sim-toggle-btn:hover { background:#f0b955; }
+    #sim-toggle-btn.running { background:var(--red); color:#fff; }
+
+    /* Train markers on map */
+    .sim-marker { transition:none; }
+    .sim-marker-icon { width:28px; height:28px; border-radius:50%;
+      border:2px solid #fff; display:flex; align-items:center; justify-content:center;
+      font-family:'DM Mono',monospace; font-size:8px; font-weight:700;
+      color:#fff; box-shadow:0 2px 8px #00000080; cursor:pointer; }
+    .sim-marker-label { position:absolute; top:-18px; left:50%; transform:translateX(-50%);
+      white-space:nowrap; font-family:'DM Mono',monospace; font-size:9px;
+      background:var(--surface); border:1px solid var(--border); color:var(--text);
+      padding:1px 5px; border-radius:2px; pointer-events:none; }
+
     /* ── Conflict blocker ── */
     #conflict-overlay { display:none; position:fixed; inset:0; z-index:2000;
       background:#00000090; backdrop-filter:blur(4px); align-items:center; justify-content:center; }
@@ -727,6 +772,7 @@
       <button class="tab-btn" id="tab-capacity" onclick="switchTab('capacity')">Przepustowość</button>
     </div>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <button class="tt-btn" id="sim-start-btn" onclick="startSimulation()" style="border-color:var(--green);color:var(--green)">▶ Symulacja</button>
       <button class="tt-btn" onclick="toggleHeatmap()" id="heatmap-btn">🌡 Obciążenie</button>
       <button class="tt-btn" onclick="toggleHeadwayPanel()">↔ Interwał</button>
       <button id="dwell-btn" onclick="toggleDwellPanel()">⏱ Czasy postoju</button>
@@ -1911,6 +1957,250 @@ function printStationTimetable() {
   }, 150);
 }
 
+// ── SIMULATION ───────────────────────────────────────────────────────────────
+const SIM_DAY_MINUTES = 1440; // 24h
+let simRunning = false;
+let simSpeed = 5;         // minutes of sim time per real second
+let simCurrentMin = 0;    // current sim time in minutes (0–1439)
+let simRafId = null;
+let simLastTs = null;
+let simMarkers = {};      // trainId → L.marker
+let simSchedules = {};    // trainId → [{latlng, minute}] interpolated path
+let simActive = false;
+
+// ── Build per-train interpolated position list ─────────────────────────────
+// Returns array of {minute, latlng} for every 0.1-minute tick
+function buildSimSchedule(train) {
+  const sch = getTrainSchedule(train);
+  if (!sch || sch.length < 2) return null;
+
+  const points = []; // {minute, latlng:[lat,lng]}
+
+  for (let i = 0; i < train.path.length - 1; i++) {
+    const fromId = train.path[i];
+    const toId   = train.path[i + 1];
+    const edge   = graph[fromId]?.find(e => e.to === toId);
+    if (!edge?.geom) continue;
+
+    const startMin = sch[i].depMinutes;
+    const endMin   = sch[i + 1].arrMinutes;
+    if (endMin <= startMin) continue;
+
+    // Orient geom from fromId
+    let g = edge.geom; // raw [lng,lat]
+    const fromSt = stations.find(s => s.id === fromId);
+    if (fromSt) {
+      const fll = fromSt.latlng; // [lat,lng]
+      const d2s = (g[0][0]-fll[1])**2 + (g[0][1]-fll[0])**2;
+      const d2e = (g[g.length-1][0]-fll[1])**2 + (g[g.length-1][1]-fll[0])**2;
+      if (d2e < d2s) g = [...g].reverse();
+    }
+
+    // Convert to [lat,lng] Leaflet format
+    const latlngs = g.map(c => [c[1], c[0]]);
+
+    // Compute cumulative distances along the geom
+    const cumDist = [0];
+    for (let k = 1; k < latlngs.length; k++) {
+      const dx = latlngs[k][1] - latlngs[k-1][1];
+      const dy = latlngs[k][0] - latlngs[k-1][0];
+      cumDist.push(cumDist[k-1] + Math.sqrt(dx*dx + dy*dy));
+    }
+    const totalDist = cumDist[cumDist.length - 1];
+    const segDuration = endMin - startMin;
+
+    // Sample at fine resolution (every 0.2 sim-minutes)
+    const STEP = 0.2;
+    for (let t = 0; t <= segDuration; t += STEP) {
+      const frac = totalDist > 0 ? t / segDuration : 0;
+      const targetDist = frac * totalDist;
+      // Binary search for position along geom
+      let lo = 0, hi = cumDist.length - 2;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (cumDist[mid + 1] < targetDist) lo = mid + 1; else hi = mid;
+      }
+      const segFrac = cumDist[lo + 1] > cumDist[lo]
+        ? (targetDist - cumDist[lo]) / (cumDist[lo + 1] - cumDist[lo]) : 0;
+      const lat = latlngs[lo][0] + segFrac * (latlngs[lo+1][0] - latlngs[lo][0]);
+      const lng = latlngs[lo][1] + segFrac * (latlngs[lo+1][1] - latlngs[lo][1]);
+      points.push({ minute: startMin + t, latlng: [lat, lng] });
+    }
+  }
+
+  // Add final destination
+  const lastSch = sch[sch.length - 1];
+  const lastSt  = stations.find(s => s.id === train.path[train.path.length - 1]);
+  if (lastSt) points.push({ minute: lastSch.arrMinutes, latlng: lastSt.latlng });
+
+  return points.sort((a, b) => a.minute - b.minute);
+}
+
+// ── Interpolate position at given minute ────────────────────────────────────
+function interpolatePosition(pts, minute) {
+  if (!pts || !pts.length) return null;
+  if (minute < pts[0].minute || minute > pts[pts.length - 1].minute) return null;
+
+  // Binary search
+  let lo = 0, hi = pts.length - 2;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (pts[mid + 1].minute < minute) lo = mid + 1; else hi = mid;
+  }
+  const t = pts[lo + 1].minute > pts[lo].minute
+    ? (minute - pts[lo].minute) / (pts[lo + 1].minute - pts[lo].minute) : 0;
+  return [
+    pts[lo].latlng[0] + t * (pts[lo + 1].latlng[0] - pts[lo].latlng[0]),
+    pts[lo].latlng[1] + t * (pts[lo + 1].latlng[1] - pts[lo].latlng[1]),
+  ];
+}
+
+// ── Marker creation ─────────────────────────────────────────────────────────
+function createSimMarker(train, latlng) {
+  const color = train.categoryColor || '#e8a945';
+  const icon = L.divIcon({
+    className: 'sim-marker',
+    html: `<div style="position:relative">
+      <div class="sim-marker-icon" style="background:${color}">
+        ${train.categoryLabel}
+      </div>
+      <div class="sim-marker-label">${train.number}${train.name?' · '+train.name:''}</div>
+    </div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  });
+  return L.marker(latlng, { icon, zIndexOffset: 1000 }).addTo(map)
+    .bindPopup(`<b style="color:${color}">[${train.categoryLabel}] ${train.number}</b>${train.name?'<br>'+train.name:''}<br><span style="font-family:monospace">${train.departure||'—'}</span>`)
+    .on('click', () => { loadTrain(train.id); });
+}
+
+// ── Clock display ───────────────────────────────────────────────────────────
+function simUpdateClock(minutes) {
+  const h = Math.floor(minutes / 60) % 24;
+  const m = Math.floor(minutes % 60);
+  document.getElementById('sim-clock').textContent =
+    `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  document.getElementById('sim-slider').value = Math.round(minutes) % SIM_DAY_MINUTES;
+}
+
+// ── Main simulation tick ────────────────────────────────────────────────────
+function simTick(ts) {
+  if (!simRunning) return;
+  if (simLastTs !== null) {
+    const realElapsed = (ts - simLastTs) / 1000; // seconds
+    simCurrentMin = (simCurrentMin + realElapsed * simSpeed) % SIM_DAY_MINUTES;
+  }
+  simLastTs = ts;
+  simUpdateClock(simCurrentMin);
+
+  let activeCount = 0;
+  Object.entries(simSchedules).forEach(([id, pts]) => {
+    if (!pts) return;
+    const pos = interpolatePosition(pts, simCurrentMin);
+    if (pos) {
+      activeCount++;
+      if (!simMarkers[id]) {
+        const train = savedTrains.find(t => t.id === id);
+        if (train) simMarkers[id] = createSimMarker(train, pos);
+      } else {
+        simMarkers[id].setLatLng(pos);
+      }
+    } else {
+      // Train not active at this time — hide marker
+      if (simMarkers[id]) {
+        map.removeLayer(simMarkers[id]);
+        delete simMarkers[id];
+      }
+    }
+  });
+
+  document.getElementById('sim-train-count').textContent =
+    `${activeCount} pociąg${activeCount===1?'':'ów'} aktywnych`;
+  simRafId = requestAnimationFrame(simTick);
+}
+
+// ── Controls ────────────────────────────────────────────────────────────────
+function simTogglePlay() {
+  simRunning = !simRunning;
+  const btn = document.getElementById('sim-play-btn');
+  btn.textContent = simRunning ? '⏸' : '▶';
+  if (simRunning) {
+    simLastTs = null;
+    simRafId = requestAnimationFrame(simTick);
+  } else {
+    if (simRafId) cancelAnimationFrame(simRafId);
+  }
+}
+
+function simSetSpeed(s) {
+  simSpeed = s;
+  document.querySelectorAll('.sim-speed-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent === s + '×');
+  });
+}
+
+function simReset() {
+  simRunning = false;
+  if (simRafId) cancelAnimationFrame(simRafId);
+  document.getElementById('sim-play-btn').textContent = '▶';
+  // Start at earliest departure
+  const deps = savedTrains.filter(t=>t.departure).map(t=>timeToMinutes(t.departure)).filter(Boolean);
+  simCurrentMin = deps.length ? Math.min(...deps) : 0;
+  simLastTs = null;
+  simUpdateClock(simCurrentMin);
+  // Clear all markers
+  Object.values(simMarkers).forEach(m => map.removeLayer(m));
+  simMarkers = {};
+  document.getElementById('sim-train-count').textContent = '0 pociągów aktywnych';
+}
+
+function simSeek(val) {
+  simCurrentMin = parseInt(val);
+  simLastTs = null;
+  simUpdateClock(simCurrentMin);
+  // Immediately update positions
+  Object.values(simMarkers).forEach(m => map.removeLayer(m));
+  simMarkers = {};
+  Object.entries(simSchedules).forEach(([id, pts]) => {
+    const pos = interpolatePosition(pts, simCurrentMin);
+    if (pos) {
+      const train = savedTrains.find(t => t.id === id);
+      if (train) simMarkers[id] = createSimMarker(train, pos);
+    }
+  });
+}
+
+function startSimulation() {
+  if (!savedTrains.length) { alert('Brak zapisanych pociągów do symulacji.'); return; }
+  const trainsWithTime = savedTrains.filter(t => t.departure && t.path?.length >= 2);
+  if (!trainsWithTime.length) { alert('Żaden pociąg nie ma wpisanej godziny odjazdu.'); return; }
+
+  // Build schedules
+  simSchedules = {};
+  trainsWithTime.forEach(t => {
+    simSchedules[t.id] = buildSimSchedule(t);
+  });
+
+  // Show bar, adjust map padding
+  document.getElementById('sim-bar').classList.add('visible');
+  document.getElementById('sim-start-btn').style.display = 'none';
+  document.getElementById('map').style.bottom = '54px';
+  simActive = true;
+  simReset();
+}
+
+function toggleSimulation() {
+  simRunning = false;
+  if (simRafId) cancelAnimationFrame(simRafId);
+  Object.values(simMarkers).forEach(m => map.removeLayer(m));
+  simMarkers = {};
+  simSchedules = {};
+  document.getElementById('sim-bar').classList.remove('visible');
+  document.getElementById('sim-start-btn').style.display = '';
+  document.getElementById('map').style.bottom = '0';
+  simActive = false;
+}
+
 // ── CONFLICT DETECTION ────────────────────────────────────────────────────────
 // Detects same-direction overlaps on a double-track system.
 // Two trains conflict if they occupy the same physical track segment
@@ -2851,6 +3141,34 @@ fetch(GEOJSON_PATH)
   </div>
   <div id="capacity-scroll">
     <div class="cap-empty">Wczytaj pociągi aby zobaczyć przepustowość</div>
+  </div>
+</div>
+
+<!-- Simulation bar -->
+<div id="sim-bar">
+  <div class="sim-section">
+    <div>
+      <div id="sim-clock">00:00</div>
+      <div id="sim-date-label">Symulacja zatrzymana</div>
+    </div>
+  </div>
+  <div class="sim-section">
+    <button class="sim-btn" id="sim-play-btn" onclick="simTogglePlay()" title="Play/Pause">▶</button>
+    <button class="sim-btn" onclick="simReset()" title="Reset">⏮</button>
+    <div id="sim-speed-btns">
+      <button class="sim-speed-btn" onclick="simSetSpeed(1)">1×</button>
+      <button class="sim-speed-btn active" onclick="simSetSpeed(5)">5×</button>
+      <button class="sim-speed-btn" onclick="simSetSpeed(10)">10×</button>
+      <button class="sim-speed-btn" onclick="simSetSpeed(60)">60×</button>
+    </div>
+  </div>
+  <div class="sim-section" id="sim-timeline">
+    <input type="range" id="sim-slider" min="0" max="1439" value="0"
+      oninput="simSeek(this.value)" style="flex:1">
+    <span id="sim-train-count">0 pociągów aktywnych</span>
+  </div>
+  <div class="sim-section">
+    <button id="sim-toggle-btn" onclick="toggleSimulation()">✕ Zamknij</button>
   </div>
 </div>
 
