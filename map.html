@@ -395,6 +395,43 @@
 
     #map.selecting-station { cursor: crosshair !important; }
 
+    /* ── Timetable panel ── */
+    #timetable-panel { position:fixed; top:60px; left:0; right:0; bottom:0; z-index:700;
+      background:var(--bg); display:none; flex-direction:column; overflow:hidden; }
+    #timetable-panel.visible { display:flex; }
+    #timetable-toolbar { padding:10px 20px; background:var(--surface);
+      border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px;
+      flex-shrink:0; flex-wrap:wrap; }
+    #timetable-toolbar h2 { font-family:'DM Mono',monospace; font-size:12px;
+      letter-spacing:2px; text-transform:uppercase; color:var(--amber); }
+    #timetable-scroll { flex:1; overflow:auto; padding:24px 32px; }
+    .tt-filter { padding:5px 10px; background:var(--surface2); border:1px solid var(--border);
+      border-radius:2px; color:var(--text); font-family:'DM Mono',monospace; font-size:11px;
+      outline:none; }
+    .stt-station-name { font-family:'Playfair Display',serif; font-size:28px;
+      color:var(--text); margin-bottom:4px; }
+    .stt-meta { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1.5px;
+      text-transform:uppercase; color:var(--text-faint); margin-bottom:20px; }
+    .stt-table { width:100%; border-collapse:collapse; max-width:960px; }
+    .stt-table thead tr { border-bottom:2px solid var(--amber); }
+    .stt-table th { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px;
+      text-transform:uppercase; color:var(--amber); padding:8px 14px; text-align:left; }
+    .stt-table td { padding:10px 14px; border-bottom:1px solid var(--border);
+      font-size:13px; color:var(--text-dim); vertical-align:middle; }
+    .stt-table tbody tr:hover td { background:var(--surface2); cursor:pointer; }
+    .stt-time { font-family:'DM Mono',monospace; font-size:18px; color:var(--text);
+      font-weight:500; letter-spacing:1px; min-width:60px; display:inline-block; }
+    .stt-dep { color:var(--amber) !important; }
+    .stt-cat { display:inline-block; padding:2px 8px; border-radius:2px;
+      font-family:'DM Mono',monospace; font-size:10px; font-weight:700;
+      color:#fff; margin-right:8px; }
+    .stt-num { font-family:'DM Mono',monospace; font-size:12px; font-weight:500; }
+    .stt-no-data { text-align:center; padding:80px 0; font-family:'DM Mono',monospace;
+      font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--text-faint); }
+    .stt-hour-sep td { background:var(--surface); font-family:'DM Mono',monospace;
+      font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text-faint);
+      padding:5px 14px; border-bottom:1px solid var(--border2); }
+
     /* ── Headway calculator ── */
     #headway-panel { position:absolute; top:80px; right:20px; z-index:900;
       width:300px; display:none; }
@@ -1565,175 +1602,185 @@ function resetDwellTimes() {
 
 // ── TIMETABLE VIEW ────────────────────────────────────────────────────────────
 let currentTab = 'map';
+let selectedTimetableStation = null;
 
 function switchTab(tab) {
   currentTab = tab;
   document.getElementById('timetable-panel').classList.toggle('visible', tab === 'timetable');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
-  if (tab === 'timetable') renderTimetable();
+  if (tab === 'timetable') {
+    populateStationSelect();
+    if (selectedTimetableStation) renderStationTimetable();
+  }
 }
 
-function renderTimetable() {
-  const svg = document.getElementById('timetable-svg');
+function populateStationSelect() {
+  const sel = document.getElementById('tt-station-select');
+  const current = sel.value;
+  // Sort: main stations first, then alphabetical
+  const sorted = [...stations].sort((a, b) => {
+    const am = a.props?.railway === 'station' ? 0 : 1;
+    const bm = b.props?.railway === 'station' ? 0 : 1;
+    return am - bm || a.name.localeCompare(b.name, 'pl');
+  });
+  sel.innerHTML = '<option value="">— wybierz stację —</option>' +
+    sorted.map(st => {
+      const isMain = st.props?.railway === 'station';
+      return `<option value="${encodeURIComponent(st.id)}" ${st.id===current?'selected':''}>${isMain?'● ':'○ '}${st.name}</option>`;
+    }).join('');
+}
+
+function renderStationTimetable() {
+  const sel = document.getElementById('tt-station-select');
+  const stId = sel.value ? decodeURIComponent(sel.value) : null;
+  if (!stId) {
+    document.getElementById('timetable-scroll').innerHTML =
+      '<div class="stt-no-data">Wybierz stację aby wyświetlić rozkład</div>';
+    return;
+  }
+  selectedTimetableStation = stId;
+  const st = stations.find(s => s.id === stId);
   const dateFilter = document.getElementById('tt-date-filter').value;
-  const stFilter = document.getElementById('tt-station-filter').value.toLowerCase().trim();
+  const search = document.getElementById('tt-search').value.toLowerCase().trim();
+  const scroll = document.getElementById('timetable-scroll');
 
-  let trains = savedTrains.filter(t => t.departure && t.path?.length >= 2);
-  if (dateFilter) trains = trains.filter(t => !t.date || t.date === dateFilter);
+  // Find all trains stopping at this station (not passing through)
+  const entries = [];
+  savedTrains.forEach(train => {
+    if (!train.departure) return;
+    if (dateFilter && train.date && train.date !== dateFilter) return;
+    const idx = train.path.indexOf(stId);
+    if (idx === -1) return;
+    const isFirst = idx === 0, isLast = idx === train.path.length - 1;
+    const isPT = train.passThroughList?.includes(stId) && !isFirst && !isLast;
 
-  if (!trains.length) {
-    svg.innerHTML = '<text x="20" y="40" fill="#4a5568" font-family="DM Mono" font-size="12">Brak tras z określoną godziną odjazdu.</text>';
-    svg.setAttribute('width', 400); svg.setAttribute('height', 80);
+    const sch = getTrainSchedule(train);
+    if (!sch) return;
+    const stop = sch[idx];
+
+    // Arrival: from previous station name
+    const prevId = idx > 0 ? train.path[idx-1] : null;
+    const nextId = idx < train.path.length-1 ? train.path[idx+1] : null;
+    const prevSt = prevId ? stations.find(s=>s.id===prevId) : null;
+    const nextSt = nextId ? stations.find(s=>s.id===nextId) : null;
+
+    const arrStr = isFirst ? null : `${pad(Math.floor(stop.arrMinutes/60))}:${pad(stop.arrMinutes%60)}`;
+    const depStr = isLast  ? null : `${pad(Math.floor(stop.depMinutes/60))}:${pad(stop.depMinutes%60)}`;
+    const sortKey = stop.arrMinutes ?? stop.depMinutes;
+
+    if (search && !train.number.toLowerCase().includes(search) &&
+        !(train.name||'').toLowerCase().includes(search) &&
+        !(train.categoryLabel||'').toLowerCase().includes(search)) return;
+
+    entries.push({ train, idx, isFirst, isLast, isPT, arrStr, depStr, sortKey,
+      arrMin: stop.arrMinutes, depMin: stop.depMinutes,
+      prevSt, nextSt, dw: getDwellTime(st) });
+  });
+
+  if (!entries.length) {
+    scroll.innerHTML = `<div class="stt-station-name">${st?.name||stId}</div>
+      <div class="stt-no-data" style="margin-top:20px">Brak pociągów na tej stacji${dateFilter?' w wybranym dniu':''}</div>`;
     return;
   }
 
-  // Collect all unique stations in path order
-  const stationOrder = [];
-  const seenSt = new Set();
-  trains.forEach(t => {
-    t.path.forEach(sid => {
-      if (!seenSt.has(sid)) { seenSt.add(sid); stationOrder.push(sid); }
+  entries.sort((a, b) => a.sortKey - b.sortKey);
+
+  // Group by hour
+  const byHour = {};
+  entries.forEach(e => {
+    const h = Math.floor((e.depMin ?? e.arrMin) / 60) % 24;
+    if (!byHour[h]) byHour[h] = [];
+    byHour[h].push(e);
+  });
+
+  const isMain = st?.props?.railway === 'station';
+  const totalTrains = entries.length;
+  const dateLabel = dateFilter || 'wszystkie dni';
+
+  let html = `
+    <div class="stt-station-name">${st?.name || stId}</div>
+    <div class="stt-meta">${isMain?'Stacja':'Przystanek'} · ${totalTrains} kursów · ${dateLabel}</div>
+    <table class="stt-table">
+      <thead>
+        <tr>
+          <th style="width:80px">Przyjazd</th>
+          <th style="width:80px">Odjazd</th>
+          <th>Pociąg</th>
+          <th>Kierunek</th>
+          <th>Skąd</th>
+          <th style="width:60px">Postój</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  Object.keys(byHour).sort((a,b)=>a-b).forEach(hour => {
+    html += `<tr class="stt-hour-sep"><td colspan="6">${pad(hour)}:00</td></tr>`;
+    byHour[hour].forEach(e => {
+      const { train, isFirst, isLast, isPT, arrStr, depStr, prevSt, nextSt, dw } = e;
+      const terminus = isLast ? (prevSt?.name||'—') : (nextSt?.name||'—');
+      const origin   = isFirst ? '(tu rozpoczyna)' : (prevSt?.name||'—');
+      const dwLabel  = isFirst||isLast ? '—' : isPT ? 'przejeżdża' : dw+' min';
+      const dwColor  = isPT ? 'var(--text-faint)' : isFirst||isLast ? 'var(--text-faint)' : 'var(--text-dim)';
+      html += `<tr onclick="loadTrain('${train.id}');switchTab('map')" title="Kliknij aby wczytać trasę">
+        <td><span class="stt-time">${arrStr||'—'}</span></td>
+        <td><span class="stt-time stt-dep">${depStr||'—'}</span></td>
+        <td>
+          <span class="stt-cat" style="background:${train.categoryColor}">${train.categoryLabel}</span>
+          <span class="stt-num">${train.number}</span>
+          ${train.name?`<span style="font-size:11px;color:var(--text-faint);margin-left:6px">"${train.name}"</span>`:''}
+        </td>
+        <td style="font-weight:${isLast?400:500};color:${isLast?'var(--text-faint)':'var(--text)'}">
+          ${isLast?'<span style="color:var(--text-faint);font-style:italic">kończy bieg</span>':terminus}
+        </td>
+        <td style="color:var(--text-faint);font-size:12px">${origin}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px;color:${dwColor}">${dwLabel}</td>
+      </tr>`;
     });
   });
 
-  // Apply station filter
-  const filteredStations = stFilter
-    ? stationOrder.filter(sid => {
-        const st = stations.find(s => s.id === sid);
-        return st?.name.toLowerCase().includes(stFilter);
-      })
-    : stationOrder;
-
-  if (!filteredStations.length) {
-    svg.innerHTML = '<text x="20" y="40" fill="#4a5568" font-family="DM Mono" font-size="12">Brak wyników dla podanego filtra.</text>';
-    return;
-  }
-
-  // Layout
-  const PAD_LEFT = 160, PAD_TOP = 50, PAD_RIGHT = 40, PAD_BOTTOM = 30;
-  const ST_H = 28; // px per station row
-  const MIN_W = 2.5; // px per minute
-  const svgH = PAD_TOP + filteredStations.length * ST_H + PAD_BOTTOM;
-
-  // Find time range
-  let minT = Infinity, maxT = -Infinity;
-  const schedules = {};
-  trains.forEach(t => {
-    const sch = getTrainSchedule(t);
-    if (!sch) return;
-    schedules[t.id] = sch;
-    sch.forEach(s => { minT = Math.min(minT, s.arrMinutes); maxT = Math.max(maxT, s.depMinutes); });
-  });
-
-  minT = Math.floor(minT/60)*60;
-  maxT = Math.ceil(maxT/60)*60 + 60;
-  const timeSpan = maxT - minT;
-  const svgW = PAD_LEFT + timeSpan * MIN_W + PAD_RIGHT;
-
-  let out = `<svg id="timetable-svg" width="${svgW}" height="${svgH}" xmlns="http://www.w3.org/2000/svg" style="background:#0e1117">`;
-
-  // Grid lines + hour labels
-  for (let t = minT; t <= maxT; t += 60) {
-    const x = PAD_LEFT + (t - minT) * MIN_W;
-    out += `<line x1="${x}" y1="${PAD_TOP-10}" x2="${x}" y2="${svgH-PAD_BOTTOM}" stroke="#2a3347" stroke-width="1"/>`;
-    out += `<text x="${x+3}" y="${PAD_TOP-14}" fill="#4a5568" font-family="DM Mono" font-size="10">${pad(Math.floor(t/60))}:00</text>`;
-  }
-  // 30-min minor lines
-  for (let t = minT; t <= maxT; t += 30) {
-    if (t % 60 === 0) continue;
-    const x = PAD_LEFT + (t - minT) * MIN_W;
-    out += `<line x1="${x}" y1="${PAD_TOP}" x2="${x}" y2="${svgH-PAD_BOTTOM}" stroke="#1e2535" stroke-width="1"/>`;
-  }
-
-  // Station rows
-  filteredStations.forEach((sid, ri) => {
-    const y = PAD_TOP + ri * ST_H;
-    const st = stations.find(s => s.id === sid);
-    const isMain = st?.props?.railway === 'station';
-    out += `<line x1="${PAD_LEFT}" y1="${y + ST_H/2}" x2="${svgW - PAD_RIGHT}" y2="${y + ST_H/2}" stroke="${isMain?'#2a3347':'#1a2030'}" stroke-width="${isMain?1:.5}"/>`;
-    out += `<text x="${PAD_LEFT-8}" y="${y+ST_H/2+4}" fill="${isMain?'#8896aa':'#4a5568'}" font-family="DM Mono" font-size="${isMain?10:9}" text-anchor="end">${st?.name||sid}</text>`;
-    if (isMain) out += `<line x1="0" y1="${y+ST_H/2}" x2="${PAD_LEFT}" y2="${y+ST_H/2}" stroke="#3a4560" stroke-width=".5"/>`;
-  });
-
-  // Train lines
-  trains.forEach((train, ti) => {
-    const sch = schedules[train.id];
-    if (!sch) return;
-    const color = train.categoryColor || '#e8a945';
-
-    // Build polyline points for stations in our filtered order
-    const points = [];
-    sch.forEach(s => {
-      const ri = filteredStations.indexOf(s.stationId);
-      if (ri === -1) return;
-      const y = PAD_TOP + ri * ST_H + ST_H/2;
-      const xArr = PAD_LEFT + (s.arrMinutes - minT) * MIN_W;
-      const xDep = PAD_LEFT + (s.depMinutes - minT) * MIN_W;
-      points.push({ xArr, xDep, y, sid: s.stationId });
-    });
-
-    // Draw line segments
-    for (let i = 0; i < points.length - 1; i++) {
-      out += `<line x1="${points[i].xDep}" y1="${points[i].y}" x2="${points[i+1].xArr}" y2="${points[i+1].y}" stroke="${color}" stroke-width="2" opacity=".85"/>`;
-    }
-    // Draw stop ticks
-    points.forEach(p => {
-      if (p.xDep > p.xArr + 1) {
-        out += `<line x1="${p.xArr}" y1="${p.y-5}" x2="${p.xDep}" y2="${p.y-5}" stroke="${color}" stroke-width="3" stroke-linecap="round"/>`;
-      }
-      out += `<circle cx="${p.xArr}" cy="${p.y}" r="3" fill="${color}"/>`;
-    });
-    // Train label at first stop
-    if (points.length > 0) {
-      out += `<text x="${points[0].xArr+4}" y="${points[0].y-8}" fill="${color}" font-family="DM Mono" font-size="9" opacity=".9">${train.number}${train.name?' '+train.name:''}</text>`;
-    }
-  });
-
-  out += '</svg>';
-  document.getElementById('timetable-scroll').innerHTML = out;
+  html += '</tbody></table>';
+  scroll.innerHTML = html;
 }
 
-// ── SCHEDULING HELPERS ────────────────────────────────────────────────────────
-function timeToMinutes(timeStr) {
-  if (!timeStr) return null;
-  const [h, m] = timeStr.split(':').map(Number);
-  return h * 60 + m;
-}
+function printStationTimetable() {
+  const stId = selectedTimetableStation;
+  if (!stId) { alert('Wybierz najpierw stację.'); return; }
+  const st = stations.find(s => s.id === stId);
+  const dateFilter = document.getElementById('tt-date-filter').value;
+  const scrollContent = document.getElementById('timetable-scroll').innerHTML;
 
-function pad(n) { return String(Math.round(n)).padStart(2, '0'); }
+  const printCSS = `
+    body { font-family: 'DM Mono', monospace; background:#fff; color:#111; margin:0; padding:20px; }
+    .stt-station-name { font-family: Georgia, serif; font-size:24px; margin-bottom:4px; color:#111; }
+    .stt-meta { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:#666; margin-bottom:16px; }
+    .stt-table { width:100%; border-collapse:collapse; }
+    .stt-table thead tr { border-bottom:2px solid #111; }
+    .stt-table th { font-size:8px; letter-spacing:2px; text-transform:uppercase; color:#555; padding:6px 10px; text-align:left; }
+    .stt-table td { padding:7px 10px; border-bottom:1px solid #eee; font-size:12px; color:#333; vertical-align:middle; }
+    .stt-time { font-size:16px; font-weight:700; color:#111; letter-spacing:1px; }
+    .stt-dep { color:#b87a00 !important; }
+    .stt-cat { display:inline-block; padding:1px 6px; border-radius:2px; font-size:9px; font-weight:700; color:#fff; margin-right:6px; }
+    .stt-num { font-size:11px; font-weight:600; }
+    .stt-hour-sep td { background:#f5f5f5; font-size:8px; letter-spacing:2px; text-transform:uppercase; color:#999; padding:4px 10px; }
+    .print-header { display:flex; justify-content:space-between; font-size:9px; color:#aaa; border-bottom:1px solid #ddd; padding-bottom:8px; margin-bottom:16px; }
+  `;
 
-// Build per-stop schedule for a saved train object
-// Returns [{stationId, arrMinutes, depMinutes}] or null if no departure set
-function getTrainSchedule(train) {
-  const depBase = timeToMinutes(train.departure);
-  if (depBase === null) return null;
-  if (!train.path || train.path.length < 2) return null;
+  const frame = document.getElementById('print-frame');
+  frame.style.display = 'block';
+  frame.innerHTML = `
+    <style>${printCSS}</style>
+    <div class="print-header">
+      <span>Koleje Królewskie · System Planowania Tras</span>
+      <span>Wydruk: ${new Date().toLocaleDateString('pl-PL')} ${new Date().toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'})}</span>
+    </div>
+    ${scrollContent}
+    <div style="margin-top:20px;font-size:8px;color:#ccc;text-align:center">Wydruk informacyjny · nie stanowi oficjalnego rozkładu jazdy</div>`;
 
-  const schedule = [];
-  let elapsed = 0;
-
-  for (let i = 0; i < train.path.length; i++) {
-    const sid = train.path[i];
-    const st = stations.find(s => s.id === sid);
-    const isFirst = i === 0, isLast = i === train.path.length - 1;
-    const isPT = train.passThroughList?.includes(sid) && !isFirst && !isLast;
-
-    if (i > 0) {
-      const prevId = train.path[i - 1];
-      const edge = graph[prevId]?.find(e => e.to === sid);
-      if (edge) {
-        const spd = Math.min(parseFloat(edge.maxspeed) || 160, train.maxspeed || 160);
-        elapsed += segmentTime(edge.dist, spd, !isPT);
-        if (!isLast && !isPT) elapsed += getDwellTime(st);
-      }
-    }
-
-    const arr = depBase + elapsed;
-    const dw = (isFirst || isLast || isPT) ? 0 : getDwellTime(st);
-    schedule.push({ stationId: sid, arrMinutes: arr, depMinutes: arr + dw });
-  }
-  return schedule;
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => { frame.style.display='none'; frame.innerHTML=''; }, 500);
+  }, 150);
 }
 
 // ── HEADWAY CALCULATOR ───────────────────────────────────────────────────────
@@ -2206,14 +2253,23 @@ fetch(GEOJSON_PATH)
 <!-- Timetable panel -->
 <div id="timetable-panel">
   <div id="timetable-toolbar">
-    <h2>Rozkład Jazdy — Wykres Czasu</h2>
-    <input class="tt-filter" id="tt-date-filter" type="date" onchange="renderTimetable()" title="Filtruj po dacie">
-    <input class="tt-filter" id="tt-station-filter" placeholder="Filtruj stację…" oninput="renderTimetable()" style="width:180px">
-    <button onclick="renderTimetable()" style="padding:5px 14px;background:var(--amber);color:#0e1117;border:none;border-radius:2px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;cursor:pointer">Odśwież</button>
+    <h2>Rozkład Jazdy</h2>
+    <div style="display:flex;align-items:center;gap:10px;margin-left:20px">
+      <label style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint)">Stacja:</label>
+      <select id="tt-station-select" onchange="renderStationTimetable()" style="padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;min-width:220px">
+        <option value="">— wybierz stację —</option>
+      </select>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <label style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint)">Data:</label>
+      <input class="tt-filter" id="tt-date-filter" type="date" onchange="renderStationTimetable()">
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <input type="text" id="tt-search" placeholder="Szukaj pociągu…" oninput="renderStationTimetable()" style="padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;width:160px">
+    </div>
+    <button id="tt-print-btn" onclick="printStationTimetable()" style="margin-left:auto;padding:6px 16px;background:var(--amber);color:#0e1117;border:none;border-radius:2px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s">🖨 Drukuj</button>
   </div>
-  <div id="timetable-scroll">
-    <svg id="timetable-svg"></svg>
-  </div>
+  <div id="timetable-scroll"></div>
 </div>
 
 <!-- Dwell time editor panel -->
