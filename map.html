@@ -2659,6 +2659,8 @@ function getEdgeDirection(fromId, toId) {
 }
 
 // Build list of {segKey, dirKey, startMin, endMin} for a train
+// Only includes time spent BETWEEN stations (not dwell time at stations)
+// Stations have enough platforms so conflicts there are impossible
 function buildTrainOccupancy(train) {
   const sch = getTrainSchedule(train);
   if (!sch) return [];
@@ -2669,10 +2671,14 @@ function buildTrainOccupancy(train) {
     const segKey = [fromId, toId].sort().join('|');
     const dirKey = getEdgeDirection(fromId, toId);
     if (!dirKey) continue;
+    // startMin = when train DEPARTS from station (after dwell)
+    // endMin   = when train ARRIVES at next station (before dwell)
+    // This excludes any time spent standing at a station from conflict checks
+    const startMin = sch[i].depMinutes;
+    const endMin   = sch[i + 1].arrMinutes;
+    if (endMin <= startMin) continue; // zero-length segment, skip
     occupancy.push({
-      segKey, dirKey, fromId, toId,
-      startMin: sch[i].depMinutes,
-      endMin:   sch[i + 1].arrMinutes,
+      segKey, dirKey, fromId, toId, startMin, endMin,
     });
   }
   return occupancy;
@@ -2718,7 +2724,9 @@ function checkConflicts(candidateTrain) {
         const gap = Math.abs(co.startMin - eo.startMin);
         const overlap = Math.max(0, Math.min(co.endMin, eo.endMin) - Math.max(co.startMin, eo.startMin));
 
-        if (overlap > 0 || gap < minHeadway) {
+        // Only flag if there's actual time overlap OR gap is dangerously small
+        // Minimum overlap threshold of 0.1 min avoids floating point false positives
+        if (overlap > 0.1 || (overlap <= 0 && gap < minHeadway * 0.5)) {
           const pairKey = [existing.id, co.segKey].join('|');
           if (seenPairs.has(pairKey)) return;
           seenPairs.add(pairKey);
@@ -2756,8 +2764,8 @@ function showConflictModal(conflicts, trainData) {
       <div class="ce-detail">
         Odcinek: <span class="ce-seg">${c.fromName} → ${c.toName}</span><br>
         ${c.overlap > 0
-          ? `Nakładanie: <strong style="color:var(--red)">${c.overlap} min</strong>`
-          : `Odstęp: <strong style="color:var(--amber)">${c.gap} min</strong> (min. wymagane: ${c.minHeadway} min)`
+          ? `Nakładanie na odcinku: <strong style="color:var(--red)">${c.overlap} min</strong>`
+          : `Zbyt mały odstęp: <strong style="color:var(--amber)">${c.gap} min</strong> (min. SBL: ${c.minHeadway} min)`
         }<br>
         Nowy pociąg: ${c.candTime} &nbsp;·&nbsp; Istniejący: ${c.existTime}
       </div>
