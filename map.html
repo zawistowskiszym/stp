@@ -395,6 +395,67 @@
 
     #map.selecting-station { cursor: crosshair !important; }
 
+    /* ── Headway calculator ── */
+    #headway-panel { position:absolute; top:80px; right:20px; z-index:900;
+      width:300px; display:none; }
+    #headway-panel.visible { display:block; animation:slideIn .3s ease; }
+    .hw-route-btn { width:100%; padding:8px 10px; background:var(--bg);
+      border:1px solid var(--border); border-radius:2px; font-family:'DM Sans',sans-serif;
+      font-size:12px; color:var(--text-dim); cursor:pointer; text-align:left;
+      transition:all .2s; margin-bottom:4px; }
+    .hw-route-btn:hover { border-color:var(--amber); color:var(--text); }
+    .hw-route-btn.selected { border-color:var(--amber); color:var(--amber); background:#e8a94510; }
+    .hw-result { margin-top:10px; padding:12px; background:var(--bg);
+      border:1px solid var(--border); border-radius:2px; }
+    .hw-result .hw-val { font-family:'Playfair Display',serif; font-size:28px;
+      color:var(--amber); line-height:1; margin-bottom:4px; }
+    .hw-result .hw-lbl { font-family:'DM Mono',monospace; font-size:9px;
+      letter-spacing:2px; text-transform:uppercase; color:var(--text-faint); }
+    .hw-train-row { display:flex; justify-content:space-between; align-items:center;
+      padding:5px 0; border-bottom:1px solid var(--border); font-size:11px; }
+    .hw-train-row:last-child { border-bottom:none; }
+
+    /* ── Heatmap legend ── */
+    #heatmap-legend { position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
+      z-index:900; background:var(--surface); border:1px solid var(--border);
+      border-radius:3px; padding:8px 16px; display:none; align-items:center; gap:12px;
+      font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1px; }
+    #heatmap-legend.visible { display:flex; }
+    .hm-grad { width:120px; height:8px; border-radius:2px;
+      background:linear-gradient(90deg,#2471a3,#3daa6e,#e8a945,#d94f3d); }
+
+    /* ── Print timetable ── */
+    @media print {
+      body > *:not(#print-frame) { display:none !important; }
+      #print-frame { display:block !important; position:fixed; inset:0;
+        background:#fff; z-index:99999; }
+    }
+    #print-frame { display:none; }
+    .tt-card { font-family:'DM Mono',monospace; background:#fff; color:#111;
+      max-width:680px; margin:0 auto; padding:24px 28px; }
+    .tt-card-header { border-bottom:3px solid #111; padding-bottom:10px; margin-bottom:14px; }
+    .tt-carrier { font-size:10px; letter-spacing:3px; text-transform:uppercase;
+      color:#555; margin-bottom:4px; }
+    .tt-train-id { font-size:22px; font-weight:700; letter-spacing:1px; }
+    .tt-train-name { font-size:13px; color:#444; margin-top:2px; }
+    .tt-meta-row { display:flex; gap:24px; margin-top:8px; font-size:10px; color:#666; }
+    .tt-stops-table { width:100%; border-collapse:collapse; margin-top:4px; }
+    .tt-stops-table th { font-size:9px; letter-spacing:2px; text-transform:uppercase;
+      color:#888; border-bottom:1px solid #ddd; padding:4px 6px; text-align:left; }
+    .tt-stops-table td { padding:5px 6px; border-bottom:1px solid #f0f0f0;
+      font-size:12px; vertical-align:middle; }
+    .tt-stops-table tr.main-station td { font-weight:600; background:#fafafa; }
+    .tt-stops-table tr.pass-through td { color:#aaa; font-style:italic; }
+    .tt-stops-table .time-col { font-size:13px; font-weight:600; color:#111;
+      white-space:nowrap; }
+    .tt-stops-table .km-col { color:#888; font-size:11px; }
+    .tt-footer { margin-top:16px; padding-top:10px; border-top:1px solid #ddd;
+      font-size:9px; color:#aaa; display:flex; justify-content:space-between; }
+    .tt-btn { padding:5px 14px; background:transparent; border:1px solid var(--border);
+      border-radius:2px; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1px;
+      color:var(--text-dim); cursor:pointer; transition:all .2s; }
+    .tt-btn:hover { border-color:var(--amber); color:var(--amber); }
+
     /* ── Tab bar in header ── */
     #tab-bar { display:flex; gap:2px; margin-left:16px; }
     .tab-btn { padding:6px 16px; background:transparent; border:1px solid var(--border);
@@ -402,43 +463,6 @@
       text-transform:uppercase; color:var(--text-dim); cursor:pointer; transition:all .2s; }
     .tab-btn:hover { border-color:var(--border2); color:var(--text); }
     .tab-btn.active { border-color:var(--amber); color:var(--amber); background:#e8a94510; }
-
-    /* ── Conflict badge on map ── */
-    .conflict-marker { position:absolute; z-index:1000; }
-    .conflict-pill { background:#d94f3d; color:#fff; font-family:'DM Mono',monospace;
-      font-size:9px; padding:2px 6px; border-radius:2px; white-space:nowrap; pointer-events:none; }
-
-    /* ── Timetable panel ── */
-    #timetable-panel { position:fixed; top:60px; left:0; right:0; bottom:0; z-index:700;
-      background:var(--bg); display:none; flex-direction:column; overflow:hidden; }
-    #timetable-panel.visible { display:flex; }
-    #timetable-toolbar { padding:12px 20px; background:var(--surface);
-      border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; flex-shrink:0; }
-    #timetable-toolbar h2 { font-family:'DM Mono',monospace; font-size:12px;
-      letter-spacing:2px; text-transform:uppercase; color:var(--amber); }
-    #timetable-scroll { flex:1; overflow:auto; padding:20px; }
-    #timetable-svg { display:block; }
-    .tt-filter { padding:5px 10px; background:var(--surface2); border:1px solid var(--border);
-      border-radius:2px; color:var(--text); font-family:'DM Mono',monospace; font-size:11px;
-      outline:none; }
-    .tt-filter:focus { border-color:var(--amber); }
-
-    /* ── Conflict panel ── */
-    #conflict-panel { position:absolute; top:80px; right:340px; z-index:900;
-      background:var(--surface); border:1px solid var(--red); border-radius:3px;
-      width:280px; max-height:50vh; overflow-y:auto; display:none; }
-    #conflict-panel.visible { display:block; animation:slideIn .3s ease; }
-    #conflict-panel .panel-header { background:#d94f3d18; }
-    .conflict-item { padding:10px 14px; border-bottom:1px solid var(--border); font-size:12px; }
-    .conflict-item:last-child { border-bottom:none; }
-    .conflict-item .c-trains { font-family:'DM Mono',monospace; font-size:11px;
-      color:var(--red); margin-bottom:3px; font-weight:500; }
-    .conflict-item .c-detail { color:var(--text-dim); font-size:11px; line-height:1.5; }
-    #conflict-btn { padding:5px 14px; background:transparent; border:1px solid var(--border);
-      border-radius:2px; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1px;
-      color:var(--text-dim); cursor:pointer; transition:all .2s; }
-    #conflict-btn.has-conflicts { border-color:var(--red); color:var(--red); animation:pulse-red 2s infinite; }
-    @keyframes pulse-red { 0%,100%{box-shadow:0 0 0 0 #d94f3d40} 50%{box-shadow:0 0 0 4px #d94f3d00} }
 
     /* ── Dwell time editor ── */
     #dwell-panel { position:absolute; bottom:20px; right:20px; z-index:900;
@@ -598,8 +622,9 @@
       <button class="tab-btn" id="tab-timetable" onclick="switchTab('timetable')">Rozkład jazdy</button>
     </div>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <button class="tt-btn" onclick="toggleHeatmap()" id="heatmap-btn">🌡 Obciążenie</button>
+      <button class="tt-btn" onclick="toggleHeadwayPanel()">↔ Interwał</button>
       <button id="dwell-btn" onclick="toggleDwellPanel()">⏱ Czasy postoju</button>
-      <button id="conflict-btn" onclick="toggleConflictPanel()">✓ Konflikty</button>
       <button id="trains-toggle-btn" onclick="toggleSidebar()">
         🚆 Pociągi <span class="count-badge" id="trains-count">0</span>
       </button>
@@ -1197,6 +1222,7 @@ function findRoute() {
       <div class="result-stat"><div class="val">${stopsCount}</div><div class="lbl">Postojów</div></div>
     </div>
     <ul class="stop-list">${items}</ul>`;
+  // Print btn appended after save
   // Store result for saving
   currentRouteResult = { ...res, totalKm };
   document.getElementById('save-btn').disabled = false;
@@ -1300,7 +1326,6 @@ function saveRoute() {
   renderTrainsList();
   highlightActiveCard();
 
-  runConflictCheck();
   // Visual feedback
   const btn = document.getElementById('save-btn');
   btn.textContent = 'Zapisano ✓';
@@ -1419,6 +1444,7 @@ function renderTrainsList() {
       <div class="train-route-preview">${preview}</div>
       <div class="train-card-actions" onclick="event.stopPropagation()">
         <button class="tc-btn" onclick="loadTrain('${t.id}')">Wczytaj</button>
+        <button class="tc-btn" onclick="printTimetable('${t.id}')">🖨 Drukuj</button>
         <button class="tc-btn" onclick="duplicateTrain('${t.id}', event)">Duplikuj</button>
         <button class="tc-btn del" onclick="deleteTrain('${t.id}', event)">Usuń</button>
       </div>
@@ -1535,224 +1561,6 @@ function resetDwellTimes() {
   saveDwellTimes();
   renderDwellList();
   if (origin && dest) findRoute();
-}
-
-// ── CONFLICT DETECTION ────────────────────────────────────────────────────────
-let conflictLayers = [];
-
-function timeToMinutes(timeStr) {
-  if (!timeStr) return null;
-  const [h, m] = timeStr.split(':').map(Number);
-  return h * 60 + m;
-}
-
-function getTrainSchedule(train) {
-  // Returns [{stationId, arrMinutes, depMinutes}] for each stop
-  const depBase = timeToMinutes(train.departure);
-  if (depBase === null) return null;
-  if (!train.path || train.path.length < 2) return null;
-
-  const schedule = [];
-  let elapsed = 0;
-
-  for (let i = 0; i < train.path.length; i++) {
-    const sid = train.path[i];
-    const st = stations.find(s => s.id === sid);
-    const isFirst = i === 0, isLast = i === train.path.length - 1;
-    const isPT = train.passThroughList?.includes(sid) && !isFirst && !isLast;
-
-    if (i > 0) {
-      const prevId = train.path[i-1];
-      const edge = graph[prevId]?.find(e => e.to === sid);
-      if (edge) {
-        const spd = Math.min(parseFloat(edge.maxspeed)||160, train.maxspeed||160);
-        elapsed += segmentTime(edge.dist, spd, !isPT);
-        if (!isLast && !isPT) elapsed += getDwellTime(st);
-      }
-    }
-
-    const arr = depBase + elapsed;
-    const dw = (isFirst || isLast || isPT) ? 0 : getDwellTime(st);
-    schedule.push({ stationId: sid, arrMinutes: arr, depMinutes: arr + dw });
-  }
-  return schedule;
-}
-
-// Build a map of physical coord-pair → canonical key (direction-independent)
-// Each edge's geometry gives us real track coordinate pairs to compare
-function edgeCoordKey(c1, c2) {
-  // Canonical: sort so A→B and B→A give the same key
-  const k1 = `${Math.round(c1[0]*1e6)},${Math.round(c1[1]*1e6)}`;
-  const k2 = `${Math.round(c2[0]*1e6)},${Math.round(c2[1]*1e6)}`;
-  return k1 < k2 ? k1+'|'+k2 : k2+'|'+k1;
-}
-
-// For a train path, return a list of physical coord segments with timing
-// Each entry: { coordKey, fromStation, toStation, startMin, endMin, geomPair, direction }
-function getPhysicalSegments(train, schedule) {
-  const segments = [];
-  for (let i = 0; i < train.path.length - 1; i++) {
-    const fromId = train.path[i];
-    const toId   = train.path[i + 1];
-    const edge = graph[fromId]?.find(e => e.to === toId);
-    if (!edge?.geom || edge.geom.length < 2) continue;
-
-    // Orient geometry: geom is raw [lng,lat], may need reversing based on direction
-    const g = edge.geom;
-    const fromSt = stations.find(s => s.id === fromId);
-    const fromLL = fromSt?.latlng; // [lat,lng]
-    let oriented = g;
-    let wasReversed = false;
-    if (fromLL) {
-      const d2s = (g[0][0]-fromLL[1])**2 + (g[0][1]-fromLL[0])**2;
-      const d2e = (g[g.length-1][0]-fromLL[1])**2 + (g[g.length-1][1]-fromLL[0])**2;
-      if (d2e < d2s) { oriented = [...g].reverse(); wasReversed = true; }
-    }
-
-    const startMin = schedule[i].depMinutes;
-    const endMin   = schedule[i+1].arrMinutes;
-    const totalCoords = oriented.length - 1;
-
-    // Split edge into individual coordinate-pair segments with interpolated timing
-    for (let k = 0; k < oriented.length - 1; k++) {
-      const c1 = oriented[k], c2 = oriented[k+1];
-      const tStart = startMin + (endMin - startMin) * (k / totalCoords);
-      const tEnd   = startMin + (endMin - startMin) * ((k+1) / totalCoords);
-      segments.push({
-        coordKey: edgeCoordKey(c1, c2),
-        fromStation: fromId,
-        toStation: toId,
-        startMin: tStart,
-        endMin: tEnd,
-        c1, c2,
-        // direction: true = travelling in geom's stored order, false = reversed
-        direction: !wasReversed,
-      });
-    }
-  }
-  return segments;
-}
-
-function detectConflicts() {
-  const trainsWithTime = savedTrains.filter(t => t.departure && t.path?.length >= 2);
-  const conflicts = [];
-
-  for (let a = 0; a < trainsWithTime.length; a++) {
-    for (let b = a + 1; b < trainsWithTime.length; b++) {
-      const tA = trainsWithTime[a];
-      const tB = trainsWithTime[b];
-      if (tA.date && tB.date && tA.date !== tB.date) continue;
-
-      const schA = getTrainSchedule(tA);
-      const schB = getTrainSchedule(tB);
-      if (!schA || !schB) continue;
-
-      const segsA = getPhysicalSegments(tA, schA);
-      const segsB = getPhysicalSegments(tB, schB);
-
-      // Build lookup: coordKey → [segB entries]
-      const mapB = {};
-      segsB.forEach(s => {
-        if (!mapB[s.coordKey]) mapB[s.coordKey] = [];
-        mapB[s.coordKey].push(s);
-      });
-
-      // For each physical coord segment of A, check B
-      const reportedPairs = new Set();
-      segsA.forEach(sA => {
-        const matches = mapB[sA.coordKey] || [];
-        matches.forEach(sB => {
-          // Double-track: only same-direction travel can conflict
-          const sameDir = sA.direction === sB.direction;
-          if (!sameDir) return;
-
-          const overlap = Math.max(0, Math.min(sA.endMin, sB.endMin) - Math.max(sA.startMin, sB.startMin));
-          if (overlap <= 0) return;
-
-          // Deduplicate by station-pair
-          const pairKey = [tA.id, tB.id, sA.fromStation, sA.toStation].join('|');
-          if (reportedPairs.has(pairKey)) return;
-          reportedPairs.add(pairKey);
-
-          // Find time window of the full edge (station→station) for display
-          const edgeSchA = schA.find(s => s.stationId === sA.fromStation);
-          const edgeSchB = schB.find(s => s.stationId === sB.fromStation);
-          const aS = edgeSchA?.depMinutes ?? sA.startMin;
-          const aE = schA.find(s => s.stationId === sA.toStation)?.arrMinutes ?? sA.endMin;
-          const bS = edgeSchB?.depMinutes ?? sB.startMin;
-          const bE = schB.find(s => s.stationId === sB.toStation)?.arrMinutes ?? sB.endMin;
-
-          conflicts.push({
-            trainA: tA, trainB: tB,
-            segment: [sA.fromStation, sA.toStation],
-            overlapMinutes: Math.round(overlap),
-            sameDirection: sameDir,
-            timeA: `${pad(Math.floor(aS/60))}:${pad(aS%60)}–${pad(Math.floor(aE/60))}:${pad(aE%60)}`,
-            timeB: `${pad(Math.floor(bS/60))}:${pad(bS%60)}–${pad(Math.floor(bE/60))}:${pad(bE%60)}`,
-            geomSample: [sA.c1, sA.c2],
-          });
-        });
-      });
-    }
-  }
-  return conflicts;
-}
-
-function pad(n) { return String(Math.round(n)).padStart(2,'0'); }
-
-function toggleConflictPanel() {
-  const p = document.getElementById('conflict-panel');
-  p.classList.toggle('visible');
-  if (p.classList.contains('visible')) runConflictCheck();
-}
-
-function runConflictCheck() {
-  const conflicts = detectConflicts();
-  const btn = document.getElementById('conflict-btn');
-  const list = document.getElementById('conflict-list');
-
-  btn.classList.toggle('has-conflicts', conflicts.length > 0);
-  btn.textContent = conflicts.length > 0 ? `⚠ ${conflicts.length} Konflikt${conflicts.length>1?'ów':''}` : '✓ Konflikty';
-
-  // Clear old conflict layers
-  conflictLayers.forEach(l => map.removeLayer(l));
-  conflictLayers = [];
-
-  if (!conflicts.length) {
-    list.innerHTML = '<div style="padding:16px 14px;text-align:center;font-family:DM Mono,monospace;font-size:10px;letter-spacing:1.5px;color:var(--green)">BRAK KONFLIKTÓW</div>';
-    return;
-  }
-
-  list.innerHTML = conflicts.map((c,i) => {
-    const dirLabel = '';
-    const stA = stations.find(s=>s.id===c.segment[0]);
-    const stB = stations.find(s=>s.id===c.segment[1]);
-    return `<div class="conflict-item">
-      <div class="c-trains">[${c.trainA.categoryLabel}] ${c.trainA.number} ✕ [${c.trainB.categoryLabel}] ${c.trainB.number}</div>
-      <div class="c-detail">
-        Odcinek: ${stA?.name||c.segment[0]} → ${stB?.name||c.segment[1]}<br>
-        ${c.trainA.number}: ${c.timeA}<br>
-        ${c.trainB.number}: ${c.timeB}<br>
-        Nakładanie: <strong style="color:var(--red)">${c.overlapMinutes} min</strong>
-      </div>
-    </div>`;
-  }).join('');
-
-  // Highlight conflicting segments on map using physical geom
-  const seenSegs = new Set();
-  conflicts.forEach(c => {
-    const key = [c.segment[0],c.segment[1]].sort().join('|');
-    if (seenSegs.has(key)) return;
-    seenSegs.add(key);
-    const edge = graph[c.segment[0]]?.find(e => e.to === c.segment[1])
-               || graph[c.segment[1]]?.find(e => e.to === c.segment[0]);
-    if (!edge?.geom) return;
-    const latlngs = edge.geom.map(g => [g[1], g[0]]);
-    const color = '#d94f3d';
-    const layer = L.polyline(latlngs, { color, weight:6, opacity:.85,
-      dashArray:'8,6' }).addTo(map);
-    conflictLayers.push(layer);
-  });
 }
 
 // ── TIMETABLE VIEW ────────────────────────────────────────────────────────────
@@ -1884,6 +1692,293 @@ function renderTimetable() {
 
   out += '</svg>';
   document.getElementById('timetable-scroll').innerHTML = out;
+}
+
+// ── HEADWAY CALCULATOR ───────────────────────────────────────────────────────
+let selectedHeadwayTrainId = null;
+
+function toggleHeadwayPanel() {
+  const p = document.getElementById('headway-panel');
+  p.classList.toggle('visible');
+  if (p.classList.contains('visible')) renderHeadwayPanel();
+}
+
+function renderHeadwayPanel() {
+  const list = document.getElementById('hw-route-list');
+  const trainsWithTime = savedTrains.filter(t => t.departure && t.path?.length >= 2);
+  if (!trainsWithTime.length) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--text-faint);padding:8px 0">Brak pociągów z godziną odjazdu.</div>';
+    return;
+  }
+  list.innerHTML = trainsWithTime.map(t =>
+    `<button class="hw-route-btn${t.id===selectedHeadwayTrainId?' selected':''}"
+      onclick="selectHeadwayTrain('${t.id}')">
+      <span style="color:${t.categoryColor};font-family:'DM Mono',monospace">[${t.categoryLabel}] ${t.number}</span>
+      ${t.name ? ' · '+t.name : ''}
+      <span style="float:right;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-faint)">${t.departure}</span>
+    </button>`
+  ).join('');
+}
+
+function selectHeadwayTrain(id) {
+  selectedHeadwayTrainId = id;
+  renderHeadwayPanel();
+  calcHeadway(id);
+}
+
+function pathKey(path) {
+  return path.join('→');
+}
+
+function pathsOverlap(pathA, pathB) {
+  // Find longest common sub-sequence of consecutive stations
+  const setA = new Set();
+  for (let i = 0; i < pathA.length-1; i++) setA.add(pathA[i]+'|'+pathA[i+1]);
+  let shared = 0;
+  for (let j = 0; j < pathB.length-1; j++) {
+    if (setA.has(pathB[j]+'|'+pathB[j+1]) || setA.has(pathB[j+1]+'|'+pathB[j])) shared++;
+  }
+  return shared;
+}
+
+function calcHeadway(baseId) {
+  const base = savedTrains.find(t => t.id === baseId);
+  if (!base) return;
+
+  const baseDepMin = timeToMinutes(base.departure);
+  const schBase = getTrainSchedule(base);
+  if (!schBase) return;
+
+  // Find all other trains sharing at least one segment in the SAME direction
+  const same = savedTrains.filter(t => {
+    if (t.id === baseId || !t.departure || !t.path?.length) return false;
+    if (base.date && t.date && base.date !== t.date) return false;
+    return pathsOverlap(base.path, t.path) > 0;
+  });
+
+  const resultEl = document.getElementById('hw-result-area');
+  if (!same.length) {
+    resultEl.innerHTML = '<div style="margin-top:10px;font-size:11px;color:var(--text-faint);font-family:DM Mono,monospace">Brak innych pociągów na tej trasie.</div>';
+    return;
+  }
+
+  // For each sharing train, compute the departure gap and minimum safe headway
+  const rows = same.map(t => {
+    const tDepMin = timeToMinutes(t.departure);
+    const gap = Math.abs(tDepMin - baseDepMin);
+    const schT = getTrainSchedule(t);
+
+    // Minimum headway = longest segment time among shared segments
+    let minHW = 0;
+    for (let i = 0; i < base.path.length-1; i++) {
+      const fromId = base.path[i], toId = base.path[i+1];
+      if (!t.path.includes(fromId) || !t.path.includes(toId)) continue;
+      const edge = graph[fromId]?.find(e => e.to === toId);
+      if (!edge) continue;
+      const spd = Math.min(parseFloat(edge.maxspeed)||160, Math.min(base.maxspeed||160, t.maxspeed||160));
+      const segTime = segmentTime(edge.dist, spd, true);
+      if (segTime > minHW) minHW = segTime;
+    }
+    minHW = Math.ceil(minHW);
+
+    const safe = gap >= minHW;
+    return { t, gap, minHW, safe };
+  }).sort((a,b) => a.gap - b.gap);
+
+  const minSafe = Math.max(...rows.map(r => r.minHW));
+
+  resultEl.innerHTML = `
+    <div class="hw-result">
+      <div class="hw-val">${minSafe} min</div>
+      <div class="hw-lbl">Minimalny bezpieczny interwał</div>
+    </div>
+    <div style="margin-top:10px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);margin-bottom:6px">Pociągi na tej trasie</div>
+    ${rows.map(r => `
+      <div class="hw-train-row">
+        <span style="color:${r.t.categoryColor}">[${r.t.categoryLabel}] ${r.t.number}</span>
+        <span style="font-family:'DM Mono',monospace;color:var(--text-dim)">${r.t.departure}</span>
+        <span style="font-family:'DM Mono',monospace">Δ ${r.gap} min</span>
+        <span style="color:${r.safe?'var(--green)':'var(--red)'}">
+          ${r.safe ? '✓' : '⚠ min '+r.minHW+' min'}
+        </span>
+      </div>`).join('')}`;
+}
+
+// ── TRACK CAPACITY HEATMAP ────────────────────────────────────────────────────
+let heatmapLayers = [];
+let heatmapActive = false;
+
+function toggleHeatmap() {
+  if (heatmapActive) {
+    clearHeatmap();
+  } else {
+    renderHeatmap();
+  }
+}
+
+function clearHeatmap() {
+  heatmapLayers.forEach(l => map.removeLayer(l));
+  heatmapLayers = [];
+  heatmapActive = false;
+  document.getElementById('heatmap-legend').classList.remove('visible');
+  document.getElementById('heatmap-btn').style.color = '';
+  document.getElementById('heatmap-btn').style.borderColor = '';
+}
+
+function renderHeatmap() {
+  clearHeatmap();
+  if (!savedTrains.length) return;
+
+  // Count usage per edge (direction-independent)
+  const edgeCounts = {};
+  const edgeGeoms = {};
+
+  savedTrains.forEach(t => {
+    if (!t.path?.length) return;
+    for (let i = 0; i < t.path.length-1; i++) {
+      const a = t.path[i], b = t.path[i+1];
+      const key = [a,b].sort().join('|');
+      edgeCounts[key] = (edgeCounts[key]||0) + 1;
+      if (!edgeGeoms[key]) {
+        const edge = graph[a]?.find(e=>e.to===b) || graph[b]?.find(e=>e.to===a);
+        if (edge?.geom) edgeGeoms[key] = edge.geom.map(c=>[c[1],c[0]]);
+      }
+    }
+  });
+
+  const counts = Object.values(edgeCounts);
+  if (!counts.length) return;
+  const maxCount = Math.max(...counts);
+  const minCount = Math.min(...counts);
+
+  function heatColor(count) {
+    const t = maxCount === minCount ? 0.5 : (count - minCount) / (maxCount - minCount);
+    // Blue → Green → Amber → Red
+    if (t < 0.33) {
+      const s = t / 0.33;
+      return `rgb(${Math.round(36+s*23)},${Math.round(113+s*57)},${Math.round(163-s*57)})`;
+    } else if (t < 0.66) {
+      const s = (t-0.33)/0.33;
+      return `rgb(${Math.round(59+s*173)},${Math.round(170-s*1)},${Math.round(110-s*41)})`;
+    } else {
+      const s = (t-0.66)/0.34;
+      return `rgb(${Math.round(232+s*15)},${Math.round(169-s*100)},${Math.round(69-s*32)})`;
+    }
+  }
+
+  Object.entries(edgeCounts).forEach(([key, count]) => {
+    const geom = edgeGeoms[key];
+    if (!geom) return;
+    const color = heatColor(count);
+    const weight = 2 + Math.round((count/maxCount)*6);
+    const layer = L.polyline(geom, { color, weight, opacity:0.85, lineJoin:'round', lineCap:'round' })
+      .bindTooltip(`${count} pociąg${count===1?'':'ów'}`, { sticky:true, className:'' })
+      .addTo(map);
+    heatmapLayers.push(layer);
+  });
+
+  heatmapActive = true;
+  document.getElementById('heatmap-legend').classList.add('visible');
+  document.getElementById('heatmap-label').textContent = `max: ${maxCount} pociągów`;
+  document.getElementById('heatmap-btn').style.color = 'var(--amber)';
+  document.getElementById('heatmap-btn').style.borderColor = 'var(--amber)';
+}
+
+// ── PDF / PRINT TIMETABLE ─────────────────────────────────────────────────────
+function printTimetable(trainId) {
+  const train = savedTrains.find(t => t.id === trainId);
+  if (!train) return;
+
+  const sch = getTrainSchedule(train);
+  if (!sch) { alert('Pociąg wymaga godziny odjazdu do wydruku.'); return; }
+
+  const depBase = timeToMinutes(train.departure);
+  let totalKm = 0;
+
+  const rows = train.path.map((sid, i) => {
+    const st = stations.find(s => s.id === sid);
+    const s = sch[i];
+    const isFirst = i === 0, isLast = i === train.path.length-1;
+    const isPT = train.passThroughList?.includes(sid) && !isFirst && !isLast;
+    const dw = getDwellTime(st);
+
+    const arrMin = s.arrMinutes;
+    const depMin = s.depMinutes;
+
+    const arrStr = isFirst ? '—' : `${pad(Math.floor(arrMin/60))}:${pad(arrMin%60)}`;
+    const depStr = isLast  ? '—' : `${pad(Math.floor(depMin/60))}:${pad(depMin%60)}`;
+
+    if (i > 0) {
+      const edge = graph[train.path[i-1]]?.find(e => e.to === sid);
+      if (edge) totalKm += edge.dist;
+    }
+
+    const isMain = st?.props?.railway === 'station';
+    const rowClass = isPT ? 'pass-through' : isMain ? 'main-station' : '';
+
+    return `<tr class="${rowClass}">
+      <td style="padding-left:${isPT?16:isMain?0:8}px">${isPT?'('+st?.name+')':st?.name||sid}</td>
+      <td class="time-col">${arrStr}</td>
+      <td class="time-col">${depStr}</td>
+      <td class="km-col">${i===0?'0':Math.round(totalKm)+' km'}</td>
+      <td style="font-size:10px;color:#999">${isPT?'bez postoju':isFirst||isLast?'':dw+' min'}</td>
+    </tr>`;
+  }).join('');
+
+  const totalTime = sch[sch.length-1].arrMinutes - depBase;
+  const catColor = train.categoryColor || '#333';
+  const now = new Date().toLocaleDateString('pl-PL');
+
+  const html = `<div class="tt-card">
+    <div class="tt-card-header">
+      <div class="tt-carrier">Koleje Królewskie · Rozkład Jazdy</div>
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span class="tt-train-id" style="color:${catColor}">${train.categoryLabel} ${train.number}</span>
+        ${train.name?`<span class="tt-train-name">"${train.name}"</span>`:''}
+      </div>
+      <div class="tt-meta-row">
+        <span>📅 ${train.date||'—'}</span>
+        <span>🕐 Odjazd: ${train.departure||'—'}</span>
+        <span>📍 ${Math.round(totalKm)} km</span>
+        <span>⏱ ${fmt(totalTime)}</span>
+        <span>🚆 ${train.categoryLabel} · maks. ${train.maxspeed} km/h</span>
+      </div>
+    </div>
+    <table class="tt-stops-table">
+      <thead>
+        <tr>
+          <th>Stacja / Przystanek</th>
+          <th>Przyjazd</th>
+          <th>Odjazd</th>
+          <th>Odl.</th>
+          <th>Postój</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="tt-footer">
+      <span>Wygenerowano: ${now} · System Planowania Tras KK</span>
+      <span>Wydruk informacyjny · nie stanowi oficjalnego rozkładu</span>
+    </div>
+  </div>`;
+
+  const frame = document.getElementById('print-frame');
+  frame.style.display = 'block';
+  frame.innerHTML = html;
+
+  // Inject print styles
+  const style = document.createElement('style');
+  style.textContent = `
+    @media print {
+      html, body { background:#fff !important; }
+      #print-frame { display:block !important; background:#fff; padding:20px; }
+    }`;
+  frame.appendChild(style);
+
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => { frame.style.display='none'; frame.innerHTML=''; }, 500);
+  }, 100);
 }
 
 // ── TRAIN PARAMETERS ─────────────────────────────────────────────────────────
@@ -2079,14 +2174,6 @@ fetch(GEOJSON_PATH)
   </div>
 </div>
 
-<!-- Conflict panel -->
-<div id="conflict-panel" class="panel">
-  <div class="panel-header">
-    <div class="panel-title" style="color:var(--red)">Konflikty torowe</div>
-  </div>
-  <div id="conflict-list" style="padding:8px 0"></div>
-</div>
-
 <!-- Dwell time editor panel -->
 <div id="dwell-panel" class="panel">
   <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between">
@@ -2098,6 +2185,30 @@ fetch(GEOJSON_PATH)
   </div>
   <div id="dwell-list"></div>
 </div>
+
+<!-- Headway panel -->
+<div id="headway-panel" class="panel">
+  <div class="panel-header">
+    <div class="panel-title">Kalkulator Interwału</div>
+  </div>
+  <div class="panel-body">
+    <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px">Wybierz trasę bazową</div>
+    <div id="hw-route-list"></div>
+    <div id="hw-result-area"></div>
+  </div>
+</div>
+
+<!-- Heatmap legend -->
+<div id="heatmap-legend">
+  <span style="color:var(--text-faint)">Mało</span>
+  <div class="hm-grad"></div>
+  <span style="color:var(--text-faint)">Dużo</span>
+  <span id="heatmap-label" style="color:var(--text-dim);margin-left:4px"></span>
+  <button onclick="toggleHeatmap()" style="margin-left:8px;background:transparent;border:none;color:var(--text-faint);cursor:pointer;font-size:14px">✕</button>
+</div>
+
+<!-- Print frame -->
+<div id="print-frame"></div>
 
 <!-- Sidebar overlay -->
 <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
