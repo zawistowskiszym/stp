@@ -1694,6 +1694,48 @@ function renderTimetable() {
   document.getElementById('timetable-scroll').innerHTML = out;
 }
 
+// ── SCHEDULING HELPERS ────────────────────────────────────────────────────────
+function timeToMinutes(timeStr) {
+  if (!timeStr) return null;
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function pad(n) { return String(Math.round(n)).padStart(2, '0'); }
+
+// Build per-stop schedule for a saved train object
+// Returns [{stationId, arrMinutes, depMinutes}] or null if no departure set
+function getTrainSchedule(train) {
+  const depBase = timeToMinutes(train.departure);
+  if (depBase === null) return null;
+  if (!train.path || train.path.length < 2) return null;
+
+  const schedule = [];
+  let elapsed = 0;
+
+  for (let i = 0; i < train.path.length; i++) {
+    const sid = train.path[i];
+    const st = stations.find(s => s.id === sid);
+    const isFirst = i === 0, isLast = i === train.path.length - 1;
+    const isPT = train.passThroughList?.includes(sid) && !isFirst && !isLast;
+
+    if (i > 0) {
+      const prevId = train.path[i - 1];
+      const edge = graph[prevId]?.find(e => e.to === sid);
+      if (edge) {
+        const spd = Math.min(parseFloat(edge.maxspeed) || 160, train.maxspeed || 160);
+        elapsed += segmentTime(edge.dist, spd, !isPT);
+        if (!isLast && !isPT) elapsed += getDwellTime(st);
+      }
+    }
+
+    const arr = depBase + elapsed;
+    const dw = (isFirst || isLast || isPT) ? 0 : getDwellTime(st);
+    schedule.push({ stationId: sid, arrMinutes: arr, depMinutes: arr + dw });
+  }
+  return schedule;
+}
+
 // ── HEADWAY CALCULATOR ───────────────────────────────────────────────────────
 let selectedHeadwayTrainId = null;
 
