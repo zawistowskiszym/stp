@@ -176,6 +176,130 @@
     /* ── Scale bar position ── */
     .leaflet-control-scale { bottom:60px !important; }
 
+    /* ── Route planner ── */
+    #planner {
+      position:absolute; top:16px; left:16px; z-index:900;
+      background:var(--panel-bg); border:1px solid var(--panel-border);
+      border-radius:6px; width:260px; box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    #planner-header {
+      padding:10px 14px; background:#f7f7f7; border-bottom:1px solid var(--panel-border);
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    #planner-header h3 {
+      font-size:11px; letter-spacing:1.5px; text-transform:uppercase;
+      color:var(--text-mid); font-weight:600;
+    }
+    .planner-body { padding:12px 14px; }
+    .planner-field { margin-bottom:10px; }
+    .planner-field label {
+      font-size:10px; letter-spacing:1px; text-transform:uppercase;
+      color:var(--text-light); display:block; margin-bottom:4px;
+    }
+    .planner-input-wrap {
+      display:flex; gap:6px; align-items:center;
+    }
+    .planner-input {
+      flex:1; padding:7px 10px; border:1px solid var(--panel-border);
+      border-radius:4px; font-size:12px; font-family:'Noto Sans',sans-serif;
+      color:var(--text-dark); outline:none; transition:border-color .15s;
+      background:#fafafa;
+    }
+    .planner-input:focus { border-color:#405d7a; background:#fff; }
+    .planner-input.set { border-color:#405d7a; background:#fff; font-weight:500; }
+    .planner-input.origin.set { border-color:#2e7d32; color:#2e7d32; }
+    .planner-input.dest.set   { border-color:#c62828; color:#c62828; }
+    .pick-btn {
+      width:30px; height:30px; border-radius:4px; border:1px solid var(--panel-border);
+      background:#fafafa; cursor:pointer; font-size:13px; transition:all .15s;
+      display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .pick-btn:hover { border-color:#405d7a; background:#405d7a; color:#fff; }
+    .pick-btn.selecting { border-color:#405d7a; background:#405d7a; color:#fff;
+      animation:pulse-pick .8s infinite; }
+    @keyframes pulse-pick { 0%,100%{opacity:1} 50%{opacity:.6} }
+    #route-btn {
+      width:100%; padding:9px; background:#405d7a; color:#fff; border:none;
+      border-radius:4px; font-family:'Noto Sans',sans-serif; font-size:13px;
+      font-weight:600; cursor:pointer; transition:background .15s; margin-top:4px;
+    }
+    #route-btn:hover { background:#2c4a63; }
+    #route-btn:disabled { background:#ccc; cursor:not-allowed; }
+    #clear-btn {
+      width:100%; padding:6px; background:transparent; color:var(--text-light);
+      border:1px solid var(--panel-border); border-radius:4px;
+      font-family:'Noto Sans',sans-serif; font-size:11px;
+      cursor:pointer; transition:all .15s; margin-top:6px;
+    }
+    #clear-btn:hover { border-color:#c62828; color:#c62828; }
+
+    /* Route results */
+    #route-results {
+      border-top:1px solid var(--panel-border); padding:12px 14px;
+      display:none;
+    }
+    .route-summary {
+      display:flex; gap:8px; margin-bottom:10px;
+    }
+    .route-stat {
+      flex:1; background:#f7f7f7; border-radius:4px; padding:8px;
+      text-align:center; border:1px solid var(--panel-border);
+    }
+    .route-stat .rs-val {
+      font-size:16px; font-weight:700; color:#405d7a; line-height:1;
+    }
+    .route-stat .rs-lbl {
+      font-size:9px; text-transform:uppercase; letter-spacing:1px;
+      color:var(--text-light); margin-top:3px;
+    }
+    .turn-list { list-style:none; max-height:200px; overflow-y:auto; }
+    .turn-list::-webkit-scrollbar { width:3px; }
+    .turn-list::-webkit-scrollbar-thumb { background:#ddd; border-radius:2px; }
+    .turn-item {
+      display:flex; align-items:flex-start; gap:8px;
+      padding:6px 0; border-bottom:1px solid #f5f5f5; font-size:11px;
+    }
+    .turn-item:last-child { border-bottom:none; }
+    .turn-icon { width:20px; height:20px; border-radius:50%; background:#405d7a;
+      color:#fff; font-size:10px; display:flex; align-items:center;
+      justify-content:center; flex-shrink:0; margin-top:1px; }
+    .turn-icon.dest { background:#c62828; }
+    .turn-icon.start { background:#2e7d32; }
+    .turn-street { font-weight:500; color:var(--text-dark); }
+    .turn-dist { color:var(--text-light); font-size:10px; margin-top:1px; }
+
+    /* Autocomplete dropdown */
+    .autocomplete-drop {
+      position:absolute; left:0; right:0; top:100%;
+      background:#fff; border:1px solid var(--panel-border);
+      border-top:none; border-radius:0 0 4px 4px;
+      max-height:160px; overflow-y:auto; z-index:1000;
+      box-shadow:0 4px 8px rgba(0,0,0,.1);
+    }
+    .ac-item { padding:7px 10px; font-size:12px; cursor:pointer;
+      border-bottom:1px solid #f5f5f5; }
+    .ac-item:last-child { border-bottom:none; }
+    .ac-item:hover { background:#f0f5fa; }
+    .ac-name { font-weight:500; color:var(--text-dark); }
+    .ac-type { font-size:10px; color:var(--text-light); }
+
+    /* Selecting cursor */
+    #map.selecting { cursor:crosshair !important; }
+
+    /* Hint banner */
+    #pick-hint {
+      position:absolute; top:80px; left:50%; transform:translateX(-50%);
+      z-index:950; background:#405d7a; color:#fff;
+      font-size:12px; font-weight:600; padding:7px 18px; border-radius:20px;
+      box-shadow:0 3px 12px rgba(0,0,0,.2); display:none; pointer-events:none;
+      animation:float 2s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%,100%{transform:translateX(-50%) translateY(0)}
+      50%{transform:translateX(-50%) translateY(-4px)}
+    }
+
     /* ── Search box ── */
     #search-box {
       position:absolute; top:16px; left:16px; z-index:900;
@@ -216,11 +340,41 @@
 
 <div id="map"></div>
 
-<!-- Search -->
-<div id="search-box">
-  <span id="search-icon">🔍</span>
-  <input id="search-input" placeholder="Szukaj ulicy lub dzielnicy…" oninput="onSearch(this.value)">
-  <div id="search-results"></div>
+<!-- Pick hint -->
+<div id="pick-hint">Kliknij punkt na mapie</div>
+
+<!-- Route planner -->
+<div id="planner">
+  <div id="planner-header">
+    <h3>Wyznacz trasę</h3>
+    <span id="route-mode-label" style="font-size:10px;color:#405d7a;font-weight:600">🚗 Samochód</span>
+  </div>
+  <div class="planner-body">
+    <div class="planner-field">
+      <label>📍 Start</label>
+      <div class="planner-input-wrap" style="position:relative">
+        <input class="planner-input origin" id="origin-input" placeholder="Wpisz ulicę lub kliknij na mapie…"
+          oninput="onAutoComplete('origin', this.value)" autocomplete="off">
+        <div class="autocomplete-drop" id="origin-ac" style="display:none"></div>
+        <button class="pick-btn" id="pick-origin-btn" onclick="startPicking('origin')" title="Kliknij na mapie">📍</button>
+      </div>
+    </div>
+    <div class="planner-field">
+      <label>🏁 Cel</label>
+      <div class="planner-input-wrap" style="position:relative">
+        <input class="planner-input dest" id="dest-input" placeholder="Wpisz ulicę lub kliknij na mapie…"
+          oninput="onAutoComplete('dest', this.value)" autocomplete="off">
+        <div class="autocomplete-drop" id="dest-ac" style="display:none"></div>
+        <button class="pick-btn" id="pick-dest-btn" onclick="startPicking('dest')" title="Kliknij na mapie">🏁</button>
+      </div>
+    </div>
+    <button id="route-btn" onclick="findRoute()" disabled>Wyznacz trasę</button>
+    <button id="clear-btn" onclick="clearRoute()">Wyczyść</button>
+    <div id="route-results">
+      <div class="route-summary" id="route-summary"></div>
+      <ul class="turn-list" id="turn-list"></ul>
+    </div>
+  </div>
 </div>
 
 <!-- Info panel -->
@@ -326,6 +480,28 @@ L.control.scale({ imperial: false, position: 'bottomright' }).addTo(map);
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let allFeatures = [];
 let selectedLayer = null;
+let routeLayer = null;
+let originPoint = null;  // {latlng, name}
+let destPoint   = null;
+let pickingMode = null;  // 'origin' | 'dest' | null
+let roadGraph   = {};    // nodeKey → [{to, dist, time, geom, streetName}]
+let nodeCoords  = {};    // nodeKey → [lat,lng]
+
+// Default speeds for each highway type (km/h)
+const DEFAULT_SPEEDS = {
+  motorway: 140, motorway_link: 80,
+  trunk: 100,    trunk_link: 60,
+  primary: 90,   primary_link: 50,
+  secondary: 70, secondary_link: 40,
+  tertiary: 50,  tertiary_link: 30,
+  residential: 30, living_street: 20,
+  service: 20,   unclassified: 40,
+  pedestrian: 5, footway: 5, path: 5,
+  _default: 30,
+};
+
+// Car: cannot use pedestrian ways
+const CAR_FORBIDDEN = new Set(['pedestrian','footway','path','steps']);
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 function getRoadStyle(props) {
@@ -405,48 +581,275 @@ function closeInfo() {
   }
 }
 
-// ── SEARCH ────────────────────────────────────────────────────────────────────
-function onSearch(val) {
-  const res = document.getElementById('search-results');
-  if (!val.trim()) { res.classList.remove('visible'); return; }
-  const q = val.toLowerCase();
-  const matches = allFeatures
-    .filter(f => {
-      const n = (f.properties?.name || '').toLowerCase();
-      const r = (f.properties?.ref  || '').toLowerCase();
-      return n.includes(q) || r.includes(q);
-    })
-    .slice(0, 8);
-  if (!matches.length) { res.classList.remove('visible'); return; }
-  res.innerHTML = matches.map((f,i) => `
-    <div class="search-result" onclick="focusFeature(${i})">
-      <div class="sr-name">${f.properties?.name || f.properties?.ref || '(bez nazwy)'}</div>
-      <div class="sr-type">${getRoadLabel(f.properties)}</div>
-    </div>`).join('');
-  // Store matches for click handler
-  res._matches = matches;
-  res.classList.add('visible');
+// ── ROAD GRAPH BUILDER ────────────────────────────────────────────────────────
+function nodeKey(latlng) {
+  return Math.round(latlng[0]*1e6) + ',' + Math.round(latlng[1]*1e6);
 }
 
-function focusFeature(idx) {
-  const res = document.getElementById('search-results');
-  const f = res._matches?.[idx];
+function buildRoadGraph(features) {
+  roadGraph = {};
+  nodeCoords = {};
+
+  features.forEach(f => {
+    const hw = f.properties?.highway;
+    if (!hw || f.geometry?.type !== 'LineString') return;
+    if (CAR_FORBIDDEN.has(hw)) return;
+
+    const coords = f.geometry.coordinates; // [lng,lat]
+    const maxspeed = parseFloat(f.properties?.maxspeed) || DEFAULT_SPEEDS[hw] || 30;
+    const oneway = f.properties?.oneway === 'yes';
+    const name = f.properties?.name || f.properties?.ref || getRoadLabel(f.properties);
+
+    for (let i = 0; i < coords.length - 1; i++) {
+      const a = [coords[i][1],   coords[i][0]];   // [lat,lng]
+      const b = [coords[i+1][1], coords[i+1][0]];
+      const ka = nodeKey(a), kb = nodeKey(b);
+      nodeCoords[ka] = a;
+      nodeCoords[kb] = b;
+
+      const dx = a[0]-b[0], dy = a[1]-b[1];
+      const dist = Math.sqrt(dx*dx+dy*dy) * 111; // approx km (CRS.Simple scaled)
+      const time = dist / maxspeed * 60; // minutes
+      const geom = [[a[0],a[1]], [b[0],b[1]]];
+
+      if (!roadGraph[ka]) roadGraph[ka] = [];
+      if (!roadGraph[kb]) roadGraph[kb] = [];
+
+      roadGraph[ka].push({ to: kb, dist, time, geom, streetName: name });
+      if (!oneway) {
+        roadGraph[kb].push({ to: ka, dist, time, geom: [[b[0],b[1]],[a[0],a[1]]], streetName: name });
+      }
+    }
+  });
+}
+
+// ── DIJKSTRA ──────────────────────────────────────────────────────────────────
+function dijkstra(startKey, endKey) {
+  const dist = {}, prev = {}, prevEdge = {};
+  Object.keys(roadGraph).forEach(k => dist[k] = Infinity);
+  dist[startKey] = 0;
+  const pq = [[0, startKey]];
+
+  while (pq.length) {
+    pq.sort((a,b) => a[0]-b[0]);
+    const [d, u] = pq.shift();
+    if (d > dist[u]) continue;
+    if (u === endKey) break;
+    for (const edge of (roadGraph[u] || [])) {
+      const nd = d + edge.time;
+      if (nd < dist[edge.to]) {
+        dist[edge.to] = nd;
+        prev[edge.to] = u;
+        prevEdge[edge.to] = edge;
+        pq.push([nd, edge.to]);
+      }
+    }
+  }
+
+  if (dist[endKey] === Infinity) return null;
+
+  // Reconstruct path
+  const edges = [];
+  let cur = endKey;
+  while (prev[cur]) {
+    edges.unshift(prevEdge[cur]);
+    cur = prev[cur];
+  }
+  return { edges, totalTime: dist[endKey] };
+}
+
+// ── NEAREST NODE ──────────────────────────────────────────────────────────────
+function nearestNode(latlng) {
+  let best = null, bestDist = Infinity;
+  Object.entries(nodeCoords).forEach(([key, coords]) => {
+    const d = (coords[0]-latlng[0])**2 + (coords[1]-latlng[1])**2;
+    if (d < bestDist) { bestDist = d; best = key; }
+  });
+  return best;
+}
+
+// ── PICKING MODE ──────────────────────────────────────────────────────────────
+function startPicking(mode) {
+  pickingMode = mode;
+  map.getContainer().classList.add('selecting');
+  document.getElementById('pick-hint').style.display = 'block';
+  document.getElementById(`pick-${mode}-btn`).classList.add('selecting');
+}
+
+map.on('click', e => {
+  if (!pickingMode) return;
+  const latlng = [e.latlng.lat, e.latlng.lng];
+  const nearest = nearestNode(latlng);
+  if (!nearest) return;
+  const snapped = nodeCoords[nearest];
+  setEndpoint(pickingMode, snapped, `${snapped[0].toFixed(5)}, ${snapped[1].toFixed(5)}`);
+});
+
+function setEndpoint(mode, latlng, label) {
+  map.getContainer().classList.remove('selecting');
+  document.getElementById('pick-hint').style.display = 'none';
+  document.getElementById(`pick-${mode}-btn`)?.classList.remove('selecting');
+  pickingMode = null;
+
+  if (mode === 'origin') {
+    originPoint = { latlng, name: label };
+    const inp = document.getElementById('origin-input');
+    inp.value = label; inp.classList.add('set');
+  } else {
+    destPoint = { latlng, name: label };
+    const inp = document.getElementById('dest-input');
+    inp.value = label; inp.classList.add('set');
+  }
+  document.getElementById('route-btn').disabled = !(originPoint && destPoint);
+  updateEndpointMarkers();
+}
+
+// ── ENDPOINT MARKERS ──────────────────────────────────────────────────────────
+let originMarker = null, destMarker = null;
+function updateEndpointMarkers() {
+  if (originMarker) map.removeLayer(originMarker);
+  if (destMarker)   map.removeLayer(destMarker);
+  if (originPoint) {
+    originMarker = L.circleMarker(originPoint.latlng, {
+      radius:8, color:'#2e7d32', fillColor:'#2e7d32', fillOpacity:1, weight:2
+    }).addTo(map).bindTooltip('Start', {permanent:false});
+  }
+  if (destPoint) {
+    destMarker = L.circleMarker(destPoint.latlng, {
+      radius:8, color:'#c62828', fillColor:'#c62828', fillOpacity:1, weight:2
+    }).addTo(map).bindTooltip('Cel', {permanent:false});
+  }
+}
+
+// ── AUTOCOMPLETE ──────────────────────────────────────────────────────────────
+function onAutoComplete(mode, val) {
+  const dropId = mode + '-ac';
+  const drop = document.getElementById(dropId);
+  if (!val.trim()) { drop.style.display='none'; return; }
+  const q = val.toLowerCase();
+  const matches = allFeatures
+    .filter(f => f.geometry?.type === 'LineString' && !CAR_FORBIDDEN.has(f.properties?.highway))
+    .filter(f => {
+      const n = (f.properties?.name||'').toLowerCase();
+      const r = (f.properties?.ref||'').toLowerCase();
+      return n.includes(q) || r.includes(q);
+    })
+    .slice(0, 6);
+
+  if (!matches.length) { drop.style.display='none'; return; }
+  drop.innerHTML = matches.map((f,i) => `
+    <div class="ac-item" onclick="selectAC('${mode}',${i})">
+      <div class="ac-name">${f.properties?.name || f.properties?.ref || '?'}</div>
+      <div class="ac-type">${getRoadLabel(f.properties)}</div>
+    </div>`).join('');
+  drop._matches = matches;
+  drop.style.display = 'block';
+}
+
+function selectAC(mode, idx) {
+  const drop = document.getElementById(mode+'-ac');
+  const f = drop._matches?.[idx];
   if (!f) return;
-  res.classList.remove('visible');
-  document.getElementById('search-input').value = f.properties?.name || f.properties?.ref || '';
-  showInfo(f.properties, false);
-  // Zoom to feature bounds
-  try {
-    const layer = L.geoJSON(f);
-    map.fitBounds(layer.getBounds(), { padding: [60, 60], maxZoom: 6 });
-  } catch(e) {}
+  drop.style.display = 'none';
+  // Use midpoint of the feature as endpoint
+  const coords = f.geometry.coordinates;
+  const mid = coords[Math.floor(coords.length/2)];
+  const latlng = [mid[1], mid[0]];
+  const nearest = nearestNode(latlng);
+  const snapped = nearest ? nodeCoords[nearest] : latlng;
+  const label = f.properties?.name || f.properties?.ref || '?';
+  document.getElementById(mode+'-input').value = label;
+  setEndpoint(mode, snapped, label);
 }
 
 document.addEventListener('click', e => {
-  if (!document.getElementById('search-box').contains(e.target)) {
-    document.getElementById('search-results').classList.remove('visible');
-  }
+  ['origin-ac','dest-ac'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el.parentElement.contains(e.target)) el.style.display = 'none';
+  });
 });
+
+// ── FIND ROUTE ────────────────────────────────────────────────────────────────
+function findRoute() {
+  if (!originPoint || !destPoint) return;
+  if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+
+  const startKey = nearestNode(originPoint.latlng);
+  const endKey   = nearestNode(destPoint.latlng);
+  if (!startKey || !endKey) { alert('Nie można znaleźć drogi w pobliżu punktów.'); return; }
+
+  const result = dijkstra(startKey, endKey);
+  const resDiv = document.getElementById('route-results');
+
+  if (!result) {
+    resDiv.style.display = 'block';
+    document.getElementById('route-summary').innerHTML =
+      '<div style="color:#c62828;font-size:12px;text-align:center;padding:8px 0">Brak trasy między tymi punktami</div>';
+    document.getElementById('turn-list').innerHTML = '';
+    return;
+  }
+
+  // Draw route
+  const latlngs = [];
+  result.edges.forEach(e => { latlngs.push(...e.geom.map(c=>[c[0],c[1]])); });
+  routeLayer = L.polyline(latlngs, {
+    color:'#1a73e8', weight:5, opacity:.9, lineJoin:'round', lineCap:'round'
+  }).addTo(map);
+  map.fitBounds(routeLayer.getBounds(), { padding:[60,60] });
+
+  // Stats
+  const totalDist = result.edges.reduce((s,e)=>s+e.dist,0);
+  const totalTime = result.totalTime;
+  const h = Math.floor(totalTime/60), m = Math.round(totalTime%60);
+  const timeStr = h>0 ? `${h} godz ${m} min` : `${m} min`;
+  const distStr = totalDist < 1 ? `${Math.round(totalDist*1000)} m` : `${totalDist.toFixed(1)} km`;
+
+  document.getElementById('route-summary').innerHTML = `
+    <div class="route-stat"><div class="rs-val">${timeStr}</div><div class="rs-lbl">Czas</div></div>
+    <div class="route-stat"><div class="rs-val">${distStr}</div><div class="rs-lbl">Dystans</div></div>`;
+
+  // Turn-by-turn: group consecutive edges by street name
+  const turns = [];
+  let curName = null, curDist = 0;
+  result.edges.forEach((e, i) => {
+    if (e.streetName !== curName) {
+      if (curName) turns.push({ name: curName, dist: curDist });
+      curName = e.streetName; curDist = e.dist;
+    } else {
+      curDist += e.dist;
+    }
+    if (i === result.edges.length-1) turns.push({ name: curName, dist: curDist });
+  });
+
+  document.getElementById('turn-list').innerHTML = [
+    `<li class="turn-item"><div class="turn-icon start">▶</div><div><div class="turn-street">${originPoint.name}</div></div></li>`,
+    ...turns.map((t,i) => {
+      const d = t.dist < 1 ? `${Math.round(t.dist*1000)} m` : `${t.dist.toFixed(1)} km`;
+      return `<li class="turn-item">
+        <div class="turn-icon">${i+1}</div>
+        <div><div class="turn-street">${t.name}</div><div class="turn-dist">${d}</div></div>
+      </li>`;
+    }),
+    `<li class="turn-item"><div class="turn-icon dest">🏁</div><div><div class="turn-street">${destPoint.name}</div></div></li>`,
+  ].join('');
+
+  resDiv.style.display = 'block';
+}
+
+function clearRoute() {
+  originPoint = null; destPoint = null; pickingMode = null;
+  if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+  if (originMarker) { map.removeLayer(originMarker); originMarker = null; }
+  if (destMarker)   { map.removeLayer(destMarker);   destMarker   = null; }
+  ['origin','dest'].forEach(m => {
+    const inp = document.getElementById(m+'-input');
+    inp.value = ''; inp.classList.remove('set');
+  });
+  document.getElementById('route-btn').disabled = true;
+  document.getElementById('route-results').style.display = 'none';
+  map.getContainer().classList.remove('selecting');
+  document.getElementById('pick-hint').style.display = 'none';
+}
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function loadLayer(url, isDistrict) {
@@ -548,9 +951,10 @@ function loadLayer(url, isDistrict) {
         }).addTo(map);
       });
 
-      // Count roads
+      // Count roads + build graph
       const total = data.features?.length || 0;
       document.getElementById('road-count').textContent = `${total} odcinków`;
+      buildRoadGraph(data.features || []);
 
       // Fit bounds
       try {
