@@ -2751,6 +2751,29 @@ function checkConflicts(candidateTrain) {
   return conflicts;
 }
 
+// Find nearest conflict-free departure (earlier or later)
+function findNearestFreeDeparture(trainData) {
+  const origDep = timeToMinutes(trainData.departure);
+  if (origDep === null) return null;
+  for (let delta = 1; delta <= 120; delta++) {
+    for (const dir of [-1, +1]) {
+      const newDep = ((origDep + dir * delta) + 1440) % 1440;
+      const newDepStr = pad(Math.floor(newDep/60)) + ':' + pad(Math.round(newDep%60));
+      const candidate = { ...trainData, departure: newDepStr };
+      if (checkConflicts(candidate).length === 0) {
+        return { depStr: newDepStr, delta: dir * delta };
+      }
+    }
+  }
+  return null;
+}
+
+function applyBestDeparture(depStr) {
+  document.getElementById('train-departure').value = depStr;
+  closeConflictModal();
+  findRoute();
+}
+
 function showConflictModal(conflicts, trainData) {
   pendingSaveData = trainData;
   const body = document.getElementById('conflict-modal-body');
@@ -2763,13 +2786,33 @@ function showConflictModal(conflicts, trainData) {
       </div>
       <div class="ce-detail">
         Odcinek: <span class="ce-seg">${c.fromName} → ${c.toName}</span><br>
-        ${c.overlap > 0
+        ${c.overlap > 0.1
           ? `Nakładanie na odcinku: <strong style="color:var(--red)">${c.overlap} min</strong>`
           : `Zbyt mały odstęp: <strong style="color:var(--amber)">${c.gap} min</strong> (min. SBL: ${c.minHeadway} min)`
         }<br>
         Nowy pociąg: ${c.candTime} &nbsp;·&nbsp; Istniejący: ${c.existTime}
       </div>
     </div>`).join('');
+
+  // Find nearest free slot
+  const suggestion = findNearestFreeDeparture(trainData);
+  const footer = document.getElementById('conflict-modal-footer');
+  const suggHtml = suggestion
+    ? `<div style="flex:1;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);display:flex;align-items:center;gap:8px">
+        Najbliższy wolny odjazd:
+        <button onclick="applyBestDeparture('${suggestion.depStr}')"
+          style="padding:5px 14px;background:var(--green);color:#fff;border:none;border-radius:2px;
+          font-family:'DM Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px">
+          ${suggestion.depStr}
+        </button>
+        <span style="color:var(--text-faint)">(${suggestion.delta > 0 ? '+' : ''}${suggestion.delta} min)</span>
+      </div>`
+    : `<div style="flex:1;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-faint)">Brak wolnego slotu w ciągu 2h</div>`;
+
+  footer.innerHTML = suggHtml +
+    `<button id="conflict-force-btn" onclick="forceSave()">Zapisz mimo to</button>
+     <button id="conflict-cancel-btn" onclick="closeConflictModal()">Wróć do edycji</button>`;
+
   document.getElementById('conflict-overlay').classList.add('visible');
 }
 
