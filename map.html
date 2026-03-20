@@ -1871,9 +1871,26 @@ function printStationTimetable() {
 let capSortCol = 'pct';
 let capSortDir = -1; // -1 = desc
 
-// UIC 406: theoretical capacity = 60 min / minimum headway
-// Minimum headway modelled as: longest single-segment travel time * 1.4 (safety factor)
-// For headway method: capacity = 60 / min_headway_minutes
+// SBL capacity model
+// Block length = braking distance at Vmax: d = v² / (2 * a_decel)
+// Minimum headway = time to traverse one block at Vmax + 0.5 min signalling margin
+// This correctly reflects that faster lines need longer blocks → lower frequency
+// UIC 406 method adds an additional occupation factor for comparison
+
+const DECEL_MS2 = 0.7; // m/s² (matches our segmentTime model)
+const SIGNAL_MARGIN_MIN = 0.5; // 30s signalling/reaction time
+
+function blockLengthKm(vmaxKmh) {
+  const v = vmaxKmh / 3.6; // m/s
+  return (v * v) / (2 * DECEL_MS2) / 1000; // km
+}
+
+function sblHeadwayMin(vmaxKmh) {
+  const bl = blockLengthKm(vmaxKmh); // km
+  const timeMin = (bl / vmaxKmh) * 60; // time to traverse one block at Vmax
+  return timeMin + SIGNAL_MARGIN_MIN;
+}
+
 function theoreticalCapacity(fromId, toId, method) {
   const edge = graph[fromId]?.find(e => e.to === toId)
              || graph[toId]?.find(e => e.to === fromId);
@@ -1882,15 +1899,24 @@ function theoreticalCapacity(fromId, toId, method) {
   const travelMin = segmentTime(edge.dist, spd, true);
 
   if (method === 'UIC') {
-    // UIC 406: infrastructure occupation time per train including safety buffer
-    // Typical: travel time + 2 min safety + 1 min buffer = travel * 1.5 min
-    const occupancy = travelMin * 1.5 + 2;
+    // UIC 406: occupation time = travel time + SBL headway (entry + exit block)
+    // More conservative — accounts for station occupation overlap
+    const headway = sblHeadwayMin(spd);
+    const occupancy = travelMin + headway * 1.5;
     return Math.floor(60 / occupancy);
   } else {
-    // Headway method: minimum separation = travel time + 3 min safety
-    const minHeadway = travelMin + 3;
-    return Math.floor(60 / minHeadway);
+    // SBL headway method: pure block-signalling limit
+    const headway = sblHeadwayMin(spd);
+    return Math.floor(60 / headway);
   }
+}
+
+// Expose block info for the table tooltip
+function sblInfo(vmaxKmh, distKm) {
+  const bl = blockLengthKm(vmaxKmh);
+  const nBlocks = Math.ceil((distKm * 1000) / (bl * 1000));
+  const hw = sblHeadwayMin(vmaxKmh);
+  return { blockLengthKm: bl, nBlocks, headwayMin: hw };
 }
 
 function buildCapacityData() {
@@ -2031,7 +2057,7 @@ function renderCapacityTable() {
       <td class="cap-mono" style="color:var(--text)">${Math.round(r.distKm)} km</td>
       <td class="cap-mono" style="color:var(--text)">${r.maxspeedKmh} km/h</td>
       <td class="cap-mono" style="color:var(--text)">${travelMin.toFixed(1)} min</td>
-      <td class="cap-mono" style="color:var(--text)">${r.cap ?? '—'}</td>
+      <td class="cap-mono" style="color:var(--text)" title="Blok: ${sblInfo(r.maxspeedKmh, r.distKm).blockLengthKm.toFixed(2)} km · ${sblInfo(r.maxspeedKmh, r.distKm).nBlocks} bloków · interwał ${sblInfo(r.maxspeedKmh, r.distKm).headwayMin.toFixed(2)} min">${r.cap ?? '—'} <span style="font-size:10px;color:var(--text-faint)">🛈</span></td>
       <td class="cap-mono">${r.scheduled}</td>
       <td class="cap-mono" style="color:var(--text-dim)">${r.peakCount} <span style="font-size:10px;color:var(--text-faint)">(${r.peakHourLabel})</span></td>
       <td>
@@ -2615,8 +2641,8 @@ fetch(GEOJSON_PATH)
     <div style="display:flex;align-items:center;gap:8px">
       <label style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint)">Metoda:</label>
       <select id="cap-method" onchange="renderCapacityTable()" style="padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none">
-        <option value="UIC">UIC 406 (kompresja)</option>
-        <option value="headway">Interwał minimalny</option>
+        <option value="headway">SBL — interwał blokowy</option>
+        <option value="UIC">SBL + UIC 406 (konserwatywna)</option>
       </select>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
