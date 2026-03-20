@@ -941,6 +941,38 @@
 </div>
 
 <script>
+// ── TAB SWITCHING (hoisted — called from HTML onclick before rest of JS loads) ──
+let currentTab = 'map';
+
+function switchTab(tab) {
+  currentTab = tab;
+  const panels = ['timetable-panel','capacity-panel','diagrams-panel'];
+  panels.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('visible', id === tab + '-panel');
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const activeBtn = document.getElementById('tab-' + tab);
+  if (activeBtn) activeBtn.classList.add('active');
+  // Hide map-only panels when not on map tab
+  const mapOnly = ['planner','train-panel','results','headway-panel','dwell-panel','heatmap-legend'];
+  mapOnly.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (tab !== 'map') {
+      el.dataset.hiddenByTab = el.style.display || '';
+      el.style.display = 'none';
+    } else if (el.dataset.hiddenByTab !== undefined) {
+      el.style.display = el.dataset.hiddenByTab;
+      delete el.dataset.hiddenByTab;
+    }
+  });
+  // Lazy-render panels when first opened
+  if (tab === 'timetable') { if (typeof populateStationSelect === 'function') populateStationSelect(); }
+  if (tab === 'capacity')  { if (typeof renderCapacityTable  === 'function') renderCapacityTable(); }
+  if (tab === 'diagrams')  { if (typeof renderDiagrams       === 'function') renderDiagrams(); }
+}
+
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const GEOJSON_PATH = 'railway.geojson';
 const LINE_COLORS = {
@@ -1839,36 +1871,7 @@ function resetDwellTimes() {
 }
 
 // ── TIMETABLE VIEW ────────────────────────────────────────────────────────────
-let currentTab = 'map';
 let selectedTimetableStation = null;
-
-function switchTab(tab) {
-  currentTab = tab;
-  document.getElementById('timetable-panel').classList.toggle('visible', tab === 'timetable');
-  document.getElementById('capacity-panel').classList.toggle('visible', tab === 'capacity');
-  document.getElementById('diagrams-panel').classList.toggle('visible', tab === 'diagrams');
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + tab).classList.add('active');
-  // Hide map-only panels when not on map tab
-  const mapOnly = ['planner', 'train-panel', 'results', 'headway-panel', 'dwell-panel', 'heatmap-legend'];
-  mapOnly.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    if (tab !== 'map') {
-      el.dataset.hiddenByTab = el.style.display || '';
-      el.style.display = 'none';
-    } else if (el.dataset.hiddenByTab !== undefined) {
-      el.style.display = el.dataset.hiddenByTab;
-      delete el.dataset.hiddenByTab;
-    }
-  });
-  if (tab === 'timetable') {
-    populateStationSelect();
-    if (selectedTimetableStation) renderStationTimetable();
-  }
-  if (tab === 'capacity') renderCapacityTable();
-  if (tab === 'diagrams') renderDiagrams();
-}
 
 function populateStationSelect() {
   const sel = document.getElementById('tt-station-select');
