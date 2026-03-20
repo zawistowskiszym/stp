@@ -1602,10 +1602,11 @@ function getPhysicalSegments(train, schedule) {
     const fromSt = stations.find(s => s.id === fromId);
     const fromLL = fromSt?.latlng; // [lat,lng]
     let oriented = g;
+    let wasReversed = false;
     if (fromLL) {
       const d2s = (g[0][0]-fromLL[1])**2 + (g[0][1]-fromLL[0])**2;
       const d2e = (g[g.length-1][0]-fromLL[1])**2 + (g[g.length-1][1]-fromLL[0])**2;
-      if (d2e < d2s) oriented = [...g].reverse();
+      if (d2e < d2s) { oriented = [...g].reverse(); wasReversed = true; }
     }
 
     const startMin = schedule[i].depMinutes;
@@ -1624,8 +1625,8 @@ function getPhysicalSegments(train, schedule) {
         startMin: tStart,
         endMin: tEnd,
         c1, c2,
-        // Direction: +1 if going c1→c2 as stored, -1 if reversed
-        direction: oriented === g ? 1 : -1,
+        // direction: true = travelling in geom's stored order, false = reversed
+        direction: !wasReversed,
       });
     }
   }
