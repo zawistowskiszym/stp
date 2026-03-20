@@ -432,6 +432,64 @@
       font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text-faint);
       padding:5px 14px; border-bottom:1px solid var(--border2); }
 
+    /* ── Diagrams (Obieg) ── */
+    #diagrams-panel { position:fixed; top:60px; left:0; right:0; bottom:0; z-index:700;
+      background:var(--bg); display:none; flex-direction:column; overflow:hidden; }
+    #diagrams-panel.visible { display:flex; }
+    #diagrams-toolbar { padding:10px 20px; background:var(--surface);
+      border-bottom:1px solid var(--border); display:flex; align-items:center;
+      gap:12px; flex-shrink:0; flex-wrap:wrap; }
+    #diagrams-toolbar h2 { font-family:'DM Mono',monospace; font-size:12px;
+      letter-spacing:2px; text-transform:uppercase; color:var(--amber); }
+    #diagrams-scroll { flex:1; overflow:auto; padding:24px 32px; }
+
+    .obieg-table { width:100%; border-collapse:collapse; margin-bottom:32px; }
+    .obieg-table caption { font-family:'DM Mono',monospace; font-size:10px;
+      letter-spacing:2px; text-transform:uppercase; color:var(--amber);
+      text-align:left; padding:0 0 10px; }
+    .obieg-table th { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px;
+      text-transform:uppercase; color:var(--text-faint); padding:7px 12px;
+      text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
+    .obieg-table td { padding:9px 12px; border-bottom:1px solid var(--border);
+      vertical-align:top; font-size:12px; }
+    .obieg-table tbody tr:hover td { background:var(--surface2); }
+    .obieg-id { font-family:'DM Mono',monospace; font-size:12px; color:var(--text);
+      font-weight:500; white-space:nowrap; }
+    .obieg-kurs { display:inline-block; margin:2px 3px 2px 0; padding:4px 10px;
+      border-radius:2px; font-family:'DM Mono',monospace; font-size:10px;
+      color:#fff; white-space:nowrap; cursor:pointer; transition:opacity .15s; }
+    .obieg-kurs:hover { opacity:.8; }
+    .obieg-kurs .ok-num { font-weight:700; }
+    .obieg-kurs .ok-route { font-size:9px; opacity:.8; display:block; margin-top:1px; }
+    .obieg-kurs .ok-time { font-size:9px; opacity:.7; }
+    .obieg-gap { display:inline-flex; align-items:center; margin:0 2px;
+      font-family:'DM Mono',monospace; font-size:9px; color:var(--text-faint); }
+    .obieg-gap.warn { color:var(--red); }
+    .obieg-gap.tight { color:var(--amber); }
+    .obieg-gap.ok { color:var(--green); }
+    .obieg-dead { display:inline-block; margin:2px 3px; padding:3px 8px;
+      border-radius:2px; font-family:'DM Mono',monospace; font-size:9px;
+      color:var(--text-faint); border:1px dashed var(--border); }
+    .obieg-summary { font-size:11px; color:var(--text-faint); padding-top:4px; }
+    .obieg-add-btn { padding:5px 12px; background:transparent; border:1px dashed var(--border);
+      border-radius:2px; font-family:'DM Mono',monospace; font-size:9px;
+      letter-spacing:1.5px; text-transform:uppercase; color:var(--text-faint);
+      cursor:pointer; transition:all .2s; }
+    .obieg-add-btn:hover { border-color:var(--amber); color:var(--amber); }
+    .obieg-del-btn { padding:3px 8px; background:transparent; border:1px solid var(--border);
+      border-radius:2px; font-family:'DM Mono',monospace; font-size:9px;
+      color:var(--text-faint); cursor:pointer; transition:all .2s; margin-left:8px; }
+    .obieg-del-btn:hover { border-color:var(--red); color:var(--red); }
+    .unassigned-pool { margin-bottom:24px; }
+    .unassigned-pool h3 { font-family:'DM Mono',monospace; font-size:10px;
+      letter-spacing:2px; text-transform:uppercase; color:var(--text-faint);
+      margin-bottom:8px; }
+    .unassigned-train { display:inline-block; margin:3px; padding:5px 10px;
+      background:var(--surface2); border:1px solid var(--border); border-radius:2px;
+      font-family:'DM Mono',monospace; font-size:10px; cursor:pointer;
+      transition:all .2s; }
+    .unassigned-train:hover { border-color:var(--amber); color:var(--amber); }
+
     /* ── Simulation ── */
     #sim-bar { position:fixed; bottom:0; left:0; right:0; z-index:1100;
       height:54px; background:var(--surface); border-top:1px solid var(--border);
@@ -770,6 +828,7 @@
       <button class="tab-btn active" id="tab-map" onclick="switchTab('map')">Mapa</button>
       <button class="tab-btn" id="tab-timetable" onclick="switchTab('timetable')">Rozkład jazdy</button>
       <button class="tab-btn" id="tab-capacity" onclick="switchTab('capacity')">Przepustowość</button>
+      <button class="tab-btn" id="tab-diagrams" onclick="switchTab('diagrams')">Obiegi</button>
     </div>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
       <button class="tt-btn" id="sim-start-btn" onclick="startSimulation()" style="border-color:var(--green);color:var(--green)">▶ Symulacja</button>
@@ -1083,6 +1142,7 @@ function buildGraph(d) {
   initTrainPanel();
   loadSavedTrains();
   loadDwellTimes();
+  loadObiegi();
 }
 
 // ── DIJKSTRA ──────────────────────────────────────────────────────────────────
@@ -1540,6 +1600,7 @@ function commitSave(train) {
   persistTrains();
   renderTrainsList();
   highlightActiveCard();
+  if (currentTab === 'diagrams') renderDiagrams();
 
   const btn = document.getElementById('save-btn');
   btn.textContent = 'Zapisano ✓';
@@ -1785,6 +1846,7 @@ function switchTab(tab) {
   currentTab = tab;
   document.getElementById('timetable-panel').classList.toggle('visible', tab === 'timetable');
   document.getElementById('capacity-panel').classList.toggle('visible', tab === 'capacity');
+  document.getElementById('diagrams-panel').classList.toggle('visible', tab === 'diagrams');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   // Hide map-only panels when not on map tab
@@ -1805,6 +1867,7 @@ function switchTab(tab) {
     if (selectedTimetableStation) renderStationTimetable();
   }
   if (tab === 'capacity') renderCapacityTable();
+  if (tab === 'diagrams') renderDiagrams();
 }
 
 function populateStationSelect() {
@@ -1976,6 +2039,341 @@ function printStationTimetable() {
     window.print();
     setTimeout(() => { frame.style.display='none'; frame.innerHTML=''; }, 500);
   }, 150);
+}
+
+// ── OBIEG (ROLLING STOCK DIAGRAMS) ───────────────────────────────────────────
+const OBIEG_STORAGE_KEY = 'kk_obiegi_v1';
+let obiegi = []; // [{id, label, trainIds:[]}]
+let obiegCounter = 1;
+
+function loadObiegi() {
+  try {
+    const raw = localStorage.getItem(OBIEG_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      obiegi = parsed.obiegi || [];
+      obiegCounter = parsed.counter || obiegi.length + 1;
+    }
+  } catch(e) { obiegi = []; }
+}
+
+function saveObiegi() {
+  localStorage.setItem(OBIEG_STORAGE_KEY, JSON.stringify({ obiegi, counter: obiegCounter }));
+}
+
+function addObieg(trainIds = []) {
+  obiegi.push({ id: 'OB-' + String(obiegCounter).padStart(3,'0'), label: '', trainIds });
+  obiegCounter++;
+  saveObiegi();
+  if (currentTab === 'diagrams') renderDiagrams();
+}
+
+function clearObiegi() {
+  if (!confirm('Wyczyścić wszystkie obiegi?')) return;
+  obiegi = [];
+  saveObiegi();
+  renderDiagrams();
+}
+
+// Get trains sorted by departure for a given obieg
+function obiegTrains(ob) {
+  return ob.trainIds
+    .map(id => savedTrains.find(t => t.id === id))
+    .filter(Boolean)
+    .sort((a, b) => (timeToMinutes(a.departure)||0) - (timeToMinutes(b.departure)||0));
+}
+
+// Check if train B can follow train A (same terminus, enough turnaround)
+function canFollow(trainA, trainB, minTurnaround) {
+  if (!trainA.departure || !trainB.departure) return false;
+  const schA = getTrainSchedule(trainA);
+  const schB = getTrainSchedule(trainB);
+  if (!schA || !schB) return false;
+  const endA   = schA[schA.length-1].arrMinutes;
+  const startB = schB[0].depMinutes;
+  const gap    = startB - endA;
+  // Must have enough turnaround AND end station of A = start station of B
+  const endStA   = trainA.path[trainA.path.length-1];
+  const startStB = trainB.path[0];
+  return gap >= minTurnaround && endStA === startStB;
+}
+
+// Auto-assign: greedy algorithm — chain trains by category, departure time, terminus match
+function autoAssignObiegi() {
+  const catFilter = document.getElementById('obieg-cat-filter').value;
+  const minTurn   = parseInt(document.getElementById('obieg-turnaround').value) || 15;
+
+  let pool = savedTrains
+    .filter(t => t.departure && t.path?.length >= 2)
+    .filter(t => !catFilter || t.category === catFilter)
+    .sort((a,b) => (timeToMinutes(a.departure)||0) - (timeToMinutes(b.departure)||0));
+
+  // Remove from existing obiegi
+  obiegi = obiegi.filter(ob => {
+    ob.trainIds = ob.trainIds.filter(id => {
+      const t = savedTrains.find(x=>x.id===id);
+      return t && (!catFilter || t.category === catFilter) ? false : true;
+    });
+    return ob.trainIds.length > 0;
+  });
+
+  const assigned = new Set(obiegi.flatMap(ob => ob.trainIds));
+  pool = pool.filter(t => !assigned.has(t.id));
+
+  const newObiegi = [];
+  while (pool.length) {
+    const first = pool.shift();
+    const chain = [first.id];
+    let current = first;
+    let changed = true;
+    while (changed) {
+      changed = false;
+      const idx = pool.findIndex(t => canFollow(current, t, minTurn));
+      if (idx !== -1) {
+        current = pool.splice(idx, 1)[0];
+        chain.push(current.id);
+        changed = true;
+      }
+    }
+    newObiegi.push({ id: 'OB-' + String(obiegCounter).padStart(3,'0'), label: '', trainIds: chain });
+    obiegCounter++;
+  }
+
+  obiegi = [...obiegi, ...newObiegi];
+  saveObiegi();
+  renderDiagrams();
+}
+
+function removeTrainFromObieg(obId, trainId) {
+  const ob = obiegi.find(o => o.id === obId);
+  if (ob) ob.trainIds = ob.trainIds.filter(id => id !== trainId);
+  if (ob && ob.trainIds.length === 0) obiegi = obiegi.filter(o => o.id !== obId);
+  saveObiegi();
+  renderDiagrams();
+}
+
+function deleteObieg(obId) {
+  obiegi = obiegi.filter(o => o.id !== obId);
+  saveObiegi();
+  renderDiagrams();
+}
+
+function assignTrainToObieg(obId, trainId) {
+  // Remove from any existing obieg first
+  obiegi.forEach(ob => { ob.trainIds = ob.trainIds.filter(id => id !== trainId); });
+  obiegi = obiegi.filter(ob => ob.trainIds.length > 0);
+  const ob = obiegi.find(o => o.id === obId);
+  if (ob) ob.trainIds.push(trainId);
+  saveObiegi();
+  renderDiagrams();
+}
+
+function renderDiagrams() {
+  const scroll = document.getElementById('diagrams-scroll');
+  const catFilter = document.getElementById('obieg-cat-filter').value;
+  const minTurn   = parseInt(document.getElementById('obieg-turnaround').value) || 15;
+
+  // Populate category filter
+  const sel = document.getElementById('obieg-cat-filter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Wszystkie kategorie</option>' +
+    TRAIN_CATEGORIES.map(c =>
+      `<option value="${c.id}" ${c.id===cur?'selected':''}>${c.label} · ${c.name}</option>`
+    ).join('');
+
+  if (!savedTrains.length) {
+    scroll.innerHTML = '<div style="text-align:center;padding:80px;font-family:DM Mono,monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint)">Brak zapisanych pociągów</div>';
+    return;
+  }
+
+  // Trains in this category view
+  const catTrains = savedTrains.filter(t =>
+    t.departure && t.path?.length >= 2 && (!catFilter || t.category === catFilter)
+  );
+
+  // Assigned train IDs
+  const assignedIds = new Set(obiegi.flatMap(ob =>
+    ob.trainIds.filter(id => catTrains.find(t=>t.id===id))
+  ));
+  const unassigned = catTrains.filter(t => !assignedIds.has(t.id));
+
+  let html = '';
+
+  // Unassigned pool
+  if (unassigned.length) {
+    html += `<div class="unassigned-pool">
+      <h3>Nieprzypisane pociągi (${unassigned.length})</h3>
+      ${unassigned.map(t => `
+        <span class="unassigned-train" title="Kliknij aby przypisać do obiegu"
+          onclick="promptAssign('${t.id}')"
+          style="border-color:${t.categoryColor}20;color:${t.categoryColor}">
+          [${t.categoryLabel}] ${t.number}${t.name?' · '+t.name:''}
+          <span style="opacity:.6;margin-left:4px">${t.departure}</span>
+        </span>`).join('')}
+    </div>`;
+  }
+
+  // Obiegi table
+  const visibleObiegi = obiegi.filter(ob =>
+    ob.trainIds.some(id => catTrains.find(t=>t.id===id))
+  );
+
+  if (!visibleObiegi.length && !unassigned.length) {
+    scroll.innerHTML = '<div style="text-align:center;padding:60px;font-family:DM Mono,monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint)">Brak obiegów — kliknij „Auto-przypisz" lub „Nowy obieg"</div>';
+    return;
+  }
+
+  if (visibleObiegi.length) {
+    html += `<table class="obieg-table">
+      <caption>Obiegi taboru${catFilter ? ' · ' + TRAIN_CATEGORIES.find(c=>c.id===catFilter)?.name : ''}</caption>
+      <thead><tr>
+        <th style="width:100px">Skład</th>
+        <th>Kursy w obiegu</th>
+        <th style="width:120px">Podsumowanie</th>
+        <th style="width:60px"></th>
+      </tr></thead>
+      <tbody>`;
+
+    visibleObiegi.forEach(ob => {
+      const trains = obiegTrains(ob).filter(t => !catFilter || t.category === catFilter);
+      if (!trains.length) return;
+
+      // Build cell: kurs → gap → kurs → gap → ...
+      let cursHtml = '';
+      let totalKm = 0;
+      let warnings = 0;
+      let firstDep = null, lastArr = null;
+
+      trains.forEach((t, i) => {
+        const sch = getTrainSchedule(t);
+        const dep = sch?.[0].depMinutes;
+        const arr = sch?.[sch.length-1].arrMinutes;
+        const depStr = dep != null ? `${pad(Math.floor(dep/60))}:${pad(dep%60)}` : '?';
+        const arrStr = arr != null ? `${pad(Math.floor(arr/60))}:${pad(arr%60)}` : '?';
+        const originSt  = stations.find(s=>s.id===t.path[0])?.name || t.path[0];
+        const destSt    = stations.find(s=>s.id===t.path[t.path.length-1])?.name || t.path[t.path.length-1];
+        if (i === 0) firstDep = dep;
+        lastArr = arr;
+
+        let km = 0;
+        for (let j=0; j<t.path.length-1; j++) {
+          const e = graph[t.path[j]]?.find(x=>x.to===t.path[j+1]);
+          if (e) km += e.dist;
+        }
+        totalKm += km;
+
+        cursHtml += `<span class="obieg-kurs" style="background:${t.categoryColor}"
+          onclick="loadTrain('${t.id}');switchTab('map')" title="${t.number} · ${originSt}→${destSt}">
+          <span class="ok-num">[${t.categoryLabel}] ${t.number}</span>
+          <span class="ok-route">${originSt} → ${destSt}</span>
+          <span class="ok-time">${depStr}–${arrStr}</span>
+        </span>`;
+
+        // Show gap to next
+        if (i < trains.length - 1) {
+          const nextSch = getTrainSchedule(trains[i+1]);
+          const nextDep = nextSch?.[0].depMinutes;
+          const gap = nextDep != null && arr != null ? Math.round(nextDep - arr) : null;
+          const endSt   = t.path[t.path.length-1];
+          const startSt = trains[i+1].path[0];
+          const transfer = endSt !== startSt;
+          let gapClass = 'ok', gapLabel = '';
+          if (gap != null) {
+            if (gap < 0) { gapClass = 'warn'; gapLabel = `⛔ -${Math.abs(gap)}min`; warnings++; }
+            else if (gap < minTurn) { gapClass = 'warn'; gapLabel = `⚠ ${gap}min`; warnings++; }
+            else if (gap < minTurn * 2) { gapClass = 'tight'; gapLabel = `${gap}min`; }
+            else { gapClass = 'ok'; gapLabel = `${gap}min`; }
+          }
+          if (transfer) {
+            cursHtml += `<span class="obieg-dead">⇢ ${stations.find(s=>s.id===startSt)?.name||startSt}</span>`;
+          }
+          cursHtml += `<span class="obieg-gap ${gapClass}">→ ${gapLabel}</span>`;
+        }
+      });
+
+      const totalTime = (firstDep != null && lastArr != null) ? Math.round(lastArr - firstDep) : null;
+      const summary = [
+        `${trains.length} kursów`,
+        `${Math.round(totalKm)} km`,
+        totalTime != null ? `${pad(Math.floor(totalTime/60))}h${pad(totalTime%60)}m` : '',
+        warnings > 0 ? `<span style="color:var(--red)">⚠ ${warnings} konflikt${warnings>1?'ów':''}</span>` : '',
+      ].filter(Boolean).join(' · ');
+
+      html += `<tr>
+        <td>
+          <div class="obieg-id">${ob.id}</div>
+          <input value="${ob.label||''}" placeholder="Nazwa…"
+            onchange="updateObiegLabel('${ob.id}',this.value)"
+            style="margin-top:4px;width:90px;padding:3px 6px;background:var(--bg);border:1px solid var(--border);border-radius:2px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text);outline:none">
+        </td>
+        <td>${cursHtml}</td>
+        <td class="obieg-summary">${summary}</td>
+        <td><button class="obieg-del-btn" onclick="deleteObieg('${ob.id}')">Usuń</button></td>
+      </tr>`;
+    });
+
+    html += '</tbody></table>';
+  }
+
+  scroll.innerHTML = html;
+}
+
+function updateObiegLabel(obId, label) {
+  const ob = obiegi.find(o => o.id === obId);
+  if (ob) { ob.label = label; saveObiegi(); }
+}
+
+function promptAssign(trainId) {
+  if (!obiegi.length) {
+    if (confirm('Brak obiegów. Utworzyć nowy?')) {
+      addObieg([trainId]);
+    }
+    return;
+  }
+  const opts = obiegi.map((ob,i) => `${i+1}. ${ob.id}${ob.label?' · '+ob.label:''}`).join('
+');
+  const choice = prompt(`Przypisz do obiegu (podaj numer):
+${opts}
+0 = nowy obieg`);
+  if (choice === null) return;
+  const n = parseInt(choice);
+  if (n === 0) addObieg([trainId]);
+  else if (n >= 1 && n <= obiegi.length) assignTrainToObieg(obiegi[n-1].id, trainId);
+}
+
+function printDiagrams() {
+  const body = document.getElementById('diagrams-scroll').innerHTML;
+  const frame = document.getElementById('print-frame');
+  frame.style.display = 'block';
+  frame.innerHTML = `
+    <style>
+      body { font-family:'DM Mono',monospace; background:#fff; color:#111; padding:20px; }
+      .obieg-table { width:100%; border-collapse:collapse; margin-bottom:24px; }
+      .obieg-table caption { font-size:11px; letter-spacing:2px; text-transform:uppercase;
+        color:#555; text-align:left; padding-bottom:8px; font-weight:700; }
+      .obieg-table th { font-size:8px; letter-spacing:2px; text-transform:uppercase;
+        color:#888; padding:6px 10px; border-bottom:2px solid #111; text-align:left; }
+      .obieg-table td { padding:8px 10px; border-bottom:1px solid #eee; vertical-align:top; font-size:11px; }
+      .obieg-id { font-weight:700; font-size:12px; }
+      .obieg-kurs { display:inline-block; margin:2px; padding:3px 8px; border-radius:2px;
+        font-size:9px; color:#fff; }
+      .obieg-gap { font-size:9px; margin:0 2px; }
+      .obieg-gap.warn { color:#c0392b; }
+      .obieg-gap.tight { color:#b7770d; }
+      .obieg-gap.ok { color:#1e8449; }
+      .obieg-dead { display:inline-block; font-size:9px; margin:2px; padding:2px 6px;
+        border:1px dashed #ccc; border-radius:2px; }
+      .unassigned-pool { display:none; }
+      input { display:none; }
+      .print-hdr { font-size:9px; color:#aaa; border-bottom:1px solid #ddd;
+        padding-bottom:8px; margin-bottom:16px; display:flex; justify-content:space-between; }
+    </style>
+    <div class="print-hdr">
+      <span>Koleje Królewskie · Planowanie Obiegów Taboru</span>
+      <span>${new Date().toLocaleDateString('pl-PL')} ${new Date().toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'})}</span>
+    </div>
+    ${body}`;
+  setTimeout(() => { window.print(); setTimeout(() => { frame.style.display='none'; frame.innerHTML=''; }, 500); }, 150);
 }
 
 // ── SIMULATION ───────────────────────────────────────────────────────────────
@@ -3202,6 +3600,29 @@ fetch(GEOJSON_PATH)
   <div class="sim-section">
     <button id="sim-toggle-btn" onclick="toggleSimulation()">✕ Zamknij</button>
   </div>
+</div>
+
+<!-- Diagrams panel -->
+<div id="diagrams-panel">
+  <div id="diagrams-toolbar">
+    <h2>Planowanie Obiegów Taboru</h2>
+    <div style="display:flex;align-items:center;gap:8px">
+      <label style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint)">Kategoria:</label>
+      <select id="obieg-cat-filter" onchange="renderDiagrams()" style="padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none">
+        <option value="">Wszystkie</option>
+      </select>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <label style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint)">Min. czas obrotu:</label>
+      <input type="number" id="obieg-turnaround" value="15" min="0" max="120" onchange="renderDiagrams()" style="width:60px;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;text-align:right">
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-faint)">min</span>
+    </div>
+    <button onclick="autoAssignObiegi()" style="padding:6px 14px;background:var(--amber);color:#0e1117;border:none;border-radius:2px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer">⚡ Auto-przypisz</button>
+    <button onclick="addObieg()" class="obieg-add-btn">+ Nowy obieg</button>
+    <button onclick="clearObiegi()" style="padding:6px 12px;background:transparent;border:1px solid var(--border);border-radius:2px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-faint);cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-faint)'">Wyczyść</button>
+    <button onclick="printDiagrams()" style="margin-left:auto;padding:6px 16px;background:var(--amber);color:#0e1117;border:none;border-radius:2px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer">🖨 Drukuj</button>
+  </div>
+  <div id="diagrams-scroll"></div>
 </div>
 
 <!-- Conflict blocker modal -->
