@@ -325,6 +325,92 @@
       box-shadow:none; padding:0;
     }
     #map.selecting { cursor:crosshair !important; }
+
+    /* ── Traffic bar ── */
+    #traffic-bar {
+      position:fixed; bottom:0; left:0; right:0; z-index:1100;
+      height:56px;
+      background:rgba(255,255,255,0.88);
+      backdrop-filter:blur(20px) saturate(180%);
+      -webkit-backdrop-filter:blur(20px) saturate(180%);
+      border-top:0.5px solid rgba(0,0,0,0.1);
+      display:none; align-items:center; gap:0;
+      box-shadow:0 -2px 12px rgba(0,0,0,0.08);
+    }
+    #traffic-bar.visible { display:flex; }
+    .tb-section {
+      display:flex; align-items:center; gap:10px;
+      padding:0 18px; border-right:0.5px solid rgba(60,60,67,0.1);
+      height:100%;
+    }
+    .tb-section:last-child { border-right:none; }
+    #traffic-clock {
+      font-size:22px; font-weight:700; letter-spacing:-1px;
+      color:var(--text); font-variant-numeric:tabular-nums;
+    }
+    #traffic-day {
+      font-size:11px; color:var(--text-3); font-weight:500; letter-spacing:-0.1px;
+    }
+    .tb-play-btn {
+      width:34px; height:34px; border-radius:50%;
+      background:var(--accent); border:none; color:#fff;
+      font-size:14px; cursor:pointer; transition:all .15s;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .tb-play-btn:hover { background:#0063d1; transform:scale(1.05); }
+    .tb-speed-btns { display:flex; gap:4px; }
+    .tb-speed-btn {
+      padding:4px 10px; border-radius:14px;
+      background:rgba(118,118,128,0.12); border:none;
+      font-family:inherit; font-size:11px; font-weight:600;
+      color:var(--text-2); cursor:pointer; transition:all .15s;
+      letter-spacing:-0.1px;
+    }
+    .tb-speed-btn:hover { background:rgba(0,122,255,0.12); color:var(--accent); }
+    .tb-speed-btn.active { background:var(--accent); color:#fff; }
+    #traffic-timeline {
+      flex:1; padding:0 18px; display:flex; align-items:center; gap:10px;
+    }
+    #traffic-slider {
+      flex:1; height:4px; accent-color:var(--accent); cursor:pointer;
+    }
+    #traffic-stats {
+      font-size:11px; color:var(--text-3); letter-spacing:-0.1px;
+      white-space:nowrap;
+    }
+    #traffic-toggle-btn {
+      padding:7px 16px;
+      background:var(--accent); color:#fff; border:none;
+      border-radius:14px; font-family:inherit; font-size:12px;
+      font-weight:600; letter-spacing:-0.1px; cursor:pointer; transition:all .15s;
+    }
+    #traffic-toggle-btn:hover { background:#0063d1; }
+    #traffic-toggle-btn.on { background:#ff3b30; }
+
+    /* Traffic legend pill */
+    #traffic-legend {
+      position:absolute; bottom:72px; left:50%; transform:translateX(-50%);
+      z-index:900; display:none;
+      background:rgba(255,255,255,0.88);
+      backdrop-filter:blur(20px);
+      border:0.5px solid rgba(0,0,0,0.08);
+      border-radius:20px; padding:6px 16px;
+      box-shadow:0 2px 12px rgba(0,0,0,0.1);
+      flex-direction:row; align-items:center; gap:12px;
+      font-size:11px; font-weight:500; color:var(--text-2);
+      white-space:nowrap;
+    }
+    #traffic-legend.visible { display:flex; }
+    .tl-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+    /* Start traffic button in header */
+    #traffic-start-btn {
+      margin-left:8px; padding:5px 14px;
+      background:rgba(52,199,89,0.12); color:#34c759; border:none;
+      border-radius:14px; font-family:inherit; font-size:12px;
+      font-weight:600; letter-spacing:-0.1px; cursor:pointer; transition:all .15s;
+    }
+    #traffic-start-btn:hover { background:rgba(52,199,89,0.2); }
   </style>
 </head>
 <body>
@@ -956,10 +1042,11 @@ function loadLayer(url, isDistrict) {
         }).addTo(map);
       });
 
-      // Count roads + build graph
+      // Count roads + build graph + store for traffic
       const total = data.features?.length || 0;
       document.getElementById('road-count').textContent = `${total} odcinków`;
       buildRoadGraph(data.features || []);
+      roadFeatures = data.features || [];
 
       // Fit bounds
       try {
@@ -990,6 +1077,193 @@ Promise.allSettled([
     document.getElementById('road-count').textContent = 'Brak danych';
   }
 });
+
+
+// ── TRAFFIC SIMULATION ────────────────────────────────────────────────────────
+const DAYS = ['Niedziela','Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota'];
+let trafficActive = false;
+let trafficRunning = false;
+let trafficSpeed = 1;
+let trafficMinutes = 480;
+let trafficDay = 1;
+let trafficRaf = null;
+let trafficLastTs = null;
+let trafficLayers = [];
+let roadFeatures = [];
+
+function getCongestion(feature, minutes, dayOfWeek) {
+  const hw = feature.properties?.highway || 'unclassified';
+  const hour = (minutes / 60) % 24;
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+  function hourFactor(h) {
+    if (isWeekend) {
+      if (h >= 10 && h <= 13) return 0.5 + 0.3 * Math.sin((h-10)*Math.PI/3);
+      if (h >= 15 && h <= 18) return 0.4 + 0.25 * Math.sin((h-15)*Math.PI/3);
+      if (h >= 0  && h <= 5)  return 0.05;
+      return 0.2;
+    }
+    if (h >= 7  && h <= 9)  return 0.6 + 0.4 * Math.sin((h-7)*Math.PI/2);
+    if (h >= 16 && h <= 19) return 0.55 + 0.45 * Math.sin((h-16)*Math.PI/3);
+    if (h >= 12 && h <= 13) return 0.35;
+    if (h >= 0  && h <= 5)  return 0.03;
+    if (h >= 22) return 0.05;
+    return 0.15 + 0.1 * Math.sin(h);
+  }
+
+  const typeMultiplier = {
+    motorway:4, trunk:3.5, primary:3, secondary:2,
+    tertiary:1.5, residential:1, living_street:0.5,
+    service:0.4, unclassified:0.8,
+  }[hw] || 1;
+
+  const coords = feature.geometry?.coordinates;
+  const seed = coords ? Math.abs((coords[0][0] * 1000 + coords[0][1] * 10000) % 1) : 0.5;
+  const noise = 0.85 + seed * 0.3;
+  const phaseShift = seed * 2;
+  const adjustedHour = (hour + phaseShift) % 24;
+  const base = hourFactor(adjustedHour) * noise;
+  return Math.min(1, base * Math.min(typeMultiplier, 4) / 4);
+}
+
+function congestionColor(c) {
+  if (c < 0.35) return '#34c759';
+  if (c < 0.60) return '#ffcc00';
+  if (c < 0.80) return '#ff9500';
+  return '#ff3b30';
+}
+
+function buildTrafficLayers() {
+  trafficLayers.forEach(l => map.removeLayer(l));
+  trafficLayers = [];
+  const showTypes = new Set(['motorway','motorway_link','trunk','trunk_link',
+    'primary','primary_link','secondary','secondary_link',
+    'tertiary','residential','unclassified','service','living_street']);
+  let congested = 0;
+  roadFeatures.forEach(f => {
+    const hw = f.properties?.highway;
+    if (!hw || !showTypes.has(hw) || f.geometry?.type !== 'LineString') return;
+    const c = getCongestion(f, trafficMinutes, trafficDay);
+    if (c > 0.6) congested++;
+    const color = congestionColor(c);
+    const coords = f.geometry.coordinates.map(c => [c[1], c[0]]);
+    const weight = ({motorway:7, trunk:6, primary:5, secondary:4}[hw] || 3) + 1;
+    const layer = L.polyline(coords, {
+      color, weight, opacity:0.72, lineJoin:'round', lineCap:'round', interactive:false,
+    }).addTo(map);
+    trafficLayers.push(layer);
+  });
+  document.getElementById('traffic-stats').textContent = `${congested} korków`;
+}
+
+function trafficUpdateClock(minutes) {
+  const h = Math.floor(minutes / 60) % 24;
+  const m = Math.floor(minutes % 60);
+  document.getElementById('traffic-clock').textContent =
+    `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  document.getElementById('traffic-day').textContent = DAYS[trafficDay];
+  document.getElementById('traffic-slider').value = Math.round(minutes) % 1440;
+}
+
+function trafficTick(ts) {
+  if (!trafficRunning) return;
+  if (trafficLastTs !== null) {
+    const realSec = (ts - trafficLastTs) / 1000;
+    trafficMinutes = (trafficMinutes + (realSec / 60) * trafficSpeed) % 1440;
+    if (trafficMinutes < 0.1 && trafficSpeed > 0) trafficDay = (trafficDay + 1) % 7;
+  }
+  trafficLastTs = ts;
+  trafficUpdateClock(trafficMinutes);
+  const prevBucket = Math.floor(((trafficMinutes - trafficSpeed/60 + 1440) % 1440) / 30);
+  const curBucket  = Math.floor(trafficMinutes / 30);
+  if (curBucket !== prevBucket || trafficLayers.length === 0) buildTrafficLayers();
+  trafficRaf = requestAnimationFrame(trafficTick);
+}
+
+function trafficTogglePlay() {
+  trafficRunning = !trafficRunning;
+  document.getElementById('traffic-play-btn').textContent = trafficRunning ? '⏸' : '▶';
+  if (trafficRunning) { trafficLastTs = null; trafficRaf = requestAnimationFrame(trafficTick); }
+  else if (trafficRaf) cancelAnimationFrame(trafficRaf);
+}
+
+function trafficSetSpeed(s) {
+  trafficSpeed = s;
+  document.querySelectorAll('.tb-speed-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent === s + '×');
+  });
+}
+
+function trafficSeek(val) {
+  trafficMinutes = parseInt(val);
+  trafficLastTs = null;
+  trafficUpdateClock(trafficMinutes);
+  buildTrafficLayers();
+}
+
+function startTraffic() {
+  if (!roadFeatures.length) { alert('Wczytaj plik roads.geojson najpierw.'); return; }
+  trafficActive = true;
+  const now = new Date();
+  trafficMinutes = now.getHours() * 60 + now.getMinutes();
+  trafficDay = now.getDay();
+  document.getElementById('traffic-bar').classList.add('visible');
+  document.getElementById('traffic-legend').classList.add('visible');
+  document.getElementById('traffic-start-btn').style.display = 'none';
+  document.getElementById('map').style.bottom = '56px';
+  trafficUpdateClock(trafficMinutes);
+  buildTrafficLayers();
+  trafficRunning = true;
+  document.getElementById('traffic-play-btn').textContent = '⏸';
+  trafficLastTs = null;
+  trafficRaf = requestAnimationFrame(trafficTick);
+}
+
+function stopTraffic() {
+  trafficRunning = false;
+  trafficActive = false;
+  if (trafficRaf) cancelAnimationFrame(trafficRaf);
+  trafficLayers.forEach(l => map.removeLayer(l));
+  trafficLayers = [];
+  document.getElementById('traffic-bar').classList.remove('visible');
+  document.getElementById('traffic-legend').classList.remove('visible');
+  document.getElementById('traffic-start-btn').style.display = '';
+  document.getElementById('map').style.bottom = '0';
+}
 </script>
+<!-- Traffic simulation bar -->
+<div id="traffic-bar">
+  <div class="tb-section">
+    <div>
+      <div id="traffic-clock">08:00</div>
+      <div id="traffic-day">Poniedziałek</div>
+    </div>
+  </div>
+  <div class="tb-section">
+    <button class="tb-play-btn" id="traffic-play-btn" onclick="trafficTogglePlay()">▶</button>
+    <div class="tb-speed-btns">
+      <button class="tb-speed-btn active" onclick="trafficSetSpeed(1)">1×</button>
+      <button class="tb-speed-btn" onclick="trafficSetSpeed(10)">10×</button>
+      <button class="tb-speed-btn" onclick="trafficSetSpeed(60)">60×</button>
+    </div>
+  </div>
+  <div id="traffic-timeline">
+    <input type="range" id="traffic-slider" min="0" max="1439" value="480"
+      oninput="trafficSeek(this.value)">
+    <span id="traffic-stats">— korków</span>
+  </div>
+  <div class="tb-section">
+    <button id="traffic-toggle-btn" class="on" onclick="stopTraffic()">✕ Zamknij</button>
+  </div>
+</div>
+
+<!-- Traffic legend -->
+<div id="traffic-legend">
+  <div class="tl-dot" style="background:#34c759"></div> Płynny
+  <div class="tl-dot" style="background:#ff9500"></div> Wolny
+  <div class="tl-dot" style="background:#ff3b30"></div> Korek
+  <div class="tl-dot" style="background:#8e8e93"></div> Brak danych
+</div>
+
 </body>
 </html>
