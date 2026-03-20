@@ -2333,11 +2333,8 @@ function promptAssign(trainId) {
     }
     return;
   }
-  const opts = obiegi.map((ob,i) => `${i+1}. ${ob.id}${ob.label?' · '+ob.label:''}`).join('
-');
-  const choice = prompt(`Przypisz do obiegu (podaj numer):
-${opts}
-0 = nowy obieg`);
+  const opts = obiegi.map((ob,i) => `${i+1}. ${ob.id}${ob.label?' · '+ob.label:''}`).join('\n');
+  const choice = prompt('Przypisz do obiegu (podaj numer):\n' + opts + '\n0 = nowy obieg');
   if (choice === null) return;
   const n = parseInt(choice);
   if (n === 0) addObieg([trainId]);
