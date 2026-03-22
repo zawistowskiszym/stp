@@ -540,8 +540,47 @@
       background:#00000090; backdrop-filter:blur(4px); align-items:center; justify-content:center; }
     #conflict-overlay.visible { display:flex; }
     #conflict-modal { background:var(--surface); border:1px solid var(--red);
-      border-radius:4px; width:560px; max-width:90vw; max-height:80vh;
+      border-radius:4px; width:680px; max-width:95vw; max-height:88vh;
       display:flex; flex-direction:column; box-shadow:0 20px 60px #00000080; overflow:hidden; }
+    /* Solution tabs */
+    #conflict-solutions { border-top:1px solid var(--border); flex-shrink:0; }
+    .sol-tabs { display:flex; border-bottom:1px solid var(--border); }
+    .sol-tab { flex:1; padding:10px 8px; background:transparent; border:none;
+      font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1.5px;
+      text-transform:uppercase; color:var(--text-faint); cursor:pointer;
+      transition:all .2s; border-bottom:2px solid transparent; }
+    .sol-tab:hover { color:var(--text-dim); background:var(--surface2); }
+    .sol-tab.active { color:var(--amber); border-bottom-color:var(--amber); background:var(--surface2); }
+    .sol-panel { display:none; padding:14px 20px; }
+    .sol-panel.active { display:block; }
+    .sol-loading { font-family:'DM Mono',monospace; font-size:11px; color:var(--text-faint);
+      text-align:center; padding:20px; letter-spacing:1px; }
+    .sol-result { padding:10px 12px; background:var(--bg); border:1px solid var(--border);
+      border-radius:3px; margin-bottom:8px; cursor:pointer; transition:all .2s; }
+    .sol-result:hover { border-color:var(--amber); }
+    .sol-result:last-child { margin-bottom:0; }
+    .sol-result-title { font-family:'DM Mono',monospace; font-size:11px;
+      color:var(--amber); font-weight:500; margin-bottom:4px; }
+    .sol-result-detail { font-size:12px; color:var(--text-dim); line-height:1.6; }
+    .sol-apply-btn { float:right; padding:3px 10px; background:var(--amber); color:#0e1117;
+      border:none; border-radius:2px; font-family:'DM Mono',monospace; font-size:9px;
+      letter-spacing:1px; font-weight:600; cursor:pointer; transition:all .2s; }
+    .sol-apply-btn:hover { background:#f0b955; }
+    .sol-none { font-size:12px; color:var(--text-faint); text-align:center;
+      padding:16px; font-family:'DM Mono',monospace; font-size:10px;
+      letter-spacing:1px; text-transform:uppercase; }
+    /* Dwell station picker */
+    .dwell-station-list { max-height:180px; overflow-y:auto; }
+    .dwell-station-list::-webkit-scrollbar { width:3px; }
+    .dwell-station-list::-webkit-scrollbar-thumb { background:var(--border2); }
+    .dwell-st-item { display:flex; align-items:center; gap:10px; padding:6px 0;
+      border-bottom:1px solid var(--border); font-size:12px; }
+    .dwell-st-item:last-child { border-bottom:none; }
+    .dwell-st-name { flex:1; color:var(--text-dim); }
+    .dwell-st-input { width:52px; padding:3px 6px; background:var(--bg);
+      border:1px solid var(--border); border-radius:2px; font-family:'DM Mono',monospace;
+      font-size:11px; color:var(--amber); text-align:right; outline:none; }
+    .dwell-st-input:focus { border-color:var(--amber); }
     #conflict-modal-header { background:#d94f3d18; border-bottom:1px solid var(--red);
       padding:16px 20px; display:flex; align-items:center; gap:12px; flex-shrink:0; }
     #conflict-modal-header .icon { font-size:22px; }
@@ -2752,20 +2791,35 @@ function checkConflicts(candidateTrain) {
 }
 
 // Find nearest conflict-free departure (earlier or later)
-function findNearestFreeDeparture(trainData) {
+// ── Tab switcher ─────────────────────────────────────────────────────────────
+function showSolTab(name) {
+  document.querySelectorAll('.sol-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['departure','route','dwell'][i] === name);
+  });
+  document.querySelectorAll('.sol-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('sol-' + name).classList.add('active');
+}
+
+// ── Solution 1: Departure time ────────────────────────────────────────────────
+function findNearestFreeDepartures(trainData) {
   const origDep = timeToMinutes(trainData.departure);
-  if (origDep === null) return null;
-  for (let delta = 1; delta <= 120; delta++) {
-    for (const dir of [-1, +1]) {
+  if (origDep === null) return [];
+  const results = [];
+  let foundFwd = 0, foundBwd = 0;
+  for (let delta = 1; delta <= 180 && (foundFwd < 3 || foundBwd < 3); delta++) {
+    for (const dir of [+1, -1]) {
+      if (dir === +1 && foundFwd >= 3) continue;
+      if (dir === -1 && foundBwd >= 3) continue;
       const newDep = ((origDep + dir * delta) + 1440) % 1440;
       const newDepStr = pad(Math.floor(newDep/60)) + ':' + pad(Math.round(newDep%60));
       const candidate = { ...trainData, departure: newDepStr };
       if (checkConflicts(candidate).length === 0) {
-        return { depStr: newDepStr, delta: dir * delta };
+        results.push({ depStr: newDepStr, delta: dir * delta });
+        if (dir === +1) foundFwd++; else foundBwd++;
       }
     }
   }
-  return null;
+  return results.sort((a,b) => Math.abs(a.delta) - Math.abs(b.delta)).slice(0, 4);
 }
 
 function applyBestDeparture(depStr) {
@@ -2774,47 +2828,154 @@ function applyBestDeparture(depStr) {
   findRoute();
 }
 
+// ── Solution 2: Alternative route ─────────────────────────────────────────────
+function findAlternativeRoutes(trainData, conflicts) {
+  if (!origin || !dest) return [];
+  const blockedEdges = new Set();
+  conflicts.forEach(c => blockedEdges.add([c.fromId, c.toId].sort().join('|')));
+
+  function dijkstraAvoiding(s, e, blocked) {
+    const dist = {}, prev = {}, prevEdge = {};
+    Object.keys(graph).forEach(id => dist[id] = Infinity);
+    dist[s] = 0;
+    const pq = [[0, s]];
+    while (pq.length) {
+      pq.sort((a,b) => a[0]-b[0]);
+      const [d, u] = pq.shift();
+      if (d > dist[u]) continue;
+      if (u === e) break;
+      for (const edge of (graph[u] || [])) {
+        const ek = [u, edge.to].sort().join('|');
+        if (blocked.has(ek)) continue;
+        const spd = Math.min(parseFloat(edge.maxspeed)||160, trainData.maxspeed||160);
+        const nd = d + segmentTime(edge.dist, spd, true);
+        if (nd < dist[edge.to]) {
+          dist[edge.to] = nd; prev[edge.to] = u; prevEdge[edge.to] = edge;
+          pq.push([nd, edge.to]);
+        }
+      }
+    }
+    if (dist[e] === Infinity) return null;
+    const path = []; let cur = e;
+    while (cur) { path.unshift({ id: cur }); cur = prev[cur]; }
+    return { path, totalTime: dist[e] };
+  }
+
+  const altResults = [];
+  const waypoints = [trainData.origin, ...(trainData.via||[]), trainData.dest];
+
+  // Try avoiding ALL conflicting edges
+  try {
+    let fullPath = [], totalTime = 0, valid = true;
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      const res = dijkstraAvoiding(waypoints[i], waypoints[i+1], blockedEdges);
+      if (!res) { valid = false; break; }
+      totalTime += res.totalTime;
+      fullPath = i === 0 ? res.path : [...fullPath, ...res.path.slice(1)];
+    }
+    if (valid) {
+      const candidate = { ...trainData, path: fullPath.map(p => p.id) };
+      if (checkConflicts(candidate).length === 0) {
+        let km = 0;
+        for (let i = 0; i < fullPath.length-1; i++) {
+          const e = graph[fullPath[i].id]?.find(x => x.to === fullPath[i+1].id);
+          if (e) km += e.dist;
+        }
+        altResults.push({
+          label: 'Trasa omijająca kolidujące odcinki',
+          timeDiff: Math.round(totalTime - (trainData.totalMinutes||0)),
+          distKm: Math.round(km), candidate,
+        });
+      }
+    }
+  } catch(e) {}
+
+  return altResults;
+}
+
+function applyAlternativeRoute(candidateStr) {
+  try {
+    const candidate = JSON.parse(candidateStr);
+    closeConflictModal();
+    commitSave(candidate);
+  } catch(e) { alert('Błąd podczas zastosowania trasy.'); }
+}
+
+// ── Solution 3: Dwell time ────────────────────────────────────────────────────
+function findDwellSolutions(trainData, conflicts) {
+  const solutions = [];
+  conflicts.forEach(c => {
+    const segIdx = trainData.path.indexOf(c.fromId);
+    if (segIdx <= 0) return;
+    for (let si = Math.max(1, segIdx - 3); si < segIdx; si++) {
+      const stId = trainData.path[si];
+      const st = stations.find(s => s.id === stId);
+      if (!st || trainData.passThroughList?.includes(stId)) continue;
+      for (const addMin of [5, 10, 15, 20, 30]) {
+        const currentDwell = customDwellTimes[stId] ?? getDwellTime(st);
+        const newDwell = currentDwell + addMin;
+        const orig = customDwellTimes[stId];
+        customDwellTimes[stId] = newDwell;
+        const remaining = checkConflicts(trainData).length;
+        if (orig !== undefined) customDwellTimes[stId] = orig; else delete customDwellTimes[stId];
+        if (remaining < conflicts.length) {
+          solutions.push({ stationId: stId, stationName: st.name, addMin, newDwell, resolvesAll: remaining === 0 });
+          break;
+        }
+      }
+    }
+  });
+  const seen = new Set();
+  return solutions.filter(s => { if (seen.has(s.stationId)) return false; seen.add(s.stationId); return true; }).slice(0, 4);
+}
+
+function applyDwellSolution(stIdEnc, newDwell) {
+  const stId = decodeURIComponent(stIdEnc);
+  customDwellTimes[stId] = newDwell;
+  saveDwellTimes();
+  closeConflictModal();
+  findRoute();
+}
+
+// ── Main modal ────────────────────────────────────────────────────────────────
 function showConflictModal(conflicts, trainData) {
   pendingSaveData = trainData;
   const body = document.getElementById('conflict-modal-body');
   body.innerHTML = conflicts.map(c => `
     <div class="conflict-entry">
-      <div class="ce-trains">
-        Kolizja z: [${c.existing.categoryLabel}] ${c.existing.number}
-        ${c.existing.name ? '"' + c.existing.name + '"' : ''}
-        ${c.existing.departure ? '· ' + c.existing.departure : ''}
-      </div>
+      <div class="ce-trains">Kolizja z: [${c.existing.categoryLabel}] ${c.existing.number}${c.existing.name?' "'+c.existing.name+'"':''} ${c.existing.departure?'· '+c.existing.departure:''}</div>
       <div class="ce-detail">
         Odcinek: <span class="ce-seg">${c.fromName} → ${c.toName}</span><br>
-        ${c.overlap > 0.1
-          ? `Nakładanie na odcinku: <strong style="color:var(--red)">${c.overlap} min</strong>`
-          : `Zbyt mały odstęp: <strong style="color:var(--amber)">${c.gap} min</strong> (min. SBL: ${c.minHeadway} min)`
-        }<br>
-        Nowy pociąg: ${c.candTime} &nbsp;·&nbsp; Istniejący: ${c.existTime}
+        ${c.overlap>0.1?`Nakładanie: <strong style="color:var(--red)">${c.overlap} min</strong>`:`Odstęp: <strong style="color:var(--amber)">${c.gap} min</strong> (min. SBL: ${c.minHeadway} min)`}<br>
+        Nowy: ${c.candTime} · Istniejący: ${c.existTime}
       </div>
     </div>`).join('');
 
-  // Find nearest free slot
-  const suggestion = findNearestFreeDeparture(trainData);
-  const footer = document.getElementById('conflict-modal-footer');
-  const suggHtml = suggestion
-    ? `<div style="flex:1;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);display:flex;align-items:center;gap:8px">
-        Najbliższy wolny odjazd:
-        <button onclick="applyBestDeparture('${suggestion.depStr}')"
-          style="padding:5px 14px;background:var(--green);color:#fff;border:none;border-radius:2px;
-          font-family:'DM Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px">
-          ${suggestion.depStr}
-        </button>
-        <span style="color:var(--text-faint)">(${suggestion.delta > 0 ? '+' : ''}${suggestion.delta} min)</span>
-      </div>`
-    : `<div style="flex:1;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-faint)">Brak wolnego slotu w ciągu 2h</div>`;
+  // Tab 1: Departure
+  const depSols = findNearestFreeDepartures(trainData);
+  document.getElementById('sol-departure').innerHTML = depSols.length
+    ? depSols.map(s=>`<div class="sol-result"><button class="sol-apply-btn" onclick="applyBestDeparture('${s.depStr}')">Zastosuj</button><div class="sol-result-title">Odjazd o ${s.depStr}</div><div class="sol-result-detail">${s.delta>0?'+':''}${s.delta} min · brak konfliktów</div></div>`).join('')
+    : '<div class="sol-none">Brak wolnych slotów w ciągu 3h</div>';
 
-  footer.innerHTML = suggHtml +
-    `<button id="conflict-force-btn" onclick="forceSave()">Zapisz mimo to</button>
-     <button id="conflict-cancel-btn" onclick="closeConflictModal()">Wróć do edycji</button>`;
+  // Tab 2: Route (async)
+  const routePanel = document.getElementById('sol-route');
+  routePanel.innerHTML = '<div class="sol-loading">Szukam alternatywnych tras…</div>';
+  setTimeout(() => {
+    const altRoutes = findAlternativeRoutes(trainData, conflicts);
+    routePanel.innerHTML = altRoutes.length
+      ? altRoutes.map(r=>`<div class="sol-result"><button class="sol-apply-btn" onclick="applyAlternativeRoute(this.dataset.c)" data-c='${JSON.stringify(r.candidate).replace(/'/g,"&apos;")}'>Zastosuj</button><div class="sol-result-title">${r.label}</div><div class="sol-result-detail">${r.distKm} km · ${r.timeDiff>=0?'+':''}${r.timeDiff} min</div></div>`).join('')
+      : '<div class="sol-none">Brak tras omijających wszystkie konflikty</div>';
+  }, 50);
+
+  // Tab 3: Dwell
+  const dwellSols = findDwellSolutions(trainData, conflicts);
+  document.getElementById('sol-dwell').innerHTML = dwellSols.length
+    ? dwellSols.map(s=>`<div class="sol-result"><button class="sol-apply-btn" onclick="applyDwellSolution('${encodeURIComponent(s.stationId)}',${s.newDwell})">Zastosuj</button><div class="sol-result-title">Postój w: ${s.stationName}</div><div class="sol-result-detail">+${s.addMin} min · łącznie ${s.newDwell} min · ${s.resolvesAll?'<span style="color:var(--green)">wszystkie konflikty usunięte</span>':'<span style="color:var(--amber)">częściowo</span>'}</div></div>`).join('')
+    : '<div class="sol-none">Brak stacji gdzie wydłużenie postoju pomogłoby</div>';
 
   document.getElementById('conflict-overlay').classList.add('visible');
 }
+
 
 function closeConflictModal() {
   document.getElementById('conflict-overlay').classList.remove('visible');
@@ -3683,10 +3844,20 @@ fetch(GEOJSON_PATH)
       <span class="icon">⛔</span>
       <div>
         <h3>Wykryto konflikty torowe</h3>
-        <div style="font-size:12px;color:var(--text-dim);margin-top:2px">Pociąg koliduje z istniejącymi kursami na tych samych odcinkach</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-top:2px">Pociąg koliduje z istniejącymi kursami — wybierz rozwiązanie</div>
       </div>
     </div>
     <div id="conflict-modal-body"></div>
+    <div id="conflict-solutions">
+      <div class="sol-tabs">
+        <button class="sol-tab active" onclick="showSolTab('departure')">🕐 Zmień odjazd</button>
+        <button class="sol-tab" onclick="showSolTab('route')">🛤 Inna trasa</button>
+        <button class="sol-tab" onclick="showSolTab('dwell')">⏱ Dłuższy postój</button>
+      </div>
+      <div id="sol-departure" class="sol-panel active"></div>
+      <div id="sol-route"     class="sol-panel"></div>
+      <div id="sol-dwell"     class="sol-panel"></div>
+    </div>
     <div id="conflict-modal-footer">
       <button id="conflict-force-btn" onclick="forceSave()">Zapisz mimo to</button>
       <button id="conflict-cancel-btn" onclick="closeConflictModal()">Wróć do edycji</button>

@@ -246,38 +246,7 @@
     .info-key { color:var(--text-3); font-weight:400; }
     .info-val { color:var(--text); font-weight:500; text-align:right; }
 
-    /* ── Legend ── */
-    #legend {
-      position:absolute; bottom:24px; left:16px; z-index:900;
-      background:var(--glass);
-      backdrop-filter:blur(20px) saturate(180%);
-      -webkit-backdrop-filter:blur(20px) saturate(180%);
-      border:0.5px solid var(--glass-border);
-      border-radius:var(--radius-lg);
-      padding:14px 16px; min-width:200px;
-      box-shadow:var(--glass-shadow);
-    }
-    #legend h4 { font-size:11px; font-weight:600; color:var(--text-3);
-      letter-spacing:0.3px; text-transform:uppercase; margin-bottom:10px; }
-    .leg-item { display:flex; align-items:center; gap:10px; margin-bottom:7px; }
-    .leg-item:last-child { margin-bottom:0; }
-    .leg-road { width:32px; height:5px; border-radius:3px; flex-shrink:0; }
-    .leg-motor   { background:var(--road-motor); outline:1.5px solid var(--casing-motor); outline-offset:0; }
-    .leg-express { background:var(--road-motor); outline:1.5px solid var(--casing-nat); }
-    .leg-nat     { background:var(--road-nat);   outline:1.5px solid var(--casing-nat); }
-    .leg-reg     { background:var(--road-reg);   outline:1.5px solid var(--casing-reg); }
-    .leg-local   { background:var(--road-local); outline:1.5px solid var(--casing-local); }
-    .leg-ped     { background:var(--road-ped);   outline:1.5px solid var(--casing-ped); }
-    .leg-district { width:16px; height:16px; border-radius:4px;
-      background:var(--district-fill); border:1.5px solid var(--district-line); flex-shrink:0; }
-    .leg-label { font-size:12px; color:var(--text-2); font-weight:400; letter-spacing:-0.1px; }
-    .shield { display:inline-flex; align-items:center; justify-content:center;
-      font-weight:700; font-size:8px; min-width:20px; height:14px;
-      padding:0 3px; border-radius:2px; color:#fff; flex-shrink:0; letter-spacing:0.2px; }
-    .shield.A  { background:#e8a800; color:#1c1c1e; }
-    .shield.S  { background:#e8a800; color:#1c1c1e; }
-    .shield.DK { background:#e8a800; color:#1c1c1e; }
-    .shield.DW { background:#8e8e93; }
+
 
     /* ── Pick hint ── */
     #pick-hint {
@@ -325,6 +294,27 @@
       box-shadow:none; padding:0;
     }
     #map.selecting { cursor:crosshair !important; }
+
+    /* ── Street labels SVG overlay ── */
+    #label-svg {
+      position:absolute; top:0; left:0; width:100%; height:100%;
+      pointer-events:none; z-index:500; overflow:visible;
+    }
+    .road-label {
+      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;
+      fill:#1c1c1e; font-weight:500; letter-spacing:0.1px;
+      text-shadow:0 0 3px rgba(255,255,255,0.9), 0 0 6px rgba(255,255,255,0.7);
+      paint-order:stroke fill;
+      stroke:#ffffff; stroke-width:3px; stroke-linejoin:round;
+    }
+    .road-label.major {
+      font-weight:600; fill:#1c1c1e;
+      stroke-width:4px;
+    }
+    .road-label.motorway {
+      font-weight:700; fill:#7a5800;
+      stroke:#fff8e0; stroke-width:4px;
+    }
 
     /* ── Traffic bar ── */
     #traffic-bar {
@@ -421,7 +411,9 @@
   <div class="header-chip" id="road-count">Wczytywanie…</div>
 </div>
 
-<div id="map"></div>
+<div id="map">
+  <svg id="label-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+</div>
 
 <!-- Pick hint -->
 <div id="pick-hint">Kliknij punkt na mapie</div>
@@ -472,19 +464,7 @@
   <div id="info-body" id="info-rows"></div>
 </div>
 
-<!-- Legend -->
-<div id="legend">
-  <h4>Legenda</h4>
-  <div class="leg-item"><div class="leg-road leg-motor"></div><span class="shield A">A</span><span class="leg-label">Autostrada</span></div>
-  <div class="leg-item"><div class="leg-road leg-express"></div><span class="shield S">S</span><span class="leg-label">Droga ekspresowa</span></div>
-  <div class="leg-item"><div class="leg-road leg-nat"></div><span class="shield DK">DK</span><span class="leg-label">Droga krajowa</span></div>
-  <div class="leg-item"><div class="leg-road leg-reg"></div><span class="shield DW">DW</span><span class="leg-label">Droga wojewódzka</span></div>
-  <div class="leg-item"><div class="leg-road leg-local"></div><span class="leg-label" style="margin-left:22px">Ulica lokalna</span></div>
-  <div class="leg-item"><div class="leg-road leg-ped"></div><span class="leg-label" style="margin-left:22px">Droga piesza</span></div>
-  <div class="leg-item" style="margin-top:8px;padding-top:8px;border-top:1px solid #eee">
-    <div class="leg-district"></div><span class="leg-label">Dzielnica</span>
-  </div>
-</div>
+
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
@@ -1053,6 +1033,8 @@ function loadLayer(url, isDistrict) {
         const bounds = L.geoJSON(data).getBounds();
         if (bounds.isValid()) map.fitBounds(bounds, { padding: [40, 40] });
       } catch(e) {}
+      // Initial label render after data loaded
+      setTimeout(renderStreetLabels, 300);
     });
 }
 
@@ -1230,6 +1212,134 @@ function stopTraffic() {
   document.getElementById('traffic-start-btn').style.display = '';
   document.getElementById('map').style.bottom = '0';
 }
+
+
+// ── STREET LABELS ─────────────────────────────────────────────────────────────
+// Renders curved text along road geometry using SVG textPath
+// Mirrors Apple Maps: labels follow road curves, appear at appropriate zoom levels
+
+let labelRafId = null;
+let lastLabelZoom = null;
+
+// Minimum zoom to show each road type
+const LABEL_MIN_ZOOM = {
+  motorway:-2, trunk:-1, primary:0, secondary:1,
+  tertiary:2, residential:3, living_street:4, unclassified:2,
+};
+
+// Font size per road type
+const LABEL_FONT_SIZE = {
+  motorway:12, trunk:11, primary:11, secondary:10,
+  tertiary:10, residential:9, living_street:8, unclassified:9,
+};
+
+function renderStreetLabels() {
+  const svg = document.getElementById('label-svg');
+  if (!svg || !roadFeatures.length) return;
+
+  const zoom = map.getZoom();
+  const bounds = map.getBounds();
+  const mapSize = map.getSize();
+
+  // Position SVG to match map
+  const origin = map.getPixelOrigin();
+
+  svg.innerHTML = '';
+
+  // Deduplicate: only one label per unique street name in viewport
+  const seen = new Set();
+  let pathId = 0;
+
+  // Process roads sorted by importance (major first)
+  const priority = {motorway:0,trunk:1,primary:2,secondary:3,tertiary:4,residential:5,unclassified:6,living_street:7};
+  const sorted = [...roadFeatures].sort((a,b) =>
+    (priority[a.properties?.highway]??9) - (priority[b.properties?.highway]??9)
+  );
+
+  sorted.forEach(f => {
+    if (f.geometry?.type !== 'LineString') return;
+    const hw = f.properties?.highway;
+    const name = f.properties?.name;
+    if (!name || !hw) return;
+
+    const minZoom = LABEL_MIN_ZOOM[hw] ?? 3;
+    if (zoom < minZoom) return;
+
+    // Check if in viewport
+    const coords = f.geometry.coordinates;
+    const mid = coords[Math.floor(coords.length / 2)];
+    const midLL = L.latLng(mid[1], mid[0]);
+    if (!bounds.contains(midLL)) return;
+
+    // Dedupe — allow same name multiple times but spaced out
+    const dedupeKey = name + '_' + Math.floor(zoom);
+    if (seen.has(dedupeKey) && hw !== 'motorway' && hw !== 'primary') {
+      seen.add(dedupeKey);
+    }
+    seen.add(dedupeKey);
+
+    // Convert coords to pixel points
+    const pts = coords.map(c => {
+      const px = map.latLngToLayerPoint(L.latLng(c[1], c[0]));
+      return [px.x, px.y];
+    });
+
+    // Compute total length in pixels
+    let totalLen = 0;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const dx = pts[i+1][0]-pts[i][0], dy = pts[i+1][1]-pts[i][1];
+      totalLen += Math.sqrt(dx*dx+dy*dy);
+    }
+
+    const fontSize = LABEL_FONT_SIZE[hw] ?? 9;
+    const nameLen = name.length * fontSize * 0.6; // approximate text width
+    if (totalLen < nameLen * 1.4) return; // road too short for label
+
+    // Build SVG path d string
+    const d = pts.map((p, i) => `${i===0?'M':'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+
+    // Determine if path goes left-to-right (for text orientation)
+    const dx = pts[pts.length-1][0] - pts[0][0];
+    const ptsOriented = dx < 0 ? [...pts].reverse() : pts;
+    const dOriented = ptsOriented.map((p,i)=>`${i===0?'M':'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+
+    const pid = `rp${pathId++}`;
+    const isMajor = ['motorway','trunk','primary'].includes(hw);
+    const isMotorway = hw === 'motorway';
+    const cls = isMotorway ? 'road-label motorway' : isMajor ? 'road-label major' : 'road-label';
+
+    // Place label at middle 30% of path
+    const startOffset = Math.max(10, ((totalLen - nameLen) / 2 / totalLen * 100)).toFixed(1) + '%';
+
+    svg.innerHTML += `
+      <defs>
+        <path id="${pid}" d="${dOriented}"/>
+      </defs>
+      <text class="${cls}" font-size="${fontSize}">
+        <textPath href="#${pid}" startOffset="${startOffset}" method="align" spacing="auto">
+          ${name}
+        </textPath>
+      </text>`;
+  });
+}
+
+// Throttled label update — don't re-render more than 15fps
+function scheduleLabels() {
+  if (labelRafId) cancelAnimationFrame(labelRafId);
+  labelRafId = requestAnimationFrame(() => {
+    labelRafId = null;
+    renderStreetLabels();
+  });
+}
+
+// Hook into map events
+map.on('moveend zoomend', scheduleLabels);
+map.on('move', () => {
+  // During panning: update SVG transform instead of re-rendering
+  // This keeps labels smooth during drag
+  const svg = document.getElementById('label-svg');
+  if (svg) scheduleLabels();
+});
 </script>
 <!-- Traffic simulation bar -->
 <div id="traffic-bar">
