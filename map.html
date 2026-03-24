@@ -1133,12 +1133,12 @@ function buildGraph(d) {
 
   // Add or update edge, keeping shortest
   // geom stored as raw [lng,lat] coords (lineCoords format)
-  function addEdge(aid, bid, dist, ms, col, rawGeom) {
+  function addEdge(aid, bid, dist, ms, col, rawGeom, tracks) {
     const fwd = rawGeom;
     const rev = [...rawGeom].reverse();
     [[aid, bid, fwd], [bid, aid, rev]].forEach(([from, to, geom]) => {
       const ex = graph[from].findIndex(e => e.to === to);
-      const entry = { to, dist, maxspeed: ms, colour: col, geom };
+      const entry = { to, dist, maxspeed: ms, colour: col, geom, tracks: tracks || 2 };
       if (ex === -1) graph[from].push(entry);
       else if (dist < graph[from][ex].dist) graph[from][ex] = entry;
     });
@@ -1201,7 +1201,8 @@ function buildGraph(d) {
         const reachable = findReachable(li, k);
         reachable.forEach(({ sid, dist, geom }) => {
           if (sid === st.id) return;
-          addEdge(st.id, sid, dist, ms, col, geom); // geom is raw [lng,lat]
+          const trks = parseInt(lines[li].properties?.tracks) || 2;
+          addEdge(st.id, sid, dist, ms, col, geom, trks); // geom is raw [lng,lat]
         });
       });
     });
@@ -2763,9 +2764,24 @@ function checkConflicts(candidateTrain) {
         const gap = Math.abs(co.startMin - eo.startMin);
         const overlap = Math.max(0, Math.min(co.endMin, eo.endMin) - Math.max(co.startMin, eo.startMin));
 
-        // Only flag if there's actual time overlap OR gap is dangerously small
-        // Minimum overlap threshold of 0.1 min avoids floating point false positives
-        if (overlap > 0.1 || (overlap <= 0 && gap < minHeadway * 0.5)) {
+        // On multi-track lines: N trains can run simultaneously in same direction
+        // Only conflict if more than tracks/2 trains overlap (each direction gets half)
+        // For 2-track: 1 per direction = conflict at 2nd train
+        // For 4-track: 2 per direction = conflict at 3rd train same direction
+        const tracks = parseInt(
+          graph[co.fromId]?.find(e=>e.to===co.toId)?.tracks ||
+          graph[co.toId]?.find(e=>e.to===co.fromId)?.tracks || 2
+        );
+        const tracksPerDir = Math.max(1, Math.floor(tracks / 2));
+
+        // Count how many existing trains already overlap this segment+direction+time
+        const overlapKey = co.segKey + '::' + co.dirKey + '::' + Math.round(co.startMin);
+        const overlapCount = (seenPairs.overlapCounts?.[overlapKey] || 0) + 1;
+        if (!seenPairs.overlapCounts) seenPairs.overlapCounts = {};
+        seenPairs.overlapCounts[overlapKey] = overlapCount;
+
+        if (overlapCount > tracksPerDir &&
+            (overlap > 0.1 || (overlap <= 0 && gap < minHeadway * 0.5))) {
           const pairKey = [existing.id, co.segKey].join('|');
           if (seenPairs.has(pairKey)) return;
           seenPairs.add(pairKey);
@@ -3007,6 +3023,14 @@ let capSortDir = -1; // -1 = desc
 const DECEL_MS2 = 0.7; // m/s² (matches our segmentTime model)
 const SIGNAL_MARGIN_MIN = 0.5; // 30s signalling/reaction time
 
+// Get number of tracks for an edge (from stored maxspeed tag neighbour — we store in edge)
+// tracks tag stored on edge as edge.tracks (integer, default 2)
+function getEdgeTracks(fromId, toId) {
+  const edge = graph[fromId]?.find(e => e.to === toId)
+             || graph[toId]?.find(e => e.to === fromId);
+  return parseInt(edge?.tracks) || 2;
+}
+
 function blockLengthKm(vmaxKmh) {
   const v = vmaxKmh / 3.6; // m/s
   return (v * v) / (2 * DECEL_MS2) / 1000; // km
@@ -3023,19 +3047,21 @@ function theoreticalCapacity(fromId, toId, method) {
              || graph[toId]?.find(e => e.to === fromId);
   if (!edge) return null;
   const spd = parseFloat(edge.maxspeed) || 160;
+  const tracks = parseInt(edge.tracks) || 2;
   const travelMin = segmentTime(edge.dist, spd, true);
 
+  let perTrack;
   if (method === 'UIC') {
-    // UIC 406: occupation time = travel time + SBL headway (entry + exit block)
-    // More conservative — accounts for station occupation overlap
     const headway = sblHeadwayMin(spd);
     const occupancy = travelMin + headway * 1.5;
-    return Math.floor(60 / occupancy);
+    perTrack = Math.floor(60 / occupancy);
   } else {
-    // SBL headway method: pure block-signalling limit
     const headway = sblHeadwayMin(spd);
-    return Math.floor(60 / headway);
+    perTrack = Math.floor(60 / headway);
   }
+  // N tracks in same direction = N times the per-track capacity
+  // (all tracks carry traffic in same direction independently)
+  return perTrack * tracks;
 }
 
 // Expose block info for the table tooltip
@@ -3184,6 +3210,7 @@ function renderCapacityTable() {
       <td class="cap-mono" style="color:var(--text)">${Math.round(r.distKm)} km</td>
       <td class="cap-mono" style="color:var(--text)">${r.maxspeedKmh} km/h</td>
       <td class="cap-mono" style="color:var(--text)">${travelMin.toFixed(1)} min</td>
+      <td class="cap-mono" style="color:var(--text-faint)">${(() => { const edge = graph[r.fromId]?.find(e=>e.to===r.toId)||graph[r.toId]?.find(e=>e.to===r.fromId); return parseInt(edge?.tracks)||2; })()} ×</td>
       <td class="cap-mono" style="color:var(--text)" title="Blok: ${sblInfo(r.maxspeedKmh, r.distKm).blockLengthKm.toFixed(2)} km · ${sblInfo(r.maxspeedKmh, r.distKm).nBlocks} bloków · interwał ${sblInfo(r.maxspeedKmh, r.distKm).headwayMin.toFixed(2)} min">${r.cap ?? '—'} <span style="font-size:10px;color:var(--text-faint)">🛈</span></td>
       <td class="cap-mono">${r.scheduled}</td>
       <td class="cap-mono" style="color:var(--text-dim)">${r.peakCount} <span style="font-size:10px;color:var(--text-faint)">(${r.peakHourLabel})</span></td>
@@ -3202,6 +3229,7 @@ function renderCapacityTable() {
         <th>${sortBtn('distKm','Długość')}</th>
         <th>${sortBtn('maxspeedKmh','Vmax')}</th>
         <th>Czas przej.</th>
+        <th>Tory</th>
         <th>${sortBtn('cap','Max poc./h')}</th>
         <th>${sortBtn('scheduled','Zapl. łącznie')}</th>
         <th>${sortBtn('peakCount','Szczyt')}</th>
