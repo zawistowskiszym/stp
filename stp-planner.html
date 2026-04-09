@@ -399,32 +399,9 @@ const state = {
   connStart: null,
   selected: null,
   simChart: null,
-  stops: [
-    {id:'s1',name:'Centrum',x:320,y:200,type:'hub'},
-    {id:'s2',name:'Rynek Główny',x:200,y:160,type:'stop'},
-    {id:'s3',name:'Dworzec Główny',x:440,y:140,type:'hub'},
-    {id:'s4',name:'Osiedle Północne',x:460,y:300,type:'stop'},
-    {id:'s5',name:'Stary Port',x:160,y:300,type:'stop'},
-    {id:'s6',name:'Politechnika',x:340,y:340,type:'stop'},
-    {id:'s7',name:'Lotnisko',x:560,y:180,type:'stop'},
-    {id:'s8',name:'Szpital Miejski',x:240,y:350,type:'stop'},
-  ],
-  lines: [
-    {id:'l1',name:'1',type:'bus',color:'#4a7fff',stops:['s2','s1','s3','s7'],runs:[],ttWeekday:[],ttWeekend:[],ttNight:[]},
-    {id:'l2',name:'12',type:'bus',color:'#3ecf8e',stops:['s5','s1','s4'],runs:[],ttWeekday:[],ttWeekend:[],ttNight:[]},
-    {id:'l3',name:'T3',type:'tram',color:'#9b6dff',stops:['s8','s1','s3','s4'],runs:[],ttWeekday:[],ttWeekend:[],ttNight:[]},
-    {id:'l4',name:'M1',type:'metro',color:'#00c8d4',stops:['s5','s2','s1','s6','s4'],runs:[],ttWeekday:[],ttWeekend:[],ttNight:[]},
-  ],
-  vehicles: [
-    {id:'v1',reg:'STP-001',type:'bus12',lineId:'l1',status:'active'},
-    {id:'v2',reg:'STP-002',type:'bus12',lineId:'l1',status:'active'},
-    {id:'v3',reg:'STP-003',type:'bus18',lineId:'l2',status:'active'},
-    {id:'v4',reg:'STP-004',type:'bus18',lineId:'l2',status:'maintenance'},
-    {id:'v5',reg:'STP-T01',type:'tram',lineId:'l3',status:'active'},
-    {id:'v6',reg:'STP-T02',type:'tram',lineId:'l3',status:'active'},
-    {id:'v7',reg:'STP-M01',type:'metro',lineId:'l4',status:'active'},
-    {id:'v8',reg:'STP-M02',type:'metro',lineId:'l4',status:'active'},
-  ],
+  stops: [],
+  lines: [],
+  vehicles: [],
   vehicleTypes: [
     {id:'bus12',name:'Autobus 12m',capacity:85,type:'bus'},
     {id:'bus18',name:'Autobus 18m (przegubowy)',capacity:150,type:'bus'},
@@ -459,12 +436,7 @@ function fmt(mins) {
   const m = ((mins%60)+60)%60;
   return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
 }
-// Initialise timetables
-state.lines.forEach(l=>{
-  l.ttWeekday = genDefaultTT(l,'weekday');
-  l.ttWeekend = genDefaultTT(l,'weekend');
-  l.ttNight = genDefaultTT(l,'night');
-});
+// (timetables generated on line creation)
 
 // ============================================================
 // MODULE SWITCHING
@@ -555,26 +527,28 @@ function renderDashboard() {
     <div class="metric"><div class="metric-val">${state.vehicles.length}</div><div class="metric-label">Tabor łącznie</div></div>
     <div class="metric"><div class="metric-val">~${Math.round(totalRuns*1.8)}k</div><div class="metric-label">Pasażerów/dobę (szac.)</div></div>
   `;
-  document.getElementById('dash-lines-table').innerHTML = `
-    <table><thead><tr><th>Linia</th><th>Typ</th><th>Przystanki</th><th>Kursy/dzień</th><th>Status</th></tr></thead>
+  document.getElementById('dash-lines-table').innerHTML = state.lines.length
+    ? `<table><thead><tr><th>Linia</th><th>Typ</th><th>Przystanki</th><th>Kursy/dzień</th><th>Status</th><th></th></tr></thead>
     <tbody>${state.lines.map(l=>`
       <tr><td><b style="color:${l.color}">${l.name}</b></td>
       <td><span class="badge ${l.type}">${typeName(l.type)}</span></td>
       <td>${l.stops.length}</td><td>${l.ttWeekday.length}</td>
-      <td><span class="badge ok">Aktywna</span></td></tr>
-    `).join('')}</tbody></table>
-  `;
-  document.getElementById('dash-fleet-table').innerHTML = `
-    <table><thead><tr><th>Pojazd</th><th>Typ</th><th>Linia</th><th>Status</th></tr></thead>
+      <td><span class="badge ok">Aktywna</span></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteLine('${l.id}')">✕</button></td></tr>
+    `).join('')}</tbody></table>`
+    : emptyState('Brak linii — przejdź do modułu Sieć, aby dodać.');
+  document.getElementById('dash-fleet-table').innerHTML = state.vehicles.length
+    ? `<table><thead><tr><th>Pojazd</th><th>Typ</th><th>Linia</th><th>Status</th><th></th></tr></thead>
     <tbody>${state.vehicles.slice(0,6).map(v=>{
       const vt=state.vehicleTypes.find(t=>t.id===v.type);
       const line=state.lines.find(l=>l.id===v.lineId);
       return `<tr><td class="mono">${v.reg}</td>
         <td><span class="badge ${vt?.type||'bus'}">${vt?.name||v.type}</span></td>
         <td style="color:${line?.color||'#888'}">${line?.name||'—'}</td>
-        <td><span class="badge ${v.status==='active'?'ok':'warn'}">${v.status==='active'?'Aktywny':'Serwis'}</span></td></tr>`;
-    }).join('')}</tbody></table>
-  `;
+        <td><span class="badge ${v.status==='active'?'ok':'warn'}">${v.status==='active'?'Aktywny':'Serwis'}</span></td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteVehicle('${v.id}')">✕</button></td></tr>`;
+    }).join('')}</tbody></table>`
+    : emptyState('Brak pojazdów — przejdź do modułu Tabor, aby dodać.');
   drawGantt();
 }
 function drawGantt() {
@@ -732,25 +706,45 @@ function setTool(t) {
 }
 function centerCanvas(){state.netOffset={x:80,y:80};drawNetwork();}
 function renderStopCount(){const el=document.getElementById('stop-count');if(el)el.textContent=state.stops.length;}
+function emptyState(msg){return `<div style="padding:20px 10px;text-align:center;color:var(--text3);font-size:12px">${msg}</div>`;}
 function renderLinesList(){
   const el=document.getElementById('lines-list');if(!el)return;
-  el.innerHTML=`<table><thead><tr><th>Linia</th><th>Typ</th><th>Przystanki</th><th></th></tr></thead><tbody>
+  if(!state.lines.length){el.innerHTML=emptyState('Brak linii. Kliknij + Linia, aby dodać.');return;}
+  el.innerHTML=`<table><thead><tr><th>Linia</th><th>Typ</th><th>Przyst.</th><th></th></tr></thead><tbody>
     ${state.lines.map(l=>`<tr>
       <td><span class="color-dot" style="background:${l.color}"></span> <b style="color:${l.color}">${l.name}</b></td>
       <td><span class="badge ${l.type}">${typeName(l.type)}</span></td>
       <td>${l.stops.length}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="openModal('editLine','${l.id}')">✎</button></td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-ghost btn-sm" onclick="openModal('editLine','${l.id}')" title="Edytuj">✎</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteLine('${l.id}')" title="Usuń">✕</button>
+      </td>
     </tr>`).join('')}</tbody></table>`;
 }
 function renderStopsList(){
   const el=document.getElementById('stops-list');if(!el)return;
-  el.innerHTML=`<table><thead><tr><th>Nazwa</th><th>Typ</th><th>Linie</th></tr></thead><tbody>
+  if(!state.stops.length){el.innerHTML=emptyState('Brak przystanków. Użyj narzędzia ⊙ lub + Przystanek.');return;}
+  el.innerHTML=`<table><thead><tr><th>Nazwa</th><th>Typ</th><th>Linie</th><th></th></tr></thead><tbody>
     ${state.stops.map(s=>{
       const lines=state.lines.filter(l=>l.stops.includes(s.id));
       return `<tr><td>${s.name}</td>
         <td><span class="badge ${s.type==='hub'?'warn':'ok'}">${s.type==='hub'?'Węzeł':'Przystanek'}</span></td>
-        <td>${lines.map(l=>`<span style="color:${l.color}">${l.name}</span>`).join(' ')}</td></tr>`;
+        <td>${lines.map(l=>`<span style="color:${l.color}">${l.name}</span>`).join(' ')||'—'}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteStop('${s.id}')" title="Usuń">✕</button></td></tr>`;
     }).join('')}</tbody></table>`;
+}
+function deleteLine(id){
+  if(!confirm('Usunąć linię? Spowoduje to również usunięcie przypisanych pojazdów z tej linii.')) return;
+  state.lines=state.lines.filter(l=>l.id!==id);
+  state.vehicles.forEach(v=>{if(v.lineId===id) v.lineId=null;});
+  renderLinesList();renderStopsList();drawNetwork();renderSidebar(state.currentModule);
+  if(state.currentModule==='dashboard') renderDashboard();
+}
+function deleteStop(id){
+  if(!confirm('Usunąć przystanek? Zostanie usunięty ze wszystkich linii.')) return;
+  state.stops=state.stops.filter(s=>s.id!==id);
+  state.lines.forEach(l=>{l.stops=l.stops.filter(sid=>sid!==id);});
+  renderStopCount();renderStopsList();renderLinesList();drawNetwork();
 }
 function selectLine(id){}
 
@@ -791,18 +785,19 @@ function getTT() {
   return {line, runs:line[ttKey]||[], profile};
 }
 function renderTimetable() {
-  const tt=getTT();if(!tt) return;
-  const {line,runs}=tt;
-  const stops=line.stops.map(id=>state.stops.find(s=>s.id===id));
+  const tt=getTT();
   const wrap=document.getElementById('tt-grid-wrap');if(!wrap) return;
+  if(!tt){wrap.innerHTML=emptyState('Wybierz linię lub dodaj nową w module Sieć.');return;}
+  const {line,runs,profile}=tt;
+  if(!runs.length){wrap.innerHTML=emptyState('Brak kursów dla tego profilu. Kliknij + Kurs lub ⚡ Generuj rozkład.');return;}
+  const stops=line.stops.map(id=>state.stops.find(s=>s.id===id));
+  const ttKey='tt'+profile.charAt(0).toUpperCase()+profile.slice(1);
   let html=`<div class="tt-grid">`;
-  // header row
   html+=`<div class="tt-header"><div class="tt-stop" style="background:var(--bg4);color:var(--text)">Kurs</div>`;
   stops.forEach(s=>{
     html+=`<div class="tt-stop">${s?.name||'?'}<div class="text-xs mono">${s?.type==='hub'?'⊙ węzeł':''}</div></div>`;
   });
-  html+=`</div>`;
-  // runs
+  html+=`<div class="tt-stop" style="min-width:36px"></div></div>`;
   runs.slice(0,30).forEach((run,ri)=>{
     const isRush=run[0]&&(run[0].dep||run[0].arr||'').match(/^(06|07|08|15|16|17):/);
     html+=`<div class="tt-row ${isRush?'tt-run':''}">`;
@@ -811,9 +806,10 @@ function renderTimetable() {
       const disp=cell.dep||cell.arr||'—';
       html+=`<div class="tt-cell dep">${disp}</div>`;
     });
+    html+=`<div class="tt-cell" style="min-width:36px;padding:2px 4px"><button class="btn btn-danger btn-sm" onclick="deleteRun('${line.id}','${ttKey}',${ri})" title="Usuń kurs">✕</button></div>`;
     html+=`</div>`;
   });
-  if(runs.length>30) html+=`<div class="tt-row"><div class="tt-cell" style="grid-column:1/-1;color:var(--text3)">... i ${runs.length-30} więcej kursów</div></div>`;
+  if(runs.length>30) html+=`<div class="tt-row"><div class="tt-cell" style="color:var(--text3)">... i ${runs.length-30} więcej kursów</div></div>`;
   html+=`</div>`;
   wrap.innerHTML=html;
   const statsEl=document.getElementById('tt-stats');
@@ -821,6 +817,11 @@ function renderTimetable() {
     const times=runs.map(r=>r[0]?.dep||r[0]?.arr).filter(Boolean);
     statsEl.textContent=`Łącznie: ${runs.length} kursów | Pierwszy: ${times[0]||'—'} | Ostatni: ${times[times.length-1]||'—'}`;
   }
+}
+function deleteRun(lineId, ttKey, index){
+  const line=state.lines.find(l=>l.id===lineId);if(!line) return;
+  line[ttKey].splice(index,1);
+  renderTimetable();
 }
 function drawHourChart(){
   const tt=getTT();if(!tt) return;
@@ -887,7 +888,9 @@ function genTimetable(lineId, profile, interval) {
 // ============================================================
 function renderFleet(){
   const el=document.getElementById('fleet-list');
-  if(el) el.innerHTML=`<table><thead><tr><th>Pojazd</th><th>Typ</th><th>Poj.</th><th>Linia</th><th>Status</th><th></th></tr></thead><tbody>
+  if(el) el.innerHTML = !state.vehicles.length
+    ? emptyState('Brak pojazdów. Kliknij + Pojazd, aby dodać.')
+    : `<table><thead><tr><th>Pojazd</th><th>Typ</th><th>Poj.</th><th>Linia</th><th>Status</th><th></th></tr></thead><tbody>
     ${state.vehicles.map(v=>{
       const vt=state.vehicleTypes.find(t=>t.id===v.type);
       const line=state.lines.find(l=>l.id===v.lineId);
@@ -897,7 +900,7 @@ function renderFleet(){
         <td>${vt?.capacity||'—'}</td>
         <td style="color:${line?.color||'#888'}">${line?.name||'—'}</td>
         <td><span class="badge ${v.status==='active'?'ok':'warn'}">${v.status==='active'?'Aktywny':'Serwis'}</span></td>
-        <td><button class="btn btn-ghost btn-sm" onclick="deleteVehicle('${v.id}')">✕</button></td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteVehicle('${v.id}')">✕</button></td>
       </tr>`;
     }).join('')}</tbody></table>`;
   const tEl=document.getElementById('vehicle-types-list');
@@ -908,7 +911,9 @@ function renderFleet(){
       <td>${state.vehicles.filter(v=>v.type===vt.id).length}</td>
     </tr>`).join('')}</tbody></table>`;
   const aEl=document.getElementById('vehicle-assignments');
-  if(aEl) aEl.innerHTML=`<table><thead><tr><th>Linia</th><th>Wymagany tabor</th><th>Przypisany</th><th>Status</th></tr></thead><tbody>
+  if(aEl) aEl.innerHTML = !state.lines.length
+    ? emptyState('Brak linii.')
+    : `<table><thead><tr><th>Linia</th><th>Wymagany tabor</th><th>Przypisany</th><th>Status</th></tr></thead><tbody>
     ${state.lines.map(l=>{
       const assigned=state.vehicles.filter(v=>v.lineId===l.id&&v.status==='active').length;
       const needed=Math.max(2,Math.ceil(l.ttWeekday.length/12));
@@ -923,6 +928,7 @@ function renderFleet(){
 function deleteVehicle(id){
   state.vehicles=state.vehicles.filter(v=>v.id!==id);
   renderFleet();
+  if(state.currentModule==='dashboard') renderDashboard();
 }
 
 // ============================================================
