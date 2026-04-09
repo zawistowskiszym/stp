@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STP — Planowanie Rozkładów</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f4f1;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: #e2e0d8;
+    --border-dark: #c8c4b8;
+    --text: #1a1916;
+    --text-muted: #7a7870;
+    --text-light: #aaa89e;
+    --accent: #1a5cff;
+    --accent-light: #e8eeff;
+    --accent-hover: #0f46d4;
+    --danger: #d93a3a;
+    --danger-light: #fdf0f0;
+    --success: #1a8c5a;
+    --success-light: #e8f7f0;
+    --warning: #c97a10;
+    --warning-light: #fef6e8;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --radius: 8px;
+    --radius-sm: 4px;
+    --shadow: 0 1px 4px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.04);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: -.2px;
+  }
+  .logo-badge {
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 3px;
+    letter-spacing: .5px;
+  }
+  .header-sep { flex: 1; }
+  .header-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+  }
+
+  /* ── LAYOUT ── */
+  .app {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: calc(100vh - 56px);
+  }
+
+  /* ── SIDEBAR ── */
+  aside {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar-section {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-light);
+    margin-bottom: 10px;
+  }
+
+  /* Line list */
+  .line-list { display: flex; flex-direction: column; gap: 4px; }
+  .line-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background .12s;
+    border: 1px solid transparent;
+  }
+  .line-item:hover { background: var(--surface2); }
+  .line-item.active {
+    background: var(--accent-light);
+    border-color: #c5d3ff;
+  }
+  .line-badge {
+    width: 32px;
+    height: 22px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .line-info { flex: 1; min-width: 0; }
+  .line-name {
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .line-trips {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+  }
+  .line-del {
+    opacity: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--danger);
+    font-size: 16px;
+    line-height: 1;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: opacity .12s, background .12s;
+  }
+  .line-item:hover .line-del { opacity: 1; }
+  .line-del:hover { background: var(--danger-light); }
+
+  /* Add line form */
+  .add-line-form { display: flex; flex-direction: column; gap: 8px; }
+  .form-row { display: flex; gap: 6px; }
+  input[type=text], input[type=time], input[type=number], select, textarea {
+    font-family: var(--sans);
+    font-size: 13px;
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-sm);
+    padding: 6px 9px;
+    background: var(--surface);
+    color: var(--text);
+    outline: none;
+    transition: border-color .12s, box-shadow .12s;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(26,92,255,.12);
+  }
+  .color-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-dark);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .btn {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: background .12s, transform .08s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border-dark); }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-danger { background: var(--danger-light); color: var(--danger); border: 1px solid #f0c8c8; }
+  .btn-danger:hover { background: #f9dada; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-full { width: 100%; justify-content: center; }
+
+  /* ── MAIN ── */
+  main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .main-toolbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .toolbar-title {
+    font-size: 15px;
+    font-weight: 600;
+    flex: 1;
+  }
+  .toolbar-title span {
+    font-weight: 400;
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-left: 8px;
+  }
+
+  .main-content { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* Empty state */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text-muted);
+    padding: 60px 20px;
+  }
+  .empty-icon { font-size: 48px; opacity: .4; }
+  .empty-title { font-size: 16px; font-weight: 500; color: var(--text); }
+  .empty-sub { font-size: 13px; text-align: center; max-width: 280px; }
+
+  /* ── STOP EDITOR ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-title { font-size: 13px; font-weight: 600; flex: 1; }
+  .card-body { padding: 16px; }
+
+  /* Stop list */
+  .stops-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .stop-index {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-light);
+    width: 18px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .stop-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .stops-row:not(:last-child) .stop-dot::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 8px;
+    width: 1px;
+    height: 22px;
+    background: var(--border-dark);
+    transform: translateX(-50%);
+  }
+  .stop-name-input { flex: 1; }
+  .stop-time-input { width: 80px; flex-shrink: 0; font-family: var(--mono); }
+  .stop-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-light);
+    font-size: 16px;
+    line-height: 1;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: color .12s, background .12s;
+    flex-shrink: 0;
+  }
+  .stop-remove:hover { color: var(--danger); background: var(--danger-light); }
+
+  /* ── TRIPS TABLE ── */
+  .trips-scroll { overflow-x: auto; }
+  .trips-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .trips-table th {
+    background: var(--surface2);
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .trips-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .trips-table tr:last-child td { border-bottom: none; }
+  .trips-table tr:hover td { background: var(--surface2); }
+
+  .time-cell {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .time-cell.first { color: var(--text); font-weight: 500; }
+
+  .trip-dir {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  .trip-dir.forward { background: var(--accent-light); color: var(--accent); }
+  .trip-dir.return { background: #f0e8ff; color: #7a30c8; }
+
+  /* ── ADD TRIP ── */
+  .add-trip-row {
+    display: grid;
+    grid-template-columns: 1fr 100px auto auto;
+    gap: 8px;
+    align-items: center;
+  }
+
+  /* ── EXPORT PANEL ── */
+  .export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .export-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 14px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background .12s, border-color .12s;
+    text-align: left;
+  }
+  .export-btn:hover { background: #eae9e0; border-color: var(--border-dark); }
+  .export-btn-icon { font-size: 20px; }
+  .export-btn-label { font-size: 13px; font-weight: 600; }
+  .export-btn-sub { font-size: 11px; color: var(--text-muted); }
+
+  /* ── STATS ── */
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .stat-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+  .stat-val {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-label { font-size: 11px; color: var(--text-muted); }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #1a1916;
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity .2s, transform .2s;
+    pointer-events: none;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  /* Tag */
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+  .tag-note { background: var(--warning-light); color: var(--warning); }
+
+  .divider { height: 1px; background: var(--border); }
+
+  textarea { resize: vertical; min-height: 60px; font-family: var(--mono); font-size: 12px; }
+
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .1s, border-color .1s;
+    font-family: var(--mono);
+  }
+  .chip:hover { background: var(--accent-light); border-color: #c5d3ff; color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-badge">STP</span>
+    Planowanie Rozkładów Jazdy
+  </div>
+  <div class="header-sep"></div>
+  <div class="header-meta" id="headerMeta">0 linii · 0 kursów</div>
+</header>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Linie autobusowe</div>
+      <div class="line-list" id="lineList"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Dodaj linię</div>
+      <div class="add-line-form">
+        <div class="form-row">
+          <input type="text" id="newLineNum" placeholder="Nr (np. 14)" style="width:80px;flex-shrink:0">
+          <input type="text" id="newLineName" placeholder="Nazwa trasy">
+        </div>
+        <div class="form-row">
+          <input type="color" class="color-swatch" id="newLineColor" value="#1a5cff" title="Kolor linii">
+          <select id="newLineType" style="flex:1">
+            <option value="urban">Miejski</option>
+            <option value="express">Ekspresowy</option>
+            <option value="night">Nocny</option>
+            <option value="suburban">Podmiejski</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="addLine()">+ Dodaj linię</button>
+      </div>
+    </div>
+
+    <div class="sidebar-section" style="flex:1">
+      <div class="sidebar-label">Szybkie wstawienie czasu</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Typowe interwały:</div>
+      <div class="chip-row">
+        <span class="chip" onclick="applyInterval(10)">10 min</span>
+        <span class="chip" onclick="applyInterval(15)">15 min</span>
+        <span class="chip" onclick="applyInterval(20)">20 min</span>
+        <span class="chip" onclick="applyInterval(30)">30 min</span>
+        <span class="chip" onclick="applyInterval(60)">60 min</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-light);margin-top:8px">
+        Kliknij aby wygenerować kursy od pierwszego kursu z wybranym interwałem.
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main>
+    <div class="main-toolbar">
+      <div class="toolbar-title" id="toolbarTitle">
+        Wybierz linię
+        <span id="toolbarSub"></span>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="showExport()" id="btnExport" style="display:none">⬇ Eksport</button>
+      <button class="btn btn-danger btn-sm" onclick="clearAllTrips()" id="btnClear" style="display:none">Wyczyść kursy</button>
+    </div>
+
+    <div class="main-content" id="mainContent">
+      <div class="empty-state">
+        <div class="empty-icon">🚌</div>
+        <div class="empty-title">Brak wybranej linii</div>
+        <div class="empty-sub">Dodaj linię autobusową w panelu po lewej, a następnie ją wybierz, aby edytować rozkład.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- EXPORT MODAL -->
+<div id="exportModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:200;display:none;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border-radius:12px;padding:24px;width:480px;max-width:90vw;box-shadow:0 8px 40px rgba(0,0,0,.2)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:600">Eksport danych</div>
+      <button onclick="closeExport()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-muted)">×</button>
+    </div>
+    <div class="export-grid">
+      <button class="export-btn" onclick="exportJSON('line')">
+        <span class="export-btn-icon">📄</span>
+        <span class="export-btn-label">JSON — linia</span>
+        <span class="export-btn-sub">Aktywna linia z kursami</span>
+      </button>
+      <button class="export-btn" onclick="exportJSON('all')">
+        <span class="export-btn-icon">📦</span>
+        <span class="export-btn-label">JSON — wszystkie</span>
+        <span class="export-btn-sub">Cała sieć STP</span>
+      </button>
+      <button class="export-btn" onclick="exportCSV('trips')">
+        <span class="export-btn-icon">📊</span>
+        <span class="export-btn-label">CSV — kursy</span>
+        <span class="export-btn-sub">Tabela kursów (arkusz)</span>
+      </button>
+      <button class="export-btn" onclick="exportCSV('stops')">
+        <span class="export-btn-icon">🗂</span>
+        <span class="export-btn-label">CSV — przystanki</span>
+        <span class="export-btn-sub">Lista przystanków linii</span>
+      </button>
+    </div>
+    <div style="margin-top:16px">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Podgląd JSON</div>
+      <textarea id="exportPreview" style="height:120px" readonly></textarea>
+    </div>
+  </div>
+</div>
+
+<div id="toast">✓ <span id="toastMsg"></span></div>
+
+<script>
+// ── STATE ──
+let lines = [];
+let activeLine = null;
+
+// ── HELPERS ──
+function uuid() { return Math.random().toString(36).slice(2,9); }
+
+function toast(msg, icon='✓') {
+  const el = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  el.querySelector('span').previousSibling.textContent = icon + ' ';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function minutesToTime(m) {
+  return pad(Math.floor(m/60)) + ':' + pad(m%60);
+}
+
+function timeToMinutes(t) {
+  if (!t) return 0;
+  const [h,m] = t.split(':').map(Number);
+  return h*60+m;
+}
+
+function addMinutes(t, delta) {
+  const mins = timeToMinutes(t) + delta;
+  const total = ((mins % 1440) + 1440) % 1440;
+  return minutesToTime(total);
+}
+
+function typeLabel(t) {
+  return {urban:'Miejski',express:'Ekspresowy',night:'Nocny',suburban:'Podmiejski'}[t] || t;
+}
+
+function updateHeaderMeta() {
+  const totalTrips = lines.reduce((s,l) => s + l.trips.length, 0);
+  document.getElementById('headerMeta').textContent =
+    `${lines.length} ${lines.length===1?'linia':lines.length<5?'linie':'linii'} · ${totalTrips} kursów`;
+}
+
+// ── LINE MANAGEMENT ──
+function addLine() {
+  const num = document.getElementById('newLineNum').value.trim();
+  const name = document.getElementById('newLineName').value.trim();
+  const color = document.getElementById('newLineColor').value;
+  const type = document.getElementById('newLineType').value;
+  if (!num) { toast('Podaj numer linii','⚠'); return; }
+  const line = {
+    id: uuid(), num, name: name || `Linia ${num}`,
+    color, type,
+    stops: [
+      { id: uuid(), name: '', offset: 0 },
+      { id: uuid(), name: '', offset: 5 },
+    ],
+    trips: []
+  };
+  lines.push(line);
+  document.getElementById('newLineNum').value = '';
+  document.getElementById('newLineName').value = '';
+  renderSidebar();
+  selectLine(line.id);
+  updateHeaderMeta();
+  toast(`Dodano linię ${num}`);
+}
+
+function deleteLine(id, e) {
+  e.stopPropagation();
+  lines = lines.filter(l => l.id !== id);
+  if (activeLine?.id === id) {
+    activeLine = null;
+    renderMain();
+  }
+  renderSidebar();
+  updateHeaderMeta();
+  toast('Linia usunięta', '🗑');
+}
+
+function selectLine(id) {
+  activeLine = lines.find(l => l.id === id);
+  renderSidebar();
+  renderMain();
+}
+
+function clearAllTrips() {
+  if (!activeLine) return;
+  activeLine.trips = [];
+  renderMain();
+  updateHeaderMeta();
+  toast('Kursy wyczyszczone', '🗑');
+}
+
+// ── STOPS ──
+function addStop() {
+  if (!activeLine) return;
+  const lastOffset = activeLine.stops.length
+    ? activeLine.stops[activeLine.stops.length-1].offset + 5
+    : 0;
+  activeLine.stops.push({ id: uuid(), name: '', offset: lastOffset });
+  renderMain();
+}
+
+function removeStop(id) {
+  if (!activeLine || activeLine.stops.length <= 2) { toast('Minimum 2 przystanki','⚠'); return; }
+  activeLine.stops = activeLine.stops.filter(s => s.id !== id);
+  renderMain();
+}
+
+function updateStop(id, field, value) {
+  if (!activeLine) return;
+  const s = activeLine.stops.find(s => s.id === id);
+  if (s) {
+    s[field] = field === 'offset' ? parseInt(value)||0 : value;
+    // recompute trip times only update display
+  }
+}
+
+// ── TRIPS ──
+function addTrip() {
+  if (!activeLine) return;
+  const startTime = document.getElementById('newTripStart').value;
+  const dir = document.getElementById('newTripDir').value;
+  if (!startTime) { toast('Podaj godzinę odjazdu','⚠'); return; }
+  const trip = {
+    id: uuid(),
+    direction: dir,
+    times: activeLine.stops.map((s,i) => addMinutes(startTime, i === 0 ? 0 : s.offset))
+  };
+  activeLine.trips.push(trip);
+  activeLine.trips.sort((a,b) => a.times[0].localeCompare(b.times[0]));
+  renderMain();
+  updateHeaderMeta();
+  toast(`Kurs ${startTime} dodany`);
+}
+
+function deleteTrip(id) {
+  if (!activeLine) return;
+  activeLine.trips = activeLine.trips.filter(t => t.id !== id);
+  renderMain();
+  updateHeaderMeta();
+}
+
+function applyInterval(minutes) {
+  if (!activeLine) { toast('Wybierz linię','⚠'); return; }
+  if (activeLine.trips.length === 0) { toast('Dodaj pierwszy kurs ręcznie','⚠'); return; }
+  if (activeLine.stops.length < 2) { toast('Dodaj przystanki','⚠'); return; }
+  const sorted = [...activeLine.trips].sort((a,b) => a.times[0].localeCompare(b.times[0]));
+  const firstTime = sorted[0].times[0];
+  const dir = sorted[0].direction;
+  // Generate from firstTime + interval to 23:59 - trip_duration
+  const tripDuration = activeLine.stops[activeLine.stops.length-1].offset;
+  let t = addMinutes(firstTime, minutes);
+  let added = 0;
+  while (timeToMinutes(t) + tripDuration <= 23*60+59 && added < 100) {
+    // Check if this time already exists
+    if (!activeLine.trips.find(tr => tr.times[0] === t)) {
+      activeLine.trips.push({
+        id: uuid(),
+        direction: dir,
+        times: activeLine.stops.map((s,i) => addMinutes(t, i===0?0:s.offset))
+      });
+      added++;
+    }
+    t = addMinutes(t, minutes);
+  }
+  activeLine.trips.sort((a,b) => a.times[0].localeCompare(b.times[0]));
+  renderMain();
+  updateHeaderMeta();
+  toast(`Dodano ${added} kursów co ${minutes} min`);
+}
+
+// ── RENDER ──
+function renderSidebar() {
+  const list = document.getElementById('lineList');
+  if (lines.length === 0) {
+    list.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:4px 2px">Brak linii. Dodaj pierwszą.</div>`;
+    return;
+  }
+  list.innerHTML = lines.map(l => `
+    <div class="line-item ${activeLine?.id === l.id ? 'active' : ''}" onclick="selectLine('${l.id}')">
+      <div class="line-badge" style="background:${l.color}20;color:${l.color};">${l.num}</div>
+      <div class="line-info">
+        <div class="line-name">${escHtml(l.name)}</div>
+        <div class="line-trips">${l.trips.length} kursów · ${typeLabel(l.type)}</div>
+      </div>
+      <button class="line-del" onclick="deleteLine('${l.id}',event)" title="Usuń linię">×</button>
+    </div>
+  `).join('');
+}
+
+function renderMain() {
+  const toolbar = document.getElementById('toolbarTitle');
+  const sub = document.getElementById('toolbarSub');
+  const content = document.getElementById('mainContent');
+  const btnExport = document.getElementById('btnExport');
+  const btnClear = document.getElementById('btnClear');
+
+  if (!activeLine) {
+    toolbar.textContent = 'Wybierz linię';
+    sub.textContent = '';
+    btnExport.style.display = 'none';
+    btnClear.style.display = 'none';
+    content.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🚌</div>
+        <div class="empty-title">Brak wybranej linii</div>
+        <div class="empty-sub">Dodaj linię autobusową w panelu po lewej, a następnie ją wybierz, aby edytować rozkład.</div>
+      </div>`;
+    return;
+  }
+
+  const l = activeLine;
+  btnExport.style.display = '';
+  btnClear.style.display = '';
+  toolbar.innerHTML = `<span class="line-badge" style="background:${l.color}20;color:${l.color};display:inline-flex;align-items:center;justify-content:center;width:36px;height:24px;border-radius:4px;font-family:var(--mono);font-size:12px;font-weight:500;margin-right:8px">${escHtml(l.num)}</span>${escHtml(l.name)}`;
+  sub.textContent = `${typeLabel(l.type)} · ${l.trips.length} kursów`;
+
+  const tripDuration = l.stops.length > 1 ? l.stops[l.stops.length-1].offset : 0;
+  const firstTrip = l.trips.length ? l.trips[0].times[0] : '—';
+  const lastTrip = l.trips.length ? l.trips[l.trips.length-1].times[0] : '—';
+
+  content.innerHTML = `
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-val">${l.trips.length}</div>
+        <div class="stat-label">Kursów łącznie</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">${l.stops.length}</div>
+        <div class="stat-label">Przystanków</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">${tripDuration}<span style="font-size:13px;color:var(--text-muted)"> min</span></div>
+        <div class="stat-label">Czas przejazdu</div>
+      </div>
+    </div>
+
+    <!-- STOPS EDITOR -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Trasa — przystanki</span>
+        <button class="btn btn-secondary btn-sm" onclick="addStop()">+ Przystanek</button>
+      </div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:18px 8px 1fr 90px auto;gap:6px;margin-bottom:4px;padding:0 0 4px 0;border-bottom:1px solid var(--border)">
+          <div></div><div></div>
+          <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Nazwa przystanku</div>
+          <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Offset (min)</div>
+          <div></div>
+        </div>
+        ${l.stops.map((s, i) => `
+          <div class="stops-row">
+            <div class="stop-index">${i+1}</div>
+            <div class="stop-dot" style="background:${i===0||i===l.stops.length-1?l.color:'var(--accent)'}"></div>
+            <input class="stop-name-input" type="text" placeholder="Nazwa przystanku" value="${escAttr(s.name)}"
+              oninput="updateStop('${s.id}','name',this.value)">
+            <input class="stop-time-input" type="number" min="0" max="999" placeholder="min" value="${s.offset}"
+              oninput="updateStop('${s.id}','offset',this.value)">
+            <button class="stop-remove" onclick="removeStop('${s.id}')" title="Usuń">×</button>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- ADD TRIP -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Dodaj kurs</span>
+      </div>
+      <div class="card-body">
+        <div class="add-trip-row">
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Godzina odjazdu</div>
+            <input type="time" id="newTripStart" value="06:00">
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Kierunek</div>
+            <select id="newTripDir">
+              <option value="forward">→ Tam</option>
+              <option value="return">← Powrót</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="addTrip()" style="align-self:flex-end">+ Dodaj kurs</button>
+          <div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRIPS TABLE -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Rozkład kursów</span>
+        ${l.trips.length > 0 ? `<span style="font-size:11px;color:var(--text-muted)">Pierwszy: ${firstTrip} · Ostatni: ${lastTrip}</span>` : ''}
+      </div>
+      ${l.trips.length === 0
+        ? `<div style="padding:32px;text-align:center;color:var(--text-muted);font-size:13px">
+            Brak kursów. Dodaj pierwszą godzinę odjazdu powyżej lub użyj interwału z panelu bocznego.
+           </div>`
+        : `<div class="trips-scroll">
+            <table class="trips-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Kierunek</th>
+                  ${l.stops.map(s => `<th>${escHtml(s.name)||'Przystanek'}</th>`).join('')}
+                  <th>Akcja</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${l.trips.map((t, i) => `
+                  <tr>
+                    <td class="time-cell">${i+1}</td>
+                    <td>
+                      <span class="trip-dir ${t.direction}">
+                        ${t.direction === 'forward' ? '→ Tam' : '← Powrót'}
+                      </span>
+                    </td>
+                    ${t.times.map((tm, j) => `
+                      <td class="time-cell ${j===0?'first':''}">${tm}</td>
+                    `).join('')}
+                    <td>
+                      <button class="btn btn-danger btn-sm" onclick="deleteTrip('${t.id}')">Usuń</button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>`
+      }
+    </div>
+  `;
+}
+
+// ── EXPORT ──
+function showExport() {
+  if (!activeLine) return;
+  document.getElementById('exportModal').style.display = 'flex';
+  document.getElementById('exportPreview').value =
+    JSON.stringify(lineToJSON(activeLine), null, 2).slice(0, 1200);
+}
+
+function closeExport() {
+  document.getElementById('exportModal').style.display = 'none';
+}
+
+function lineToJSON(l) {
+  return {
+    id: l.id,
+    number: l.num,
+    name: l.name,
+    type: l.type,
+    color: l.color,
+    stops: l.stops.map(s => ({ id: s.id, name: s.name, offset_min: s.offset })),
+    trips: l.trips.map(t => ({
+      id: t.id,
+      direction: t.direction,
+      departures: l.stops.map((s,i) => ({ stop: s.name||`stop_${i+1}`, time: t.times[i] }))
+    }))
+  };
+}
+
+function exportJSON(scope) {
+  let data, filename;
+  if (scope === 'line') {
+    data = lineToJSON(activeLine);
+    filename = `STP_linia_${activeLine.num}.json`;
+  } else {
+    data = { network: 'STP', exported: new Date().toISOString(), lines: lines.map(lineToJSON) };
+    filename = `STP_siec.json`;
+  }
+  downloadFile(JSON.stringify(data, null, 2), filename, 'application/json');
+  toast(`Wyeksportowano ${filename}`);
+}
+
+function exportCSV(type) {
+  if (!activeLine) return;
+  let csv, filename;
+  if (type === 'trips') {
+    const header = ['#','kierunek', ...activeLine.stops.map((s,i) => s.name||`przystanek_${i+1}`)].join(',');
+    const rows = activeLine.trips.map((t,i) =>
+      [i+1, t.direction, ...t.times].join(',')
+    );
+    csv = [header, ...rows].join('\n');
+    filename = `STP_linia_${activeLine.num}_kursy.csv`;
+  } else {
+    const header = '#,nazwa,offset_min';
+    const rows = activeLine.stops.map((s,i) => `${i+1},${s.name||''},${s.offset}`);
+    csv = [header, ...rows].join('\n');
+    filename = `STP_linia_${activeLine.num}_przystanki.csv`;
+  }
+  downloadFile('\uFEFF'+csv, filename, 'text/csv;charset=utf-8');
+  toast(`Wyeksportowano ${filename}`);
+}
+
+function downloadFile(content, filename, mime) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+  a.download = filename;
+  a.click();
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return String(s||'').replace(/"/g,'&quot;');
+}
+
+// ── INIT ──
+renderSidebar();
+renderMain();
+</script>
+</body>
+</html>
