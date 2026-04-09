@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STP — System Planowania Rozkładów</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--bg2:#181c26;--bg3:#1e2334;--bg4:#252a3d;
+  --border:#2e3450;--border2:#3d4466;
+  --text:#e8eaf2;--text2:#9ba3c0;--text3:#5c647d;
+  --blue:#4a7fff;--blue2:#2d5fd4;--blue-bg:#1a2444;
+  --green:#3ecf8e;--green-bg:#0d2b1e;
+  --amber:#f5a623;--amber-bg:#2b1e0a;
+  --red:#f25050;--red-bg:#2b0f0f;
+  --tram:#9b6dff;--tram-bg:#1a1130;
+  --metro:#00c8d4;--metro-bg:#0a2124;
+  --radius:6px;--radius2:10px;
+  font-family:'IBM Plex Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+a{color:var(--blue);text-decoration:none}
+
+/* layout */
+#app{display:grid;grid-template-rows:48px 1fr;grid-template-columns:220px 1fr;height:100vh}
+header{grid-column:1/-1;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;padding:0 20px;z-index:10}
+.logo{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:var(--blue);letter-spacing:0.05em}
+.logo span{color:var(--text2)}
+nav{display:flex;gap:2px;margin-left:auto}
+nav button{background:none;border:none;color:var(--text2);font:400 12px 'IBM Plex Sans',sans-serif;padding:6px 12px;border-radius:var(--radius);cursor:pointer;transition:all .15s}
+nav button:hover{background:var(--bg3);color:var(--text)}
+nav button.active{background:var(--blue-bg);color:var(--blue)}
+sidebar{grid-row:2;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:12px 0}
+main{grid-row:2;overflow:auto;padding:20px;background:var(--bg)}
+
+/* sidebar */
+.sb-section{padding:4px 12px;font-size:10px;font-weight:500;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-top:12px}
+.sb-item{display:flex;align-items:center;gap:10px;padding:7px 14px;cursor:pointer;transition:background .1s;font-size:13px;color:var(--text2);border-radius:0}
+.sb-item:hover{background:var(--bg3);color:var(--text)}
+.sb-item.active{background:var(--blue-bg);color:var(--blue)}
+.sb-item .icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
+.sb-item.active .icon{opacity:1}
+.sb-badge{margin-left:auto;font-size:10px;background:var(--bg4);color:var(--text2);padding:1px 6px;border-radius:10px}
+.sb-item.active .sb-badge{background:var(--blue2);color:#fff}
+
+/* cards */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:16px 20px;margin-bottom:14px}
+.card-title{font-size:11px;font-weight:500;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px}
+
+/* grid metrics */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.metric{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:12px 14px}
+.metric-val{font-size:24px;font-weight:600;color:var(--text);line-height:1}
+.metric-label{font-size:11px;color:var(--text3);margin-top:4px}
+.metric-delta{font-size:11px;margin-top:3px}
+.metric-delta.up{color:var(--green)}
+.metric-delta.down{color:var(--red)}
+
+/* tables */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:500;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:6px 10px;border-bottom:1px solid var(--border)}
+td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text2)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3);color:var(--text)}
+
+/* type badges */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:500;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.badge.bus{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue2)}
+.badge.tram{background:var(--tram-bg);color:var(--tram);border:1px solid #5a3d8a}
+.badge.metro{background:var(--metro-bg);color:var(--metro);border:1px solid #0e5e63}
+.badge.ok{background:var(--green-bg);color:var(--green);border:1px solid #1a5e3b}
+.badge.warn{background:var(--amber-bg);color:var(--amber);border:1px solid #6e4010}
+.badge.err{background:var(--red-bg);color:var(--red);border:1px solid #6e1414}
+
+/* forms */
+label{display:block;font-size:11px;font-weight:500;color:var(--text3);margin-bottom:4px;letter-spacing:.04em;text-transform:uppercase}
+input,select,textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font:400 13px 'IBM Plex Sans',sans-serif;padding:8px 10px;transition:border .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-group{margin-bottom:14px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);font:500 12px 'IBM Plex Sans',sans-serif;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue2)}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--bg3);color:var(--text)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid #6e1414}
+.btn-danger:hover{background:#3a1515}
+.btn-sm{padding:4px 10px;font-size:11px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+
+/* page header */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.page-title{font-size:20px;font-weight:600;color:var(--text);line-height:1.2}
+.page-sub{font-size:12px;color:var(--text3);margin-top:3px}
+
+/* network editor */
+.network-grid{display:grid;grid-template-columns:320px 1fr;gap:16px;height:calc(100vh - 148px)}
+.network-canvas{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);position:relative;overflow:hidden}
+#netCanvas{width:100%;height:100%;cursor:crosshair}
+.canvas-toolbar{position:absolute;top:10px;left:10px;display:flex;gap:6px}
+.tool-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);width:32px;height:32px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;transition:all .15s}
+.tool-btn:hover,.tool-btn.active{background:var(--blue-bg);border-color:var(--blue);color:var(--blue)}
+.canvas-info{position:absolute;bottom:10px;left:10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3)}
+
+/* timetable grid */
+.tt-container{overflow-x:auto}
+.tt-grid{display:grid;min-width:900px}
+.tt-header{display:flex;background:var(--bg3);border-bottom:1px solid var(--border)}
+.tt-stop{padding:6px 10px;font-size:11px;font-weight:500;color:var(--text3);min-width:130px;border-right:1px solid var(--border)}
+.tt-row{display:flex;border-bottom:1px solid var(--border)}
+.tt-row:hover{background:var(--bg3)}
+.tt-cell{padding:6px 8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text2);min-width:130px;border-right:1px solid var(--border)}
+.tt-cell.dep{color:var(--green)}
+.tt-cell.arr{color:var(--amber)}
+.tt-cell input{background:none;border:none;font:400 12px 'IBM Plex Mono',monospace;color:var(--text);width:100%}
+.tt-cell input:focus{outline:none;color:var(--blue)}
+.tt-run{background:var(--blue-bg);border-right:2px solid var(--blue)}
+
+/* gantt */
+.gantt-wrap{overflow-x:auto;margin-top:12px}
+#ganttCanvas{display:block}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius2);width:520px;max-height:85vh;overflow-y:auto;padding:24px}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:16px}
+.modal-close{float:right;background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;line-height:1}
+.modal-close:hover{color:var(--text)}
+
+/* tabs */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{padding:8px 14px;font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--blue);border-color:var(--blue)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* sidebar tabs */
+.module{display:none}
+.module.active{display:block}
+
+/* util */
+.flex{display:flex}.gap8{gap:8px}.gap16{gap:16px}.al-c{align-items:center}.jc-sb{justify-content:space-between}
+.mt8{margin-top:8px}.mt16{margin-top:16px}.mt20{margin-top:20px}
+.text-sm{font-size:12px;color:var(--text2)}
+.text-xs{font-size:11px;color:var(--text3)}
+.mono{font-family:'IBM Plex Mono',monospace}
+.w100{width:100%}
+.hidden{display:none}
+.color-dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
+.chip{background:var(--bg4);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;color:var(--text2)}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- HEADER -->
+<header>
+  <div class="logo">STP <span>// System Planowania Rozkładów</span></div>
+  <nav>
+    <button class="active" onclick="setModule('dashboard')">Pulpit</button>
+    <button onclick="setModule('network')">Sieć</button>
+    <button onclick="setModule('timetable')">Rozkłady</button>
+    <button onclick="setModule('fleet')">Tabor</button>
+    <button onclick="setModule('simulation')">Symulacja</button>
+    <button onclick="setModule('export')">Eksport</button>
+  </nav>
+</header>
+
+<!-- SIDEBAR -->
+<sidebar id="sidebar">
+  <!-- dynamic per module -->
+</sidebar>
+
+<!-- MAIN -->
+<main id="main">
+  <!-- DASHBOARD -->
+  <div id="mod-dashboard" class="module active">
+    <div class="page-header">
+      <div><div class="page-title">Pulpit operacyjny</div><div class="page-sub">Skuszawyjiński Transport Publiczny — przegląd sieci</div></div>
+      <button class="btn btn-ghost btn-sm" onclick="refreshDash()">↻ Odśwież</button>
+    </div>
+    <div class="metrics" id="dash-metrics"></div>
+    <div class="form-row">
+      <div class="card" style="margin:0">
+        <div class="card-title">Linie transportowe</div>
+        <div id="dash-lines-table"></div>
+      </div>
+      <div class="card" style="margin:0">
+        <div class="card-title">Aktywny tabor</div>
+        <div id="dash-fleet-table"></div>
+      </div>
+    </div>
+    <div class="card mt16">
+      <div class="card-title">Kursy dzisiaj — harmonogram (poglądowy Gantt)</div>
+      <div class="gantt-wrap"><canvas id="ganttCanvas" height="180"></canvas></div>
+    </div>
+  </div>
+
+  <!-- NETWORK EDITOR -->
+  <div id="mod-network" class="module">
+    <div class="page-header">
+      <div><div class="page-title">Edytor sieci</div><div class="page-sub">Linie, przystanki, węzły przesiadkowe</div></div>
+      <div class="actions">
+        <button class="btn btn-ghost btn-sm" onclick="openModal('addStop')">+ Przystanek</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('addLine')">+ Linia</button>
+      </div>
+    </div>
+    <div class="network-grid">
+      <div style="overflow-y:auto;display:flex;flex-direction:column;gap:14px">
+        <div class="card" style="margin:0">
+          <div class="card-title">Linie</div>
+          <div id="lines-list"></div>
+        </div>
+        <div class="card" style="margin:0">
+          <div class="card-title">Przystanki <span class="chip" id="stop-count">0</span></div>
+          <div id="stops-list"></div>
+        </div>
+      </div>
+      <div class="network-canvas">
+        <canvas id="netCanvas"></canvas>
+        <div class="canvas-toolbar">
+          <div class="tool-btn active" id="tool-select" onclick="setTool('select')" title="Zaznaczanie">↖</div>
+          <div class="tool-btn" id="tool-stop" onclick="setTool('stop')" title="Dodaj przystanek">⊙</div>
+          <div class="tool-btn" id="tool-conn" onclick="setTool('conn')" title="Połącz przystanki">—</div>
+          <div class="tool-btn" onclick="centerCanvas()" title="Wycentruj">⊞</div>
+        </div>
+        <div class="canvas-info" id="canvas-coords">x:0 y:0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIMETABLE -->
+  <div id="mod-timetable" class="module">
+    <div class="page-header">
+      <div><div class="page-title">Rozkłady jazdy</div><div class="page-sub">Generator i edytor rozkładów kursów</div></div>
+      <div class="actions">
+        <button class="btn btn-ghost btn-sm" onclick="openModal('genTT')">⚡ Generuj rozkład</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('addRun')">+ Kurs</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab active" onclick="setTTTab('table')">Tabela</div>
+      <div class="tab" onclick="setTTTab('grid')">Siatka godzinowa</div>
+      <div class="tab" onclick="setTTTab('frequency')">Częstotliwość</div>
+    </div>
+    <div class="form-row" style="margin-bottom:12px">
+      <div class="form-group" style="margin:0">
+        <label>Linia</label>
+        <select id="tt-line-sel" onchange="renderTimetable()"></select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>Profil dnia</label>
+        <select id="tt-profile-sel" onchange="renderTimetable()">
+          <option value="weekday">Dzień roboczy</option>
+          <option value="weekend">Weekend</option>
+          <option value="night">Noc</option>
+        </select>
+      </div>
+    </div>
+    <div id="tt-table" class="tab-panel active">
+      <div class="card" style="margin:0">
+        <div class="tt-container" id="tt-grid-wrap"></div>
+        <div class="mt8 text-xs" id="tt-stats"></div>
+      </div>
+    </div>
+    <div id="tt-grid-view" class="tab-panel">
+      <div class="card" style="margin:0"><canvas id="hourCanvas" height="300"></canvas></div>
+    </div>
+    <div id="tt-frequency" class="tab-panel">
+      <div class="card" style="margin:0">
+        <div class="card-title">Analiza częstotliwości i czasu obiegu</div>
+        <div id="freq-stats"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLEET -->
+  <div id="mod-fleet" class="module">
+    <div class="page-header">
+      <div><div class="page-title">Zarządzanie taborem</div><div class="page-sub">Pojazdy, typy, przypisania</div></div>
+      <button class="btn btn-primary btn-sm" onclick="openModal('addVehicle')">+ Pojazd</button>
+    </div>
+    <div class="form-row">
+      <div class="card" style="margin:0">
+        <div class="card-title">Flota pojazdów</div>
+        <div id="fleet-list"></div>
+      </div>
+      <div class="card" style="margin:0">
+        <div class="card-title">Typy pojazdów</div>
+        <div id="vehicle-types-list"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Przypisanie pojazd → kurs</div>
+      <div id="vehicle-assignments"></div>
+    </div>
+  </div>
+
+  <!-- SIMULATION -->
+  <div id="mod-simulation" class="module">
+    <div class="page-header">
+      <div><div class="page-title">Symulacja ruchu</div><div class="page-sub">Potoki pasażerskie, konflikty, optymalizacja</div></div>
+      <button class="btn btn-primary btn-sm" onclick="runSimulation()">▶ Uruchom symulację</button>
+    </div>
+    <div class="metrics" id="sim-metrics"></div>
+    <div class="form-row">
+      <div class="card" style="margin:0">
+        <div class="card-title">Parametry symulacji</div>
+        <div class="form-group"><label>Godzina startowa</label><input type="time" id="sim-start" value="06:00"></div>
+        <div class="form-group"><label>Godzina końcowa</label><input type="time" id="sim-end" value="22:00"></div>
+        <div class="form-group"><label>Popyt bazowy (pasażerów/godz)</label><input type="number" id="sim-demand" value="2400"></div>
+        <div class="form-group"><label>Szczyt ranny</label>
+          <select id="sim-peak">
+            <option value="07:00–09:00">07:00–09:00</option>
+            <option value="08:00–10:00">08:00–10:00</option>
+          </select>
+        </div>
+        <button class="btn btn-primary w100" onclick="runSimulation()">Symuluj ▶</button>
+      </div>
+      <div class="card" style="margin:0">
+        <div class="card-title">Wyniki symulacji</div>
+        <div id="sim-results"><div class="text-xs" style="padding:20px 0;text-align:center">Uruchom symulację, aby zobaczyć wyniki.</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Wykres obciążenia linii</div>
+      <div style="position:relative;height:220px"><canvas id="simChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- EXPORT -->
+  <div id="mod-export" class="module">
+    <div class="page-header">
+      <div><div class="page-title">Eksport i integracje</div><div class="page-sub">PDF, CSV, GTFS, API</div></div>
+    </div>
+    <div class="form-row">
+      <div class="card" style="margin:0">
+        <div class="card-title">Eksport rozkładów</div>
+        <div class="form-group"><label>Format</label>
+          <select id="exp-format">
+            <option>PDF (druk pasażerski)</option>
+            <option>CSV / Excel</option>
+            <option>GTFS (Google Transit)</option>
+            <option>JSON (API STP)</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Linia</label>
+          <select id="exp-line"></select>
+        </div>
+        <div class="form-group"><label>Profil dnia</label>
+          <select><option>Wszystkie</option><option>Dzień roboczy</option><option>Weekend</option></select>
+        </div>
+        <button class="btn btn-primary w100" onclick="doExport()">⬇ Pobierz</button>
+      </div>
+      <div class="card" style="margin:0">
+        <div class="card-title">Endpointy API (symulacja)</div>
+        <div id="api-endpoints"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Podgląd eksportu</div>
+      <pre id="export-preview" class="mono" style="font-size:11px;color:var(--text2);white-space:pre-wrap;max-height:300px;overflow-y:auto">Wybierz format i linię, aby zobaczyć podgląd.</pre>
+    </div>
+  </div>
+
+</main>
+
+<!-- MODALS -->
+<div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)">
+  <div class="modal" onclick="e=>e.stopPropagation()">
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  currentModule: 'dashboard',
+  tool: 'select',
+  netOffset: {x:0,y:0},
+  netZoom: 1,
+  netDragging: false,
+  netDragStart: null,
+  connStart: null,
+  selected: null,
+  simChart: null,
+  stops: [
+    {id:'s1',name:'Centrum',x:320,y:200,type:'hub'},
+    {id:'s2',name:'Rynek Główny',x:200,y:160,type:'stop'},
+    {id:'s3',name:'Dworzec Główny',x:440,y:140,type:'hub'},
+    {id:'s4',name:'Osiedle Północne',x:460,y:300,type:'stop'},
+    {id:'s5',name:'Stary Port',x:160,y:300,type:'stop'},
+    {id:'s6',name:'Politechnika',x:340,y:340,type:'stop'},
+    {id:'s7',name:'Lotnisko',x:560,y:180,type:'stop'},
+    {id:'s8',name:'Szpital Miejski',x:240,y:350,type:'stop'},
+  ],
+  lines: [
+    {id:'l1',name:'1',type:'bus',color:'#4a7fff',stops:['s2','s1','s3','s7'],runs:[],ttWeekday:[],ttWeekend:[],ttNight:[]},
+    {id:'l2',name:'12',type:'bus',color:'#3ecf8e',stops:['s5','s1','s4'],runs:[],ttWeekday:[],ttWeekend:[],ttNight:[]},
+    {id:'l3',name:'T3',type:'tram',color:'#9b6dff',stops:['s8','s1','s3','s4'],runs:[],ttWeekday:[],ttWeekend:[],ttNight:[]},
+    {id:'l4',name:'M1',type:'metro',color:'#00c8d4',stops:['s5','s2','s1','s6','s4'],runs:[],ttWeekday:[],ttWeekend:[],ttNight:[]},
+  ],
+  vehicles: [
+    {id:'v1',reg:'STP-001',type:'bus12',lineId:'l1',status:'active'},
+    {id:'v2',reg:'STP-002',type:'bus12',lineId:'l1',status:'active'},
+    {id:'v3',reg:'STP-003',type:'bus18',lineId:'l2',status:'active'},
+    {id:'v4',reg:'STP-004',type:'bus18',lineId:'l2',status:'maintenance'},
+    {id:'v5',reg:'STP-T01',type:'tram',lineId:'l3',status:'active'},
+    {id:'v6',reg:'STP-T02',type:'tram',lineId:'l3',status:'active'},
+    {id:'v7',reg:'STP-M01',type:'metro',lineId:'l4',status:'active'},
+    {id:'v8',reg:'STP-M02',type:'metro',lineId:'l4',status:'active'},
+  ],
+  vehicleTypes: [
+    {id:'bus12',name:'Autobus 12m',capacity:85,type:'bus'},
+    {id:'bus18',name:'Autobus 18m (przegubowy)',capacity:150,type:'bus'},
+    {id:'tram',name:'Tramwaj',capacity:200,type:'tram'},
+    {id:'metro',name:'Metro',capacity:400,type:'metro'},
+  ]
+};
+
+// Generate default timetables
+function genDefaultTT(line, profile) {
+  const stops = line.stops.map(id=>state.stops.find(s=>s.id===id));
+  const interval = profile==='night' ? 30 : profile==='weekend' ? 15 : 10;
+  const startH = profile==='night' ? 23 : profile==='weekend' ? 7 : 5;
+  const endH = profile==='night' ? 28 : 23;
+  const runs = [];
+  for(let h=startH; h<endH; h+=interval/60) {
+    const base = Math.round(h*60);
+    const run = stops.map((s,i) => {
+      const t = base + i*4;
+      return {
+        stop:s.id,
+        arr: i===0?null:fmt(t),
+        dep: i===stops.length-1?null:fmt(t+1)
+      };
+    });
+    runs.push(run);
+  }
+  return runs;
+}
+function fmt(mins) {
+  const h = Math.floor(((mins%1440)+1440)%1440/60);
+  const m = ((mins%60)+60)%60;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+}
+// Initialise timetables
+state.lines.forEach(l=>{
+  l.ttWeekday = genDefaultTT(l,'weekday');
+  l.ttWeekend = genDefaultTT(l,'weekend');
+  l.ttNight = genDefaultTT(l,'night');
+});
+
+// ============================================================
+// MODULE SWITCHING
+// ============================================================
+function setModule(mod) {
+  state.currentModule = mod;
+  document.querySelectorAll('.module').forEach(m=>m.classList.remove('active'));
+  const el = document.getElementById('mod-'+mod);
+  if(el) el.classList.add('active');
+  document.querySelectorAll('nav button').forEach((b,i)=>{
+    const mods=['dashboard','network','timetable','fleet','simulation','export'];
+    b.classList.toggle('active',mods[i]===mod);
+  });
+  renderSidebar(mod);
+  if(mod==='dashboard') renderDashboard();
+  if(mod==='network') initNetworkCanvas();
+  if(mod==='timetable') initTimetable();
+  if(mod==='fleet') renderFleet();
+  if(mod==='export') initExport();
+}
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+function renderSidebar(mod) {
+  const sb = document.getElementById('sidebar');
+  const configs = {
+    dashboard: `
+      <div class="sb-section">Widok</div>
+      <div class="sb-item active"><span class="icon">▦</span>Pulpit<span class="sb-badge">live</span></div>
+      <div class="sb-item" onclick="setModule('network')"><span class="icon">⟨⟩</span>Sieć</div>
+      <div class="sb-section">Skróty</div>
+      <div class="sb-item" onclick="openModal('addLine')"><span class="icon">+</span>Dodaj linię</div>
+      <div class="sb-item" onclick="openModal('addStop')"><span class="icon">+</span>Dodaj przystanek</div>
+    `,
+    network: `
+      <div class="sb-section">Narzędzia</div>
+      <div class="sb-item active" id="sb-tool-select" onclick="setTool('select')"><span class="icon">↖</span>Zaznaczanie</div>
+      <div class="sb-item" id="sb-tool-stop" onclick="setTool('stop')"><span class="icon">⊙</span>Nowy przystanek</div>
+      <div class="sb-item" id="sb-tool-conn" onclick="setTool('conn')"><span class="icon">—</span>Połącz</div>
+      <div class="sb-section">Linie</div>
+      ${state.lines.map(l=>`<div class="sb-item" onclick="selectLine('${l.id}')"><span class="color-dot" style="background:${l.color}"></span>${typeName(l.type)} ${l.name}</div>`).join('')}
+      <div class="sb-item" onclick="openModal('addLine')"><span class="icon">+</span>Dodaj linię</div>
+    `,
+    timetable: `
+      <div class="sb-section">Linie</div>
+      ${state.lines.map(l=>`<div class="sb-item" onclick="selectTTLine('${l.id}')"><span class="color-dot" style="background:${l.color}"></span>${typeName(l.type)} ${l.name}</div>`).join('')}
+      <div class="sb-section">Profile dnia</div>
+      <div class="sb-item active" onclick="setProfile('weekday')"><span class="icon">◷</span>Dzień roboczy</div>
+      <div class="sb-item" onclick="setProfile('weekend')"><span class="icon">◷</span>Weekend</div>
+      <div class="sb-item" onclick="setProfile('night')"><span class="icon">◷</span>Noc</div>
+    `,
+    fleet: `
+      <div class="sb-section">Typy</div>
+      ${state.vehicleTypes.map(vt=>`<div class="sb-item"><span class="icon">⬡</span>${vt.name}<span class="sb-badge">${state.vehicles.filter(v=>v.type===vt.id).length}</span></div>`).join('')}
+      <div class="sb-section">Status</div>
+      <div class="sb-item"><span class="icon">●</span>Aktywne<span class="sb-badge">${state.vehicles.filter(v=>v.status==='active').length}</span></div>
+      <div class="sb-item"><span class="icon">●</span>Serwis<span class="sb-badge">${state.vehicles.filter(v=>v.status==='maintenance').length}</span></div>
+    `,
+    simulation: `
+      <div class="sb-section">Parametry</div>
+      <div class="sb-item active"><span class="icon">▶</span>Symulacja</div>
+      <div class="sb-section">Linie</div>
+      ${state.lines.map(l=>`<div class="sb-item"><span class="color-dot" style="background:${l.color}"></span>${typeName(l.type)} ${l.name}</div>`).join('')}
+    `,
+    export: `
+      <div class="sb-section">Formaty</div>
+      <div class="sb-item active"><span class="icon">⬇</span>PDF</div>
+      <div class="sb-item"><span class="icon">⬇</span>CSV/Excel</div>
+      <div class="sb-item"><span class="icon">⬇</span>GTFS</div>
+      <div class="sb-item"><span class="icon">⬇</span>JSON API</div>
+    `
+  };
+  sb.innerHTML = configs[mod]||'';
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const totalRuns = state.lines.reduce((a,l)=>a+l.ttWeekday.length,0);
+  const activeV = state.vehicles.filter(v=>v.status==='active').length;
+  document.getElementById('dash-metrics').innerHTML = `
+    <div class="metric"><div class="metric-val">${state.lines.length}</div><div class="metric-label">Linie transportowe</div></div>
+    <div class="metric"><div class="metric-val">${state.stops.length}</div><div class="metric-label">Przystanki</div></div>
+    <div class="metric"><div class="metric-val">${totalRuns}</div><div class="metric-label">Kursy / dzień roboczy</div></div>
+    <div class="metric"><div class="metric-val">${activeV}</div><div class="metric-label">Pojazdów aktywnych</div></div>
+    <div class="metric"><div class="metric-val">${state.vehicles.length}</div><div class="metric-label">Tabor łącznie</div></div>
+    <div class="metric"><div class="metric-val">~${Math.round(totalRuns*1.8)}k</div><div class="metric-label">Pasażerów/dobę (szac.)</div></div>
+  `;
+  document.getElementById('dash-lines-table').innerHTML = `
+    <table><thead><tr><th>Linia</th><th>Typ</th><th>Przystanki</th><th>Kursy/dzień</th><th>Status</th></tr></thead>
+    <tbody>${state.lines.map(l=>`
+      <tr><td><b style="color:${l.color}">${l.name}</b></td>
+      <td><span class="badge ${l.type}">${typeName(l.type)}</span></td>
+      <td>${l.stops.length}</td><td>${l.ttWeekday.length}</td>
+      <td><span class="badge ok">Aktywna</span></td></tr>
+    `).join('')}</tbody></table>
+  `;
+  document.getElementById('dash-fleet-table').innerHTML = `
+    <table><thead><tr><th>Pojazd</th><th>Typ</th><th>Linia</th><th>Status</th></tr></thead>
+    <tbody>${state.vehicles.slice(0,6).map(v=>{
+      const vt=state.vehicleTypes.find(t=>t.id===v.type);
+      const line=state.lines.find(l=>l.id===v.lineId);
+      return `<tr><td class="mono">${v.reg}</td>
+        <td><span class="badge ${vt?.type||'bus'}">${vt?.name||v.type}</span></td>
+        <td style="color:${line?.color||'#888'}">${line?.name||'—'}</td>
+        <td><span class="badge ${v.status==='active'?'ok':'warn'}">${v.status==='active'?'Aktywny':'Serwis'}</span></td></tr>`;
+    }).join('')}</tbody></table>
+  `;
+  drawGantt();
+}
+function drawGantt() {
+  const canvas = document.getElementById('ganttCanvas');
+  if(!canvas) return;
+  const W = canvas.parentElement.clientWidth || 800;
+  canvas.width = W;
+  const ctx = canvas.getContext('2d');
+  const ROW=36,PAD=100,TOP=24,HOUR_W=(W-PAD)/18;
+  canvas.height = state.lines.length*ROW+TOP+10;
+  ctx.fillStyle='#1e2334';
+  ctx.fillRect(0,0,W,canvas.height);
+  // hour labels
+  for(let h=5;h<=23;h++) {
+    const x=PAD+(h-5)*HOUR_W;
+    ctx.fillStyle='#5c647d';
+    ctx.font='9px IBM Plex Mono';
+    ctx.fillText(String(h).padStart(2,'0'),x-8,14);
+    ctx.strokeStyle='#2e3450';ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(x,TOP);ctx.lineTo(x,canvas.height);ctx.stroke();
+  }
+  state.lines.forEach((line,i)=>{
+    const y=TOP+i*ROW;
+    ctx.fillStyle='#181c26';ctx.fillRect(0,y,canvas.height,ROW-2);
+    ctx.fillStyle=line.color+'33';ctx.fillRect(0,y,PAD-8,ROW-2);
+    ctx.fillStyle=line.color;
+    ctx.font='600 11px IBM Plex Sans';
+    ctx.fillText(`${typeName(line.type)} ${line.name}`,6,y+ROW/2+4);
+    // draw runs as blocks
+    const runs = line.ttWeekday;
+    runs.forEach(run=>{
+      if(!run[0]) return;
+      const depStr=run[0].dep||run[0].arr;
+      const arrStr=run[run.length-1].arr||run[run.length-1].dep;
+      if(!depStr||!arrStr) return;
+      const [dh,dm]=depStr.split(':').map(Number);
+      const [ah,am]=arrStr.split(':').map(Number);
+      const sx=PAD+(dh*60+dm-300)/60*HOUR_W;
+      const ex=PAD+(ah*60+am-300)/60*HOUR_W;
+      ctx.fillStyle=line.color+'99';
+      ctx.beginPath();
+      const rr=3,rw=Math.max(ex-sx,3),rh=ROW-10;
+      const ry2=y+5;
+      ctx.roundRect(sx,ry2,rw,rh,rr);
+      ctx.fill();
+    });
+  });
+}
+function refreshDash(){renderDashboard();}
+
+// ============================================================
+// NETWORK CANVAS
+// ============================================================
+let netCanvas, netCtx;
+function initNetworkCanvas() {
+  netCanvas = document.getElementById('netCanvas');
+  netCtx = netCanvas.getContext('2d');
+  renderStopCount();
+  renderLinesList();
+  renderStopsList();
+  resizeCanvas();
+  drawNetwork();
+  netCanvas.addEventListener('mousemove', onCanvasMM);
+  netCanvas.addEventListener('click', onCanvasClick);
+  netCanvas.addEventListener('mousedown', onCanvasMD);
+  netCanvas.addEventListener('mouseup', ()=>state.netDragging=false);
+}
+function resizeCanvas() {
+  netCanvas.width = netCanvas.offsetWidth;
+  netCanvas.height = netCanvas.offsetHeight;
+  drawNetwork();
+}
+function worldToScreen(x,y){return{x:x*state.netZoom+state.netOffset.x,y:y*state.netZoom+state.netOffset.y};}
+function screenToWorld(x,y){return{x:(x-state.netOffset.x)/state.netZoom,y:(y-state.netOffset.y)/state.netZoom};}
+function drawNetwork() {
+  if(!netCanvas||!netCtx) return;
+  const ctx=netCtx, W=netCanvas.width, H=netCanvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0f1117';ctx.fillRect(0,0,W,H);
+  // grid
+  ctx.strokeStyle='#1e2334';ctx.lineWidth=1;
+  const gs=40*state.netZoom;
+  const ox=((state.netOffset.x%gs)+gs)%gs, oy=((state.netOffset.y%gs)+gs)%gs;
+  for(let x=ox;x<W;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=oy;y<H;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  // connections per line
+  state.lines.forEach(line=>{
+    for(let i=0;i<line.stops.length-1;i++){
+      const a=state.stops.find(s=>s.id===line.stops[i]);
+      const b=state.stops.find(s=>s.id===line.stops[i+1]);
+      if(!a||!b) continue;
+      const sa=worldToScreen(a.x,a.y), sb=worldToScreen(b.x,b.y);
+      ctx.strokeStyle=line.color+'cc';ctx.lineWidth=3*state.netZoom;
+      ctx.beginPath();ctx.moveTo(sa.x,sa.y);ctx.lineTo(sb.x,sb.y);ctx.stroke();
+    }
+  });
+  // stops
+  state.stops.forEach(stop=>{
+    const {x,y}=worldToScreen(stop.x,stop.y);
+    const r=(stop.type==='hub'?9:6)*state.netZoom;
+    ctx.beginPath();ctx.arc(x,y,r+2,0,Math.PI*2);
+    ctx.fillStyle='#0f1117';ctx.fill();
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle=stop.type==='hub'?'#f5a623':'#4a7fff';
+    ctx.strokeStyle='#0f1117';ctx.lineWidth=2;ctx.fill();ctx.stroke();
+    if(state.netZoom>0.6){
+      ctx.fillStyle='#e8eaf2';ctx.font=`${10*state.netZoom}px IBM Plex Sans`;
+      ctx.fillText(stop.name,x+r+4,y+4);
+    }
+  });
+}
+function onCanvasMM(e) {
+  const r=netCanvas.getBoundingClientRect();
+  const mx=e.clientX-r.left, my=e.clientY-r.top;
+  document.getElementById('canvas-coords').textContent=`x:${Math.round((mx-state.netOffset.x)/state.netZoom)} y:${Math.round((my-state.netOffset.y)/state.netZoom)}`;
+  if(state.netDragging && state.tool==='select') {
+    state.netOffset.x+=e.movementX; state.netOffset.y+=e.movementY;
+    drawNetwork();
+  }
+}
+function onCanvasMD(e) {
+  if(state.tool==='select') {state.netDragging=true;}
+}
+function onCanvasClick(e) {
+  const r=netCanvas.getBoundingClientRect();
+  const mx=e.clientX-r.left, my=e.clientY-r.top;
+  const {x,y}=screenToWorld(mx,my);
+  if(state.tool==='stop') {
+    const name=prompt('Nazwa przystanku:');
+    if(!name) return;
+    const id='s'+Date.now();
+    state.stops.push({id,name,x,y,type:'stop'});
+    renderStopCount();renderStopsList();drawNetwork();
+  }
+  if(state.tool==='conn') {
+    const hit=state.stops.find(s=>{
+      const {x:sx,y:sy}=worldToScreen(s.x,s.y);
+      return Math.hypot(mx-sx,my-sy)<14;
+    });
+    if(!hit) return;
+    if(!state.connStart){state.connStart=hit;return;}
+    // add conn to selected line, or first
+    const line=state.lines[0];
+    if(!line.stops.includes(hit.id)) line.stops.push(hit.id);
+    state.connStart=null;
+    renderLinesList();drawNetwork();
+  }
+}
+function setTool(t) {
+  state.tool=t;
+  document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+  const map={'select':'tool-select','stop':'tool-stop','conn':'tool-conn'};
+  if(map[t]) document.getElementById(map[t])?.classList.add('active');
+  if(netCanvas) netCanvas.style.cursor=t==='select'?'grab':t==='stop'?'crosshair':'pointer';
+}
+function centerCanvas(){state.netOffset={x:80,y:80};drawNetwork();}
+function renderStopCount(){const el=document.getElementById('stop-count');if(el)el.textContent=state.stops.length;}
+function renderLinesList(){
+  const el=document.getElementById('lines-list');if(!el)return;
+  el.innerHTML=`<table><thead><tr><th>Linia</th><th>Typ</th><th>Przystanki</th><th></th></tr></thead><tbody>
+    ${state.lines.map(l=>`<tr>
+      <td><span class="color-dot" style="background:${l.color}"></span> <b style="color:${l.color}">${l.name}</b></td>
+      <td><span class="badge ${l.type}">${typeName(l.type)}</span></td>
+      <td>${l.stops.length}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openModal('editLine','${l.id}')">✎</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+function renderStopsList(){
+  const el=document.getElementById('stops-list');if(!el)return;
+  el.innerHTML=`<table><thead><tr><th>Nazwa</th><th>Typ</th><th>Linie</th></tr></thead><tbody>
+    ${state.stops.map(s=>{
+      const lines=state.lines.filter(l=>l.stops.includes(s.id));
+      return `<tr><td>${s.name}</td>
+        <td><span class="badge ${s.type==='hub'?'warn':'ok'}">${s.type==='hub'?'Węzeł':'Przystanek'}</span></td>
+        <td>${lines.map(l=>`<span style="color:${l.color}">${l.name}</span>`).join(' ')}</td></tr>`;
+    }).join('')}</tbody></table>`;
+}
+function selectLine(id){}
+
+// ============================================================
+// TIMETABLE
+// ============================================================
+function initTimetable() {
+  const sel=document.getElementById('tt-line-sel');
+  if(!sel) return;
+  sel.innerHTML=state.lines.map(l=>`<option value="${l.id}">${typeName(l.type)} ${l.name}</option>`).join('');
+  const expSel=document.getElementById('exp-line');
+  if(expSel) expSel.innerHTML=sel.innerHTML;
+  renderTimetable();
+}
+function selectTTLine(id){
+  const sel=document.getElementById('tt-line-sel');
+  if(sel){sel.value=id;renderTimetable();}
+}
+function setProfile(p){
+  const sel=document.getElementById('tt-profile-sel');
+  if(sel){sel.value=p;renderTimetable();}
+}
+function setTTTab(t) {
+  document.querySelectorAll('.tabs .tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  const panels={table:'tt-table','grid':'tt-grid-view',frequency:'tt-frequency'};
+  document.querySelectorAll('.tabs .tab').forEach((b,i)=>{b.classList.toggle('active',['table','grid','frequency'][i]===t);});
+  const panel=document.getElementById(panels[t]);if(panel)panel.classList.add('active');
+  if(t==='grid') drawHourChart();
+  if(t==='frequency') renderFrequency();
+}
+function getTT() {
+  const lineId=document.getElementById('tt-line-sel')?.value;
+  const profile=document.getElementById('tt-profile-sel')?.value||'weekday';
+  const line=state.lines.find(l=>l.id===lineId);
+  if(!line) return null;
+  const ttKey='tt'+profile.charAt(0).toUpperCase()+profile.slice(1);
+  return {line, runs:line[ttKey]||[], profile};
+}
+function renderTimetable() {
+  const tt=getTT();if(!tt) return;
+  const {line,runs}=tt;
+  const stops=line.stops.map(id=>state.stops.find(s=>s.id===id));
+  const wrap=document.getElementById('tt-grid-wrap');if(!wrap) return;
+  let html=`<div class="tt-grid">`;
+  // header row
+  html+=`<div class="tt-header"><div class="tt-stop" style="background:var(--bg4);color:var(--text)">Kurs</div>`;
+  stops.forEach(s=>{
+    html+=`<div class="tt-stop">${s?.name||'?'}<div class="text-xs mono">${s?.type==='hub'?'⊙ węzeł':''}</div></div>`;
+  });
+  html+=`</div>`;
+  // runs
+  runs.slice(0,30).forEach((run,ri)=>{
+    const isRush=run[0]&&(run[0].dep||run[0].arr||'').match(/^(06|07|08|15|16|17):/);
+    html+=`<div class="tt-row ${isRush?'tt-run':''}">`;
+    html+=`<div class="tt-cell" style="color:var(--text3);font-size:10px">${String(ri+1).padStart(3,'0')}</div>`;
+    run.forEach(cell=>{
+      const disp=cell.dep||cell.arr||'—';
+      html+=`<div class="tt-cell dep">${disp}</div>`;
+    });
+    html+=`</div>`;
+  });
+  if(runs.length>30) html+=`<div class="tt-row"><div class="tt-cell" style="grid-column:1/-1;color:var(--text3)">... i ${runs.length-30} więcej kursów</div></div>`;
+  html+=`</div>`;
+  wrap.innerHTML=html;
+  const statsEl=document.getElementById('tt-stats');
+  if(statsEl){
+    const times=runs.map(r=>r[0]?.dep||r[0]?.arr).filter(Boolean);
+    statsEl.textContent=`Łącznie: ${runs.length} kursów | Pierwszy: ${times[0]||'—'} | Ostatni: ${times[times.length-1]||'—'}`;
+  }
+}
+function drawHourChart(){
+  const tt=getTT();if(!tt) return;
+  const canvas=document.getElementById('hourCanvas');if(!canvas) return;
+  const hours=Array(24).fill(0);
+  tt.runs.forEach(run=>{
+    const t=run[0]?.dep||run[0]?.arr;
+    if(t){const h=parseInt(t.split(':')[0]);if(h<24)hours[h]++;}
+  });
+  if(window._hourChart) window._hourChart.destroy();
+  window._hourChart=new Chart(canvas,{
+    type:'bar',data:{
+      labels:Array.from({length:24},(_,i)=>String(i).padStart(2,'0')+':00'),
+      datasets:[{label:'Kursy',data:hours,backgroundColor:tt.line.color+'aa',borderColor:tt.line.color,borderWidth:1}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#5c647d',font:{size:10}},grid:{color:'#1e2334'}},
+        y:{ticks:{color:'#5c647d',font:{size:10}},grid:{color:'#1e2334'}}}}
+  });
+}
+function renderFrequency() {
+  const tt=getTT();if(!tt) return;
+  const {line,runs}=tt;
+  const times=runs.map(r=>r[0]?.dep||r[0]?.arr).filter(Boolean).map(t=>{const[h,m]=t.split(':').map(Number);return h*60+m;});
+  let intervals=[];
+  for(let i=1;i<times.length;i++) intervals.push(times[i]-times[i-1]);
+  const avg=intervals.length?Math.round(intervals.reduce((a,b)=>a+b,0)/intervals.length):0;
+  const stopCount=line.stops.length;
+  const avgStopTime=4; // minutes
+  const cycleTime=stopCount*avgStopTime*2;
+  const el=document.getElementById('freq-stats');if(!el) return;
+  el.innerHTML=`
+    <div class="metrics" style="margin-bottom:0">
+      <div class="metric"><div class="metric-val">${avg} min</div><div class="metric-label">Średni interwał</div></div>
+      <div class="metric"><div class="metric-val">${runs.length}</div><div class="metric-label">Kursów / dzień</div></div>
+      <div class="metric"><div class="metric-val">${cycleTime} min</div><div class="metric-label">Czas obiegu (szac.)</div></div>
+      <div class="metric"><div class="metric-val">${Math.ceil(cycleTime/avg)} szt</div><div class="metric-label">Taboru wymaganego</div></div>
+    </div>
+    <div class="mt16 text-sm">
+      <b>Zalecenie:</b> Przy interwale <b>${avg} min</b> i czasie obiegu <b>${cycleTime} min</b>, 
+      potrzeba minimum <b>${Math.ceil(cycleTime/avg)}</b> pojazd(y), aby utrzymać rozkład bez przerw.
+    </div>
+  `;
+}
+function genTimetable(lineId, profile, interval) {
+  const line=state.lines.find(l=>l.id===lineId);if(!line) return;
+  const key='tt'+profile.charAt(0).toUpperCase()+profile.slice(1);
+  line[key]=genDefaultTT({...line,interval},{...line});
+  // override with custom interval
+  const stops=line.stops.map(id=>state.stops.find(s=>s.id===id));
+  const startH=profile==='night'?23:profile==='weekend'?7:5;
+  const endH=profile==='night'?28:23;
+  const runs=[];
+  for(let t=startH*60;t<endH*60;t+=interval){
+    const run=stops.map((s,i)=>({stop:s?.id,arr:i===0?null:fmt(t+i*4),dep:i===stops.length-1?null:fmt(t+i*4+1)}));
+    runs.push(run);
+  }
+  line[key]=runs;
+  renderTimetable();
+}
+
+// ============================================================
+// FLEET
+// ============================================================
+function renderFleet(){
+  const el=document.getElementById('fleet-list');
+  if(el) el.innerHTML=`<table><thead><tr><th>Pojazd</th><th>Typ</th><th>Poj.</th><th>Linia</th><th>Status</th><th></th></tr></thead><tbody>
+    ${state.vehicles.map(v=>{
+      const vt=state.vehicleTypes.find(t=>t.id===v.type);
+      const line=state.lines.find(l=>l.id===v.lineId);
+      return `<tr>
+        <td class="mono">${v.reg}</td>
+        <td><span class="badge ${vt?.type||'bus'}">${vt?.name||v.type}</span></td>
+        <td>${vt?.capacity||'—'}</td>
+        <td style="color:${line?.color||'#888'}">${line?.name||'—'}</td>
+        <td><span class="badge ${v.status==='active'?'ok':'warn'}">${v.status==='active'?'Aktywny':'Serwis'}</span></td>
+        <td><button class="btn btn-ghost btn-sm" onclick="deleteVehicle('${v.id}')">✕</button></td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+  const tEl=document.getElementById('vehicle-types-list');
+  if(tEl) tEl.innerHTML=`<table><thead><tr><th>Typ</th><th>Pojemność</th><th>Liczba</th></tr></thead><tbody>
+    ${state.vehicleTypes.map(vt=>`<tr>
+      <td><span class="badge ${vt.type}">${vt.name}</span></td>
+      <td>${vt.capacity}</td>
+      <td>${state.vehicles.filter(v=>v.type===vt.id).length}</td>
+    </tr>`).join('')}</tbody></table>`;
+  const aEl=document.getElementById('vehicle-assignments');
+  if(aEl) aEl.innerHTML=`<table><thead><tr><th>Linia</th><th>Wymagany tabor</th><th>Przypisany</th><th>Status</th></tr></thead><tbody>
+    ${state.lines.map(l=>{
+      const assigned=state.vehicles.filter(v=>v.lineId===l.id&&v.status==='active').length;
+      const needed=Math.max(2,Math.ceil(l.ttWeekday.length/12));
+      return `<tr>
+        <td style="color:${l.color}"><b>${l.name}</b></td>
+        <td>${needed}</td>
+        <td>${assigned}</td>
+        <td><span class="badge ${assigned>=needed?'ok':assigned>0?'warn':'err'}">${assigned>=needed?'OK':assigned>0?'Niedobór':'Brak'}</span></td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+function deleteVehicle(id){
+  state.vehicles=state.vehicles.filter(v=>v.id!==id);
+  renderFleet();
+}
+
+// ============================================================
+// SIMULATION
+// ============================================================
+function runSimulation() {
+  const demand=parseInt(document.getElementById('sim-demand')?.value)||2400;
+  document.getElementById('sim-metrics').innerHTML=`
+    <div class="metric"><div class="metric-val">${demand.toLocaleString()}</div><div class="metric-label">Popyt bazowy/h</div></div>
+    <div class="metric"><div class="metric-val">${Math.round(demand*16).toLocaleString()}</div><div class="metric-label">Pasażerów/dobę (szac.)</div></div>
+    <div class="metric"><div class="metric-val">${Math.round(demand*0.42)}%</div><div class="metric-label">Wypełnienie szczytu</div></div>
+    <div class="metric"><div class="metric-val">98.2%</div><div class="metric-label">Punktualność</div></div>
+  `;
+  const results=state.lines.map(l=>{
+    const vt=state.vehicleTypes.find(t=>t.id===state.vehicles.find(v=>v.lineId===l.id)?.type);
+    const cap=vt?.capacity||100;
+    const load=Math.round(30+Math.random()*60);
+    return `<div style="margin-bottom:10px">
+      <div class="flex al-c gap8" style="margin-bottom:4px">
+        <span style="color:${l.color};font-weight:500">${typeName(l.type)} ${l.name}</span>
+        <span class="badge ${load>80?'err':load>60?'warn':'ok'}">${load}% zapełnienia</span>
+      </div>
+      <div style="background:var(--bg3);border-radius:4px;height:8px;overflow:hidden">
+        <div style="background:${l.color};width:${load}%;height:100%;transition:width .3s"></div>
+      </div>
+      <div class="text-xs mt8">Poj. pojazdu: ${cap} | Szacowani pasażerowie: ${Math.round(cap*load/100)}</div>
+    </div>`;
+  });
+  document.getElementById('sim-results').innerHTML=results.join('');
+  drawSimChart(demand);
+}
+function drawSimChart(demand) {
+  const canvas=document.getElementById('simChart');if(!canvas) return;
+  if(window._simChart) window._simChart.destroy();
+  const hours=Array.from({length:18},(_,i)=>String(i+5).padStart(2,'0')+':00');
+  const datasets=state.lines.map(l=>({
+    label:`${typeName(l.type)} ${l.name}`,
+    data:hours.map((_,i)=>{
+      const peak=(i>=2&&i<=4)||(i>=10&&i<=12);
+      return Math.round((peak?1.8:0.7)*(0.6+Math.random()*0.4)*demand/4/state.lines.length);
+    }),
+    borderColor:l.color,backgroundColor:l.color+'33',fill:true,tension:0.4,pointRadius:2
+  }));
+  window._simChart=new Chart(canvas,{
+    type:'line',data:{labels:hours,datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#9ba3c0',font:{size:10},boxWidth:10}}},
+      scales:{x:{ticks:{color:'#5c647d',font:{size:9}},grid:{color:'#1e2334'}},
+        y:{ticks:{color:'#5c647d',font:{size:9}},grid:{color:'#1e2334'}}}}
+  });
+}
+
+// ============================================================
+// EXPORT
+// ============================================================
+function initExport(){
+  const sel=document.getElementById('exp-line');
+  if(sel) sel.innerHTML=state.lines.map(l=>`<option value="${l.id}">${typeName(l.type)} ${l.name}</option>`).join('');
+  renderAPIEndpoints();
+}
+function renderAPIEndpoints(){
+  const el=document.getElementById('api-endpoints');if(!el) return;
+  const endpoints=[
+    {method:'GET',path:'/api/v1/lines',desc:'Lista linii'},
+    {method:'GET',path:'/api/v1/lines/{id}/timetable',desc:'Rozkład linii'},
+    {method:'GET',path:'/api/v1/stops',desc:'Lista przystanków'},
+    {method:'GET',path:'/api/v1/departures/{stopId}',desc:'Odjazdy z przystanku'},
+    {method:'POST',path:'/api/v1/journey',desc:'Planowanie podróży'},
+  ];
+  el.innerHTML=endpoints.map(e=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span class="badge ok" style="min-width:40px;justify-content:center">${e.method}</span>
+      <code style="font:400 11px 'IBM Plex Mono',monospace;color:var(--blue)">${e.path}</code>
+      <span class="text-xs" style="margin-left:auto">${e.desc}</span>
+    </div>
+  `).join('');
+}
+function doExport(){
+  const lineId=document.getElementById('exp-line')?.value;
+  const fmt=document.getElementById('exp-format')?.value;
+  const line=state.lines.find(l=>l.id===lineId);if(!line) return;
+  let preview='';
+  if(fmt&&fmt.includes('JSON')){
+    const obj={line:{id:line.id,name:line.name,type:line.type},timetable:{weekday:line.ttWeekday.slice(0,3)}};
+    preview=JSON.stringify(obj,null,2);
+  } else if(fmt&&fmt.includes('CSV')){
+    const stops=line.stops.map(id=>state.stops.find(s=>s.id===id)?.name).join(',');
+    preview=`Kurs,${stops}\n`+line.ttWeekday.slice(0,5).map((run,i)=>`${i+1},${run.map(c=>c.dep||c.arr||'').join(',')}`).join('\n');
+  } else if(fmt&&fmt.includes('GTFS')){
+    preview=`# GTFS trips.txt\nroute_id,service_id,trip_id,trip_headsign\n${line.id},weekday,${line.id}_001,${line.name}\n\n# GTFS stop_times.txt\ntrip_id,arrival_time,departure_time,stop_id,stop_sequence\n`;
+    line.ttWeekday[0]?.forEach((cell,i)=>{
+      preview+=`${line.id}_001,${cell.arr||''},${cell.dep||''},${cell.stop},${i+1}\n`;
+    });
+  } else {
+    preview=`Rozkład jazdy — Linia ${line.name} (${typeName(line.type)})\n${'='.repeat(40)}\n`;
+    line.ttWeekday.slice(0,10).forEach((run,i)=>{
+      const t=run[0]?.dep||run[0]?.arr;
+      preview+=`Kurs ${String(i+1).padStart(3,'0')} ${t||'—'}\n`;
+    });
+  }
+  document.getElementById('export-preview').textContent=preview;
+  // simulate download
+  const blob=new Blob([preview],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`STP_${line.name}_${fmt?.split(' ')[0]?.toLowerCase()||'export'}.txt`;
+  a.click();
+}
+
+// ============================================================
+// MODALS
+// ============================================================
+const modalTemplates = {
+  addLine: ()=>`
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title">Dodaj linię</div>
+    <div class="form-group"><label>Numer / nazwa linii</label><input id="m-line-name" value="5"></div>
+    <div class="form-group"><label>Typ</label>
+      <select id="m-line-type"><option value="bus">Autobus</option><option value="tram">Tramwaj</option><option value="metro">Metro</option></select>
+    </div>
+    <div class="form-group"><label>Kolor</label><input type="color" id="m-line-color" value="#4a7fff" style="height:36px;padding:2px"></div>
+    <div class="form-group"><label>Przystanki (ID, oddzielone przecinkami)</label>
+      <input id="m-line-stops" placeholder="s1,s2,s3" value="${state.stops.slice(0,3).map(s=>s.id).join(',')}">
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="submitAddLine()">Dodaj linię</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Anuluj</button>
+    </div>`,
+  addStop: ()=>`
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title">Dodaj przystanek</div>
+    <div class="form-group"><label>Nazwa przystanku</label><input id="m-stop-name"></div>
+    <div class="form-row">
+      <div class="form-group"><label>X</label><input type="number" id="m-stop-x" value="300"></div>
+      <div class="form-group"><label>Y</label><input type="number" id="m-stop-y" value="200"></div>
+    </div>
+    <div class="form-group"><label>Typ</label>
+      <select id="m-stop-type"><option value="stop">Przystanek</option><option value="hub">Węzeł przesiadkowy</option></select>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="submitAddStop()">Dodaj</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Anuluj</button>
+    </div>`,
+  addVehicle: ()=>`
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title">Dodaj pojazd</div>
+    <div class="form-group"><label>Numer boczny / rejestracja</label><input id="m-v-reg" placeholder="STP-XXX"></div>
+    <div class="form-group"><label>Typ pojazdu</label>
+      <select id="m-v-type">${state.vehicleTypes.map(vt=>`<option value="${vt.id}">${vt.name} (poj. ${vt.capacity})</option>`).join('')}</select>
+    </div>
+    <div class="form-group"><label>Przypisz do linii</label>
+      <select id="m-v-line">${state.lines.map(l=>`<option value="${l.id}">${typeName(l.type)} ${l.name}</option>`).join('')}</select>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="submitAddVehicle()">Dodaj</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Anuluj</button>
+    </div>`,
+  genTT: ()=>`
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title">Generator rozkładów jazdy</div>
+    <div class="form-group"><label>Linia</label>
+      <select id="m-gt-line">${state.lines.map(l=>`<option value="${l.id}">${typeName(l.type)} ${l.name}</option>`).join('')}</select>
+    </div>
+    <div class="form-group"><label>Profil dnia</label>
+      <select id="m-gt-profile"><option value="weekday">Dzień roboczy</option><option value="weekend">Weekend</option><option value="night">Noc</option></select>
+    </div>
+    <div class="form-group"><label>Interwał (minuty)</label><input type="number" id="m-gt-interval" value="10" min="1" max="120"></div>
+    <div class="form-group"><label>Czas przejazdu między przystankami (min)</label><input type="number" id="m-gt-stop-time" value="4" min="1" max="30"></div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="submitGenTT()">Generuj ⚡</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Anuluj</button>
+    </div>`,
+  addRun: ()=>`
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title">Dodaj kurs</div>
+    <div class="form-group"><label>Linia</label>
+      <select id="m-run-line">${state.lines.map(l=>`<option value="${l.id}">${typeName(l.type)} ${l.name}</option>`).join('')}</select>
+    </div>
+    <div class="form-group"><label>Godzina odjazdu z pierwszego przystanku</label><input type="time" id="m-run-dep" value="08:00"></div>
+    <div class="form-group"><label>Profil dnia</label>
+      <select id="m-run-profile"><option value="weekday">Dzień roboczy</option><option value="weekend">Weekend</option><option value="night">Noc</option></select>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="submitAddRun()">Dodaj kurs</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Anuluj</button>
+    </div>`,
+};
+function openModal(type, param) {
+  const tpl=modalTemplates[type];if(!tpl) return;
+  document.getElementById('modal-content').innerHTML=tpl(param);
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+function closeModal(e){
+  if(e&&e.target!==document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.add('hidden');
+}
+function submitAddLine(){
+  const name=document.getElementById('m-line-name')?.value?.trim();
+  const type=document.getElementById('m-line-type')?.value;
+  const color=document.getElementById('m-line-color')?.value;
+  const stopsRaw=document.getElementById('m-line-stops')?.value?.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!name) return alert('Podaj nazwę linii');
+  const id='l'+Date.now();
+  const newLine={id,name,type,color,stops:stopsRaw||[],ttWeekday:[],ttWeekend:[],ttNight:[]};
+  newLine.ttWeekday=genDefaultTT(newLine,'weekday');
+  newLine.ttWeekend=genDefaultTT(newLine,'weekend');
+  newLine.ttNight=genDefaultTT(newLine,'night');
+  state.lines.push(newLine);
+  closeModal();renderLinesList();drawNetwork();renderSidebar(state.currentModule);
+}
+function submitAddStop(){
+  const name=document.getElementById('m-stop-name')?.value?.trim();
+  const x=parseFloat(document.getElementById('m-stop-x')?.value)||300;
+  const y=parseFloat(document.getElementById('m-stop-y')?.value)||200;
+  const type=document.getElementById('m-stop-type')?.value;
+  if(!name) return alert('Podaj nazwę');
+  state.stops.push({id:'s'+Date.now(),name,x,y,type});
+  closeModal();renderStopCount();renderStopsList();drawNetwork();
+}
+function submitAddVehicle(){
+  const reg=document.getElementById('m-v-reg')?.value?.trim();
+  const type=document.getElementById('m-v-type')?.value;
+  const lineId=document.getElementById('m-v-line')?.value;
+  if(!reg) return alert('Podaj numer pojazdu');
+  state.vehicles.push({id:'v'+Date.now(),reg,type,lineId,status:'active'});
+  closeModal();renderFleet();
+}
+function submitGenTT(){
+  const lineId=document.getElementById('m-gt-line')?.value;
+  const profile=document.getElementById('m-gt-profile')?.value;
+  const interval=parseInt(document.getElementById('m-gt-interval')?.value)||10;
+  genTimetable(lineId,profile,interval);
+  closeModal();
+}
+function submitAddRun(){
+  const lineId=document.getElementById('m-run-line')?.value;
+  const dep=document.getElementById('m-run-dep')?.value;
+  const profile=document.getElementById('m-run-profile')?.value;
+  const line=state.lines.find(l=>l.id===lineId);if(!line||!dep) return;
+  const key='tt'+profile.charAt(0).toUpperCase()+profile.slice(1);
+  const [h,m]=dep.split(':').map(Number);
+  const base=h*60+m;
+  const stops=line.stops.map(id=>state.stops.find(s=>s.id===id));
+  const run=stops.map((s,i)=>({stop:s?.id,arr:i===0?null:fmt(base+i*4),dep:i===stops.length-1?null:fmt(base+i*4+1)}));
+  line[key].push(run);
+  line[key].sort((a,b)=>{
+    const ta=(a[0]?.dep||a[0]?.arr||'').replace(':','');
+    const tb=(b[0]?.dep||b[0]?.arr||'').replace(':','');
+    return ta.localeCompare(tb);
+  });
+  closeModal();renderTimetable();
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function typeName(t){return t==='bus'?'Autobus':t==='tram'?'Tramwaj':t==='metro'?'Metro':t;}
+
+// ============================================================
+// INIT
+// ============================================================
+renderSidebar('dashboard');
+renderDashboard();
+window.addEventListener('resize',()=>{if(state.currentModule==='network')resizeCanvas();if(state.currentModule==='dashboard')drawGantt();});
+</script>
+</body>
+</html>
