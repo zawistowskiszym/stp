@@ -2845,12 +2845,12 @@ function checkConflicts(candidateTrain) {
 
         // Count how many existing trains already overlap this segment+direction+time
         const overlapKey = co.segKey + '::' + co.dirKey + '::' + Math.round(co.startMin);
-        const overlapCount = (seenPairs.overlapCounts?.[overlapKey] || 0) + 1;
         if (!seenPairs.overlapCounts) seenPairs.overlapCounts = {};
+        const overlapCount = (seenPairs.overlapCounts[overlapKey] || 0) + 1;
         seenPairs.overlapCounts[overlapKey] = overlapCount;
 
-        if (overlapCount > tracksPerDir &&
-            (overlap > 0.1 || (overlap <= 0 && gap < minHeadway * 0.5))) {
+        if (overlapCount >= tracksPerDir &&
+            (overlap > 0.1 || (overlap <= 0 && gap < minHeadway))) {
           const pairKey = [existing.id, co.segKey].join('|');
           if (seenPairs.has(pairKey)) return;
           seenPairs.add(pairKey);
@@ -2859,6 +2859,8 @@ function checkConflicts(candidateTrain) {
           const toSt   = stations.find(s => s.id === co.toId);
           conflicts.push({
             existing,
+            fromId:   co.fromId,
+            toId:     co.toId,
             fromName: fromSt?.name || co.fromId,
             toName:   toSt?.name   || co.toId,
             overlap: Math.round(overlap),
@@ -2999,10 +3001,12 @@ function findDwellSolutions(trainData, conflicts) {
       for (const addMin of [5, 10, 15, 20, 30]) {
         const currentDwell = customDwellTimes[stId] ?? getDwellTime(st);
         const newDwell = currentDwell + addMin;
-        const orig = customDwellTimes[stId];
+        const orig = customDwellTimes[stId]; // may be undefined
         customDwellTimes[stId] = newDwell;
         const remaining = checkConflicts(trainData).length;
-        if (orig !== undefined) customDwellTimes[stId] = orig; else delete customDwellTimes[stId];
+        // Restore state after checking
+        if (orig !== undefined) customDwellTimes[stId] = orig;
+        else delete customDwellTimes[stId];
         if (remaining < conflicts.length) {
           solutions.push({ stationId: stId, stationName: st.name, addMin, newDwell, resolvesAll: remaining === 0 });
           break;
