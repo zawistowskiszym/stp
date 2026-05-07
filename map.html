@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Koleje Królewskie — Mapa Sieci</title>
+  <title>Portal Planowania Przewozów</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -443,6 +443,74 @@
       letter-spacing:2px; text-transform:uppercase; color:var(--amber); }
     #diagrams-scroll { flex:1; overflow:auto; padding:24px 32px; }
 
+    /* ── Analizy ruchu panel ── */
+    #analizy-panel { position:fixed; top:60px; left:0; right:0; bottom:0; z-index:700;
+      background:var(--bg); display:none; flex-direction:column; overflow:hidden; }
+    #analizy-panel.visible { display:flex; }
+    #analizy-toolbar { padding:10px 24px; background:var(--surface);
+      border-bottom:1px solid var(--border); display:flex; align-items:center;
+      gap:16px; flex-shrink:0; flex-wrap:wrap; }
+    #analizy-toolbar h2 { font-family:'DM Mono',monospace; font-size:12px;
+      letter-spacing:2px; text-transform:uppercase; color:var(--amber); margin-right:8px; }
+    #analizy-scroll { flex:1; overflow:auto; padding:28px 36px; }
+    .an-section { margin-bottom:40px; }
+    .an-section-title { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:2.5px;
+      text-transform:uppercase; color:var(--amber); margin-bottom:16px;
+      display:flex; align-items:center; gap:10px; }
+    .an-section-title::before { content:''; width:3px; height:14px; background:var(--amber); border-radius:1px; }
+    .an-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-bottom:24px; }
+    .an-card { background:var(--surface); border:1px solid var(--border); border-radius:2px; padding:16px; }
+    .an-card-label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px;
+      text-transform:uppercase; color:var(--text-faint); margin-bottom:6px; }
+    .an-card-value { font-size:22px; font-weight:600; color:var(--text); line-height:1; }
+    .an-nodata { display:flex; align-items:center; justify-content:center; height:200px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--text-faint); }
+    .an-card-sub { font-family:'DM Mono',monospace; font-size:10px; color:var(--text-dim); margin-top:4px; }
+    .an-table { width:100%; border-collapse:collapse; max-width:1100px; }
+    .an-table thead tr { border-bottom:2px solid var(--amber); }
+    .an-table th { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px;
+      text-transform:uppercase; color:var(--text-faint); padding:8px 14px; text-align:left; }
+    .an-table td { padding:10px 14px; border-bottom:1px solid var(--border);
+      font-size:13px; color:var(--text); }
+    .an-table tbody tr:hover td { background:var(--surface2); }
+    .an-bar-wrap { display:flex; align-items:center; gap:10px; }
+    .an-bar-bg { flex:1; height:8px; background:var(--surface2); border-radius:2px; overflow:hidden; }
+    .an-bar-fill { height:100%; border-radius:2px; transition:width .4s; }
+    .an-rank { font-family:'DM Mono',monospace; font-size:10px; color:var(--text-faint); width:24px; }
+    .an-badge { display:inline-block; padding:2px 8px; border-radius:2px; font-family:'DM Mono',monospace;
+      font-size:9px; letter-spacing:1.5px; text-transform:uppercase; }
+    .an-badge.hub { background:#4a8fd420; color:var(--blue); border:1px solid #4a8fd440; }
+    .an-badge.regional { background:#3daa6e20; color:var(--green); border:1px solid #3daa6e40; }
+    .an-badge.local { background:#8896aa20; color:var(--text-dim); border:1px solid #8896aa40; }
+    .an-chart-wrap { background:var(--surface); border:1px solid var(--border); border-radius:2px; padding:20px 24px; max-width:900px; }
+    .an-chart-bars { display:flex; align-items:flex-end; gap:6px; height:160px; margin-top:12px; }
+    .an-chart-col { display:flex; flex-direction:column; align-items:center; flex:1; }
+    .an-chart-bar { width:100%; border-radius:2px 2px 0 0; transition:height .4s; cursor:pointer; }
+    .an-chart-bar:hover { opacity:.8; }
+    .an-chart-lbl { font-family:'DM Mono',monospace; font-size:8px; letter-spacing:1px;
+      color:var(--text-faint); margin-top:4px; text-align:center; transform:rotate(-30deg);
+      transform-origin:top center; white-space:nowrap; }
+    .an-chart-val { font-family:'DM Mono',monospace; font-size:9px; color:var(--text-dim); margin-bottom:2px; }
+    .an-info-box { background:var(--surface2); border:1px solid var(--border); border-left:3px solid var(--amber);
+      border-radius:2px; padding:14px 18px; max-width:900px; margin-bottom:16px; }
+    .an-info-box p { font-size:13px; color:var(--text-dim); line-height:1.7; }
+    .an-info-box strong { color:var(--text); }
+    .an-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; max-width:900px; }
+    .an-tab { padding:8px 18px; background:transparent; border:none; border-bottom:2px solid transparent;
+      font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase;
+      color:var(--text-faint); cursor:pointer; transition:all .2s; margin-bottom:-1px; }
+    .an-tab:hover { color:var(--text-dim); }
+    .an-tab.active { color:var(--amber); border-bottom-color:var(--amber); }
+    .an-flow-table { width:100%; border-collapse:collapse; max-width:900px; }
+    .an-flow-table th { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px;
+      text-transform:uppercase; color:var(--text-faint); padding:8px 12px; text-align:left;
+      border-bottom:2px solid var(--amber); }
+    .an-flow-table td { padding:9px 12px; border-bottom:1px solid var(--border); font-size:12px; }
+    .an-flow-table tbody tr:hover td { background:var(--surface2); }
+    .an-pair { color:var(--text); font-family:'DM Mono',monospace; font-size:11px; }
+    .an-vol { color:var(--amber); font-family:'DM Mono',monospace; }
+    .an-modal-share { color:var(--green); font-family:'DM Mono',monospace; font-size:11px; }
+
+
     .obieg-table { width:100%; border-collapse:collapse; margin-bottom:32px; }
     .obieg-table caption { font-family:'DM Mono',monospace; font-size:10px;
       letter-spacing:2px; text-transform:uppercase; color:var(--amber);
@@ -854,8 +922,8 @@
   <div class="header-inner">
     <div class="logo-mark"></div>
     <div class="logo-text">
-      Koleje Królewskie
-      <small>Sieć Krajowa · KDP 2025</small>
+      Portal Planowania Przewozów
+      <small>Analityka Transportu Kolejowego</small>
     </div>
     <div class="header-divider"></div>
     <div class="header-meta">Mapa Sieci · Planer Tras</div>
@@ -868,6 +936,7 @@
       <button class="tab-btn" id="tab-timetable" onclick="switchTab('timetable')">Rozkład jazdy</button>
       <button class="tab-btn" id="tab-capacity" onclick="switchTab('capacity')">Przepustowość</button>
       <button class="tab-btn" id="tab-diagrams" onclick="switchTab('diagrams')">Obiegi</button>
+      <button class="tab-btn" id="tab-analizy" onclick="switchTab('analizy')">Analizy ruchu</button>
     </div>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
       <button class="tt-btn" id="sim-start-btn" onclick="startSimulation()" style="border-color:var(--green);color:var(--green)">▶ Symulacja</button>
@@ -985,7 +1054,7 @@ let currentTab = 'map';
 
 function switchTab(tab) {
   currentTab = tab;
-  const panels = ['timetable-panel','capacity-panel','diagrams-panel'];
+  const panels = ['timetable-panel','capacity-panel','diagrams-panel','analizy-panel'];
   panels.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.toggle('visible', id === tab + '-panel');
@@ -3914,8 +3983,668 @@ fetch(GEOJSON_PATH)
   <button onclick="toggleHeatmap()" style="margin-left:8px;background:transparent;border:none;color:var(--text-faint);cursor:pointer;font-size:14px">✕</button>
 </div>
 
-<!-- Print frame -->
-<div id="print-frame"></div>
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     ANALIZY RUCHU — Panel
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div id="analizy-panel">
+  <div id="analizy-toolbar">
+    <h2>Analizy Ruchu</h2>
+    <div style="display:flex;align-items:center;gap:8px">
+      <label style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint)">Widok:</label>
+      <select id="an-view-select" onchange="switchAnView(this.value)" style="padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none">
+        <option value="od">Macierz O/D (więźba ruchu)</option>
+        <option value="potoki">Natężenie na odcinkach</option>
+        <option value="ranking">Ranking węzłów</option>
+        <option value="izochron">Izochron dostępności</option>
+      </select>
+    </div>
+    <div id="an-horizon-wrap" style="display:flex;align-items:center;gap:8px">
+      <label style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint)">Horyzont:</label>
+      <select id="an-horizon" onchange="renderAnalizy()" style="padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none">
+        <option value="2030">2030</option>
+        <option value="2035" selected>2035</option>
+        <option value="2040">2040</option>
+        <option value="2050">2050</option>
+      </select>
+    </div>
+    <div id="an-variant-wrap" style="display:flex;align-items:center;gap:8px">
+      <label style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint)">Wariant:</label>
+      <select id="an-variant" onchange="renderAnalizy()" style="padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none">
+        <option value="W0">W0 – Pesymistyczny (bez inwestycji)</option>
+        <option value="W1" selected>W1 – Bazowy</option>
+        <option value="W2">W2 – Dynamiczny rozwój</option>
+        <option value="W3">W3 – Optymistyczny</option>
+      </select>
+    </div>
+    <div id="an-izochron-wrap" style="display:none;align-items:center;gap:8px">
+      <label style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint)">Hub startowy:</label>
+      <select id="an-hub-select" onchange="renderAnalizy()" style="padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;min-width:160px">
+        <option value="">— wybierz stację —</option>
+      </select>
+    </div>
+    <button onclick="exportAnalizyCSV()" style="padding:6px 14px;background:transparent;border:1px solid var(--border);border-radius:2px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--amber)';this.style.color='var(--amber)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">↓ CSV</button>
+    <button onclick="window.print()" style="margin-left:4px;padding:6px 16px;background:var(--amber);color:#0e1117;border:none;border-radius:2px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer">🖨 Drukuj</button>
+  </div>
+  <div id="analizy-scroll" style="flex:1;overflow:auto;padding:28px 36px"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+//  ANALIZY RUCHU — silnik analityczny PMT-like oparty na żywych danych GeoJSON
+// ══════════════════════════════════════════════════════════════════════════════
+
+/* ─── Dane miast (populacje w tys.) ─────────────────────────────────────────── */
+const AN_CITY_POP = {
+  'Skuszawyjice': 3200, 'Bentach': 1600, 'Bizceń': 1300, 'Helonki': 980,
+  'Utroch': 940, 'Selbert': 840, 'Budziszów': 790, 'Roszeel': 640,
+  'Nota': 640, 'Breb': 620, 'Wraków': 580, 'Llandersa': 440,
+  'Piwniczna': 430, 'Sielanki Mroźne': 410, 'Runion': 410,
+};
+
+/* ─── Mnożniki prognostyczne (PMT) ─────────────────────────────────────────── */
+const AN_MNOZNIK = {
+  '2030':{ W0:1.05, W1:1.22, W2:1.38, W3:1.52 },
+  '2035':{ W0:1.08, W1:1.45, W2:1.72, W3:2.01 },
+  '2040':{ W0:1.10, W1:1.60, W2:1.98, W3:2.40 },
+  '2050':{ W0:1.06, W1:1.72, W2:2.20, W3:2.85 },
+};
+const AN_MODAL = {
+  W0:{ kolej:28, auto:62, bus:10 },
+  W1:{ kolej:42, auto:50, bus:8 },
+  W2:{ kolej:55, auto:38, bus:7 },
+  W3:{ kolej:66, auto:28, bus:6 },
+};
+
+let anView = 'od';
+let anCache = null; // {dijkstraResults, odMatrix, edgeLoads}
+
+/* ─── Pomocnik: pobierz populację stacji ────────────────────────────────────── */
+function anPop(stName) {
+  if (!stName) return 0;
+  // exact match
+  if (AN_CITY_POP[stName]) return AN_CITY_POP[stName];
+  // fuzzy: check if any city name is contained in station name or vice versa
+  for (const [city, pop] of Object.entries(AN_CITY_POP)) {
+    if (stName.toLowerCase().includes(city.toLowerCase()) ||
+        city.toLowerCase().includes(stName.toLowerCase())) return pop;
+  }
+  return 0;
+}
+
+/* ─── Dijkstra (czas przejazdu) od jednej stacji do wszystkich ─────────────── */
+function anDijkstraAll(srcId) {
+  // Uses the main graph + cdist + max speed 160 km/h, no dwell (analytical)
+  const distMap = {}, prevMap = {};
+  Object.keys(graph).forEach(id => distMap[id] = Infinity);
+  distMap[srcId] = 0;
+  const pq = [[0, srcId]];
+  while (pq.length) {
+    pq.sort((a,b) => a[0]-b[0]);
+    const [d, u] = pq.shift();
+    if (d > distMap[u]) continue;
+    for (const edge of (graph[u] || [])) {
+      const spd = Math.min(parseFloat(edge.maxspeed) || 160, 160);
+      const travelMin = (edge.dist / spd) * 60;
+      const nd = d + travelMin;
+      if (nd < distMap[edge.to]) {
+        distMap[edge.to] = nd;
+        prevMap[edge.to] = u;
+        pq.push([nd, edge.to]);
+      }
+    }
+  }
+  return { distMap, prevMap };
+}
+
+/* ─── Model grawitacji: objętość podróży między parą stacji ─────────────────── */
+function anGravity(popA, popB, timeMin) {
+  // T_ij = k * Pa^α * Pb^α / t^β  (PMT-style gravity model)
+  if (timeMin <= 0 || popA <= 0 || popB <= 0) return 0;
+  const k = 0.0018, alpha = 0.88, beta = 1.15;
+  return Math.round(k * Math.pow(popA, alpha) * Math.pow(popB, alpha) / Math.pow(timeMin, beta));
+}
+
+/* ─── Zbuduj pełną macierz O/D i obciążenia krawędzi ───────────────────────── */
+function anBuildMatrix() {
+  if (anCache && anCache.stationsCount === stations.length) return anCache;
+
+  // Stacje z populacją (hubowe)
+  const hubs = stations.filter(s => anPop(s.name) > 0);
+
+  // Dla każdego huba — Dijkstra do wszystkich
+  const dijkResults = {};
+  hubs.forEach(h => { dijkResults[h.id] = anDijkstraAll(h.id); });
+
+  // Macierz O/D: [srcId][dstId] = {vol, volKolej, timeMin}
+  const od = {};
+  const edgeLoad = {}; // edgeKey → load (tys pas/rok)
+
+  hubs.forEach(src => {
+    od[src.id] = {};
+    const { distMap, prevMap } = dijkResults[src.id];
+    hubs.forEach(dst => {
+      if (src.id === dst.id) return;
+      const timeMin = distMap[dst.id];
+      if (!isFinite(timeMin)) return;
+      const vol = anGravity(anPop(src.name), anPop(dst.name), timeMin);
+      od[src.id][dst.id] = { vol, timeMin };
+
+      // Attribute volume to edges on the shortest path
+      // Trace back path dst→src
+      let cur = dst.id;
+      while (prevMap[cur] && cur !== src.id) {
+        const prev = prevMap[cur];
+        const key = [prev, cur].sort().join('↔');
+        edgeLoad[key] = (edgeLoad[key] || 0) + vol;
+        cur = prev;
+      }
+    });
+  });
+
+  anCache = { dijkResults, od, edgeLoad, hubs, stationsCount: stations.length };
+  return anCache;
+}
+
+/* ─── Widok: Macierz O/D ─────────────────────────────────────────────────── */
+function renderAnOD() {
+  if (!stations || stations.length === 0)
+    return '<div class="an-nodata">⚠ Wczytaj plik railway.geojson aby korzystać z analiz ruchu</div>';
+
+  const horizon  = document.getElementById('an-horizon').value;
+  const wariant  = document.getElementById('an-variant').value;
+  const mnoznik  = AN_MNOZNIK[horizon][wariant];
+  const modal    = AN_MODAL[wariant];
+  const { od, hubs } = anBuildMatrix();
+
+  // Oblicz sumy wierszowe dla rankingu
+  const rowSums = {};
+  hubs.forEach(src => {
+    let sum = 0;
+    hubs.forEach(dst => { if (od[src.id]?.[dst.id]) sum += od[src.id][dst.id].vol; });
+    rowSums[src.id] = sum;
+  });
+  const sortedHubs = [...hubs].sort((a,b) => (rowSums[b.id]||0) - (rowSums[a.id]||0));
+  const top = sortedHubs.slice(0, 12); // top 12 for matrix display
+
+  // Znajdź max vol dla skalowania kolorów
+  let maxVol = 0;
+  top.forEach(src => top.forEach(dst => {
+    if (od[src.id]?.[dst.id]) maxVol = Math.max(maxVol, od[src.id][dst.id].vol);
+  }));
+
+  // Generuj komórki macierzy
+  const headerCells = top.map(h =>
+    `<th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;
+    text-transform:uppercase;color:var(--text-faint);padding:6px 10px;
+    text-align:center;border-bottom:2px solid var(--amber);white-space:nowrap;
+    max-width:80px;overflow:hidden;text-overflow:ellipsis" title="${h.name}">
+    ${h.name.length > 10 ? h.name.slice(0,9)+'…' : h.name}</th>`).join('');
+
+  const rows = top.map(src => {
+    const pop = anPop(src.name);
+    const cells = top.map(dst => {
+      if (src.id === dst.id)
+        return '<td style="background:var(--surface2);border:1px solid var(--border)"></td>';
+      const pair = od[src.id]?.[dst.id];
+      if (!pair)
+        return '<td style="border:1px solid var(--border);color:var(--text-faint);font-family:\'DM Mono\',monospace;font-size:10px;text-align:center">—</td>';
+      const v = Math.round(pair.vol * mnoznik * modal.kolej / 100);
+      const t = Math.round(pair.timeMin);
+      const intensity = Math.min(1, pair.vol / maxVol);
+      const r = Math.round(40 + intensity * 60);
+      const g = Math.round(30 + intensity * 50);
+      const b = Math.round(10);
+      const bgAlpha = (intensity * 0.55).toFixed(2);
+      return `<td title="${src.name}→${dst.name}: ${v} tys. pas/rok, ${t} min"
+        style="border:1px solid var(--border);
+        background:rgba(${r*3},${Math.round(g*1.5)},${b},${bgAlpha});
+        font-family:'DM Mono',monospace;font-size:11px;text-align:right;
+        padding:5px 10px;color:var(--text);white-space:nowrap">
+        <div style="font-size:11px;font-weight:600">${v >= 1000 ? (v/1000).toFixed(1)+'k' : v}</div>
+        <div style="font-size:9px;color:var(--text-faint)">${t}min</div>
+      </td>`;
+    }).join('');
+    return `<tr>
+      <td style="border:1px solid var(--border);padding:5px 10px;white-space:nowrap;
+        font-size:12px;font-weight:600;color:var(--text);border-left:3px solid var(--amber)">
+        ${src.name}
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-faint);font-weight:400">${pop ? pop+'k' : ''}</div>
+      </td>
+      ${cells}
+    </tr>`;
+  }).join('');
+
+  // Karty sumaryczne
+  let totalODvol = 0;
+  hubs.forEach(src => hubs.forEach(dst => {
+    if (od[src.id]?.[dst.id]) totalODvol += od[src.id][dst.id].vol;
+  }));
+  const totalKolej = Math.round(totalODvol * mnoznik * modal.kolej / 100);
+  const avgTime = (() => {
+    let sum = 0, cnt = 0;
+    hubs.forEach(src => hubs.forEach(dst => {
+      if (od[src.id]?.[dst.id]) { sum += od[src.id][dst.id].timeMin; cnt++; }
+    }));
+    return cnt ? Math.round(sum/cnt) : 0;
+  })();
+
+  return `
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px">
+    <div class="an-card">
+      <div class="an-card-label">Węzły w modelu</div>
+      <div class="an-card-value">${hubs.length}</div>
+      <div class="an-card-sub">stacje z przypisaną populacją</div>
+    </div>
+    <div class="an-card">
+      <div class="an-card-label">Łączny potok kolejowy</div>
+      <div class="an-card-value">${Math.round(totalKolej/1000)} mln</div>
+      <div class="an-card-sub">pas./rok · ${horizon} · ${wariant} · kolej ${modal.kolej}%</div>
+    </div>
+    <div class="an-card">
+      <div class="an-card-label">Śr. czas przejazdu (sieć)</div>
+      <div class="an-card-value">${avgTime} min</div>
+      <div class="an-card-sub">między węzłami sieci (bez postojów)</div>
+    </div>
+    <div class="an-card" style="border-color:var(--amber)">
+      <div class="an-card-label">Mnożnik prognostyczny</div>
+      <div class="an-card-value" style="color:var(--amber)">×${mnoznik.toFixed(2)}</div>
+      <div class="an-card-sub">${horizon} · wariant ${wariant}</div>
+    </div>
+  </div>
+  <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--amber);padding:10px 16px;margin-bottom:20px;border-radius:2px;max-width:960px">
+    <p style="font-size:12px;color:var(--text-dim);line-height:1.7">
+      <strong style="color:var(--text)">Macierz O/D (więźba ruchu)</strong> — wartości obliczone
+      modelem grawitacji na podstawie rzeczywistych czasów przejazdu z grafu sieci (Dijkstra).
+      Komórka: <span style="color:var(--amber)">potok kolejowy [tys. pas./rok]</span> / czas przejazdu [min].
+      Intensywność koloru = natężenie ruchu. Wyświetlane top ${top.length} węzłów wg łącznego potoku.
+    </p>
+  </div>
+  <div style="overflow-x:auto;max-width:100%">
+    <table style="border-collapse:collapse;font-size:12px">
+      <thead><tr>
+        <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;
+          color:var(--text-faint);padding:6px 10px;border-bottom:2px solid var(--amber);text-align:left">Węzeł →</th>
+        ${headerCells}
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+/* ─── Widok: Obciążenie odcinków ─────────────────────────────────────────── */
+function renderAnPotoki() {
+  if (!stations || stations.length === 0)
+    return '<div class="an-nodata">⚠ Wczytaj plik railway.geojson</div>';
+
+  const horizon = document.getElementById('an-horizon').value;
+  const wariant = document.getElementById('an-variant').value;
+  const mnoznik = AN_MNOZNIK[horizon][wariant];
+  const modal   = AN_MODAL[wariant];
+  const { edgeLoad } = anBuildMatrix();
+
+  // Buduj listę krawędzi z nazwami stacji
+  const edgeList = Object.entries(edgeLoad).map(([key, vol]) => {
+    const [a, b] = key.split('↔');
+    const stA = stations.find(s => s.id === a);
+    const stB = stations.find(s => s.id === b);
+    if (!stA || !stB) return null;
+    // Find edge data for speed/distance
+    const edgeData = (graph[a]||[]).find(e => e.to === b) || (graph[b]||[]).find(e => e.to === a);
+    const dist = edgeData ? Math.round(edgeData.dist) : null;
+    const maxspeed = edgeData ? (parseFloat(edgeData.maxspeed)||160) : 160;
+    const tracks = edgeData ? (edgeData.tracks || 2) : 2;
+    const volKolej = Math.round(vol * mnoznik * modal.kolej / 100);
+    // Capacity approx: tracks * 20 pociągów/h * 18h * 500 pas = tracks * 180000 pas/rok
+    const capYear = tracks * 20 * 18 * 500;
+    const utilPct = Math.round(volKolej / capYear * 100);
+    return { nameA: stA.name, nameB: stB.name, vol: Math.round(vol*mnoznik), volKolej, dist, maxspeed, tracks, utilPct };
+  }).filter(Boolean).sort((a,b) => b.volKolej - a.volKolej);
+
+  const maxVol = edgeList[0]?.volKolej || 1;
+
+  const rows = edgeList.slice(0, 40).map((e, i) => {
+    const pct = (e.volKolej / maxVol * 100).toFixed(0);
+    const utilColor = e.utilPct > 85 ? 'var(--red)' : e.utilPct > 60 ? 'var(--amber)' : 'var(--green)';
+    const volFmt = v => v >= 1000 ? (v/1000).toFixed(1)+'k' : v;
+    return `<tr>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:10px;color:var(--text-faint)">${i+1}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text);white-space:nowrap">
+        <strong>${e.nameA}</strong> ↔ <strong>${e.nameB}</strong>
+      </td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">${e.dist ? e.dist+' km' : '—'}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">${e.maxspeed} km/h · ${e.tracks}t</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;color:var(--text-dim)">${volFmt(e.vol)}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="flex:1;height:8px;background:var(--surface2);border-radius:2px;min-width:80px">
+            <div style="width:${pct}%;height:100%;background:var(--amber);border-radius:2px"></div>
+          </div>
+          <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--amber);min-width:40px">${volFmt(e.volKolej)}</span>
+        </div>
+      </td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;color:${utilColor}">${e.utilPct}%</td>
+    </tr>`;
+  }).join('');
+
+  const overloaded = edgeList.filter(e => e.utilPct > 85).length;
+  const totalLoad  = edgeList.reduce((s,e)=>s+e.volKolej,0);
+
+  return `
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px">
+    <div class="an-card"><div class="an-card-label">Odcinki w modelu</div>
+      <div class="an-card-value">${edgeList.length}</div>
+      <div class="an-card-sub">par stacji z obliczonym ruchem</div></div>
+    <div class="an-card"><div class="an-card-label">Łączny potok kolejowy (sieć)</div>
+      <div class="an-card-value">${Math.round(totalLoad/1000)} mln</div>
+      <div class="an-card-sub">pas./rok · ${horizon} · ${wariant}</div></div>
+    <div class="an-card" style="border-color:var(--red)"><div class="an-card-label">Przeciążone odcinki (&gt;85%)</div>
+      <div class="an-card-value" style="color:var(--red)">${overloaded}</div>
+      <div class="an-card-sub">wymagają interwencji inwestycyjnej</div></div>
+    <div class="an-card" style="border-color:var(--amber)"><div class="an-card-label">Najobciążniejszy odcinek</div>
+      <div class="an-card-value" style="font-size:14px;color:var(--amber)">${edgeList[0]?.nameA||'—'} ↔ ${edgeList[0]?.nameB||'—'}</div>
+      <div class="an-card-sub">${edgeList[0]?volFmt(edgeList[0].volKolej)+' tys. pas./rok':''}</div></div>
+  </div>
+  <table style="width:100%;border-collapse:collapse;max-width:1100px">
+    <thead><tr style="border-bottom:2px solid var(--amber)">
+      <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px;text-align:left">#</th>
+      <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px;text-align:left">Odcinek</th>
+      <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px;text-align:left">Dł.</th>
+      <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px;text-align:left">Parametry</th>
+      <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px;text-align:left">Wszystkie środki</th>
+      <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px;text-align:left">Potok kolejowy (tys./rok)</th>
+      <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px;text-align:left">Wykorz. przepust.</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+  function volFmt(v) { return v >= 1000 ? (v/1000).toFixed(1)+'k' : v; }
+}
+
+/* ─── Widok: Ranking węzłów ─────────────────────────────────────────────── */
+function renderAnRanking() {
+  if (!stations || stations.length === 0)
+    return '<div class="an-nodata">⚠ Wczytaj plik railway.geojson</div>';
+
+  const horizon = document.getElementById('an-horizon').value;
+  const wariant = document.getElementById('an-variant').value;
+  const mnoznik = AN_MNOZNIK[horizon][wariant];
+  const modal   = AN_MODAL[wariant];
+  const { od, hubs, dijkResults } = anBuildMatrix();
+
+  // Metryki węzłów
+  const nodeMetrics = hubs.map(src => {
+    let totalVol = 0, totalVolKolej = 0, reachCount = 0, sumTime = 0, minTime = Infinity;
+    const { distMap } = dijkResults[src.id];
+    hubs.forEach(dst => {
+      if (dst.id === src.id) return;
+      const pair = od[src.id]?.[dst.id];
+      if (!pair) return;
+      totalVol += pair.vol;
+      totalVolKolej += Math.round(pair.vol * modal.kolej / 100);
+      reachCount++;
+      sumTime += pair.timeMin;
+      if (pair.timeMin < minTime) minTime = pair.timeMin;
+    });
+    // Centrality: how many stations reachable within 180 min
+    const reach180 = Object.values(distMap).filter(t => isFinite(t) && t <= 180).length;
+    // Degree: number of direct edges
+    const degree = (graph[src.id]||[]).length;
+    const pop = anPop(src.name);
+    const avgTime = reachCount > 0 ? Math.round(sumTime / reachCount) : 999;
+    const progVol = Math.round(totalVolKolej * mnoznik);
+    return { ...src, pop, totalVol: Math.round(totalVol*mnoznik), progVol, reachCount, avgTime, minTime: Math.round(minTime), reach180, degree };
+  }).sort((a,b) => b.progVol - a.progVol);
+
+  const maxVol = nodeMetrics[0]?.progVol || 1;
+  const rows = nodeMetrics.map((n, i) => {
+    const pct = (n.progVol / maxVol * 100).toFixed(0);
+    const cat = n.pop >= 1000 ? { label:'Hub krajowy', color:'var(--amber)' }
+              : n.pop >= 600  ? { label:'Węzeł reg.', color:'var(--blue)' }
+              : n.pop >= 300  ? { label:'Węzeł lok.', color:'var(--green)' }
+              : { label:'Stacja', color:'var(--text-faint)' };
+    return `<tr>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:10px;color:var(--text-faint)">${i+1}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;color:var(--text)">${n.name}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">${n.pop ? n.pop.toLocaleString('pl')+' tys.' : '—'}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:100px;height:8px;background:var(--surface2);border-radius:2px">
+            <div style="width:${pct}%;height:100%;background:${cat.color};border-radius:2px"></div>
+          </div>
+          <span style="font-family:'DM Mono',monospace;font-size:11px;color:${cat.color}">${n.progVol >= 1000 ? (n.progVol/1000).toFixed(1)+'k' : n.progVol}</span>
+        </div>
+      </td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">${n.reach180}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">${n.avgTime} min</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">${n.degree}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--border)"><span style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:2px 8px;border-radius:2px;background:${cat.color}20;color:${cat.color};border:1px solid ${cat.color}40">${cat.label}</span></td>
+    </tr>`;
+  }).join('');
+
+  return `
+  <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--amber);padding:10px 16px;margin-bottom:20px;border-radius:2px;max-width:960px">
+    <p style="font-size:12px;color:var(--text-dim);line-height:1.7">
+      <strong style="color:var(--text)">Ranking węzłów</strong> — węzły posortowane według <span style="color:var(--amber)">prognozowanego łącznego potoku kolejowego</span>
+      (tys. pas./rok, suma po wszystkich relacjach wychodzących). Metryki obliczone na bazie grafu sieci z GeoJSON.
+      Zasięg 180 min = liczba stacji osiągalnych w czasie ≤ 3h bez postojów.
+    </p>
+  </div>
+  <table style="width:100%;border-collapse:collapse;max-width:1100px">
+    <thead><tr style="border-bottom:2px solid var(--amber)">
+      <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px;text-align:left">#</th>
+      <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px;text-align:left">Węzeł</th>
+      <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px;text-align:left">Populacja</th>
+      <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px;text-align:left">Potok kol. (tys./rok) ${horizon}·${wariant}</th>
+      <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px;text-align:left">Zasięg 180min</th>
+      <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px;text-align:left">Śr. czas przej.</th>
+      <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px;text-align:left">Stopień</th>
+      <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px;text-align:left">Kategoria</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+/* ─── Widok: Izochron dostępności ───────────────────────────────────────── */
+function renderAnIzochron() {
+  if (!stations || stations.length === 0)
+    return '<div class="an-nodata">⚠ Wczytaj plik railway.geojson</div>';
+
+  const hubSel = document.getElementById('an-hub-select').value;
+  if (!hubSel) return `<div class="an-nodata">← Wybierz stację startową z listy w pasku narzędzi</div>`;
+
+  const src = stations.find(s => s.id === hubSel);
+  if (!src) return '<div class="an-nodata">Nie znaleziono stacji</div>';
+
+  const horizon = document.getElementById('an-horizon').value;
+  const wariant = document.getElementById('an-variant').value;
+  const mnoznik = AN_MNOZNIK[horizon][wariant];
+  const modal   = AN_MODAL[wariant];
+
+  const { distMap } = anDijkstraAll(src.id);
+
+  // Przedziały czasowe
+  const bands = [
+    { max:30,  label:'do 30 min',    color:'#3daa6e', desc:'Strefa aglomeracyjna' },
+    { max:60,  label:'30–60 min',    color:'#4a8fd4', desc:'Strefa regionalna' },
+    { max:120, label:'1–2 godz.',    color:'#e8a945', desc:'Strefa międzyregionalna' },
+    { max:180, label:'2–3 godz.',    color:'#d94f3d', desc:'Strefa dalekobieżna' },
+    { max:Infinity, label:'> 3 godz.', color:'#5a6a80', desc:'Obrzeża zasięgu' },
+  ];
+
+  const bandStations = bands.map(b => ({ ...b, stations: [] }));
+  stations.forEach(st => {
+    if (st.id === src.id) return;
+    const t = distMap[st.id];
+    if (!isFinite(t)) return;
+    for (const b of bandStations) {
+      if (t <= b.max) { b.stations.push({ ...st, timeMin: Math.round(t) }); break; }
+    }
+  });
+  bandStations.forEach(b => b.stations.sort((a,z) => a.timeMin - z.timeMin));
+
+  const totalReach = bandStations.reduce((s,b)=>s+b.stations.length,0);
+  const within2h = bandStations.slice(0,3).reduce((s,b)=>s+b.stations.length,0);
+
+  const sections = bandStations.map(b => {
+    if (!b.stations.length) return '';
+    const rows = b.stations.map(st => {
+      const pop = anPop(st.name);
+      const pair = (() => {
+        const hubs = stations.filter(s => anPop(s.name) > 0);
+        const srcHub = hubs.find(h => h.id === src.id);
+        const dstHub = hubs.find(h => h.id === st.id);
+        if (!srcHub || !dstHub) return null;
+        const m = anBuildMatrix();
+        return m.od[src.id]?.[st.id];
+      })();
+      const vol = pair ? Math.round(pair.vol * mnoznik * modal.kolej / 100) : null;
+      return `<tr>
+        <td style="padding:7px 12px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text)">${st.name}</td>
+        <td style="padding:7px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">${pop ? pop.toLocaleString('pl')+' tys.' : '—'}</td>
+        <td style="padding:7px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:${b.color}">${st.timeMin} min</td>
+        <td style="padding:7px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;color:var(--amber)">${vol !== null ? (vol>=1000?(vol/1000).toFixed(1)+'k':vol)+' tys.' : '—'}</td>
+      </tr>`;
+    }).join('');
+    return `<div style="margin-bottom:24px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:12px;height:12px;border-radius:50%;background:${b.color};flex-shrink:0"></div>
+        <span style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${b.color}">${b.label}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-faint)">— ${b.desc} · ${b.stations.length} stacji</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;max-width:700px">
+        <thead><tr style="border-bottom:1px solid var(--border)">
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);padding:6px 12px;text-align:left">Stacja</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);padding:6px 12px;text-align:left">Populacja</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);padding:6px 12px;text-align:left">Czas przejazdu</th>
+          <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);padding:6px 12px;text-align:left">Potok kol. ${horizon}·${wariant}</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  return `
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:24px">
+    <div class="an-card" style="border-color:var(--amber)">
+      <div class="an-card-label">Hub startowy</div>
+      <div class="an-card-value" style="font-size:16px;color:var(--amber)">${src.name}</div>
+      <div class="an-card-sub">${anPop(src.name) ? anPop(src.name).toLocaleString('pl')+' tys. mieszkańców' : 'stacja'}</div>
+    </div>
+    <div class="an-card"><div class="an-card-label">Stacje w zasięgu</div>
+      <div class="an-card-value">${totalReach}</div>
+      <div class="an-card-sub">osiągalnych z grafu sieci</div></div>
+    <div class="an-card"><div class="an-card-label">W zasięgu 2h</div>
+      <div class="an-card-value">${within2h}</div>
+      <div class="an-card-sub">stacji w czasie ≤ 120 min</div></div>
+  </div>
+  <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--amber);padding:10px 16px;margin-bottom:24px;border-radius:2px;max-width:700px">
+    <p style="font-size:12px;color:var(--text-dim);line-height:1.7">
+      Izochron dostępności kolejowej ze stacji <strong style="color:var(--text)">${src.name}</strong>.
+      Czasy obliczone algorytmem Dijkstry na grafie sieci (prędkość maks. 160 km/h, bez postojów handlowych).
+      Wariant <strong>${wariant}</strong>, horyzont <strong>${horizon}</strong>.
+    </p>
+  </div>
+  ${sections}`;
+}
+
+/* ─── Dispatcher ─────────────────────────────────────────────────────────── */
+function switchAnView(v) {
+  anView = v;
+  const izoWrap = document.getElementById('an-izochron-wrap');
+  if (izoWrap) izoWrap.style.display = v === 'izochron' ? 'flex' : 'none';
+  renderAnalizy();
+}
+
+function renderAnalizy() {
+  const scroll = document.getElementById('analizy-scroll');
+  if (!scroll) return;
+  const loading = `<div style="display:flex;align-items:center;justify-content:center;height:200px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint)">
+    <div class="status-dot" style="margin-right:10px"></div>Obliczanie modelu…</div>`;
+  scroll.innerHTML = loading;
+  // Defer to allow repaint
+  setTimeout(() => {
+    try {
+      if (anView === 'od')       scroll.innerHTML = renderAnOD();
+      else if (anView === 'potoki')   scroll.innerHTML = renderAnPotoki();
+      else if (anView === 'ranking')  scroll.innerHTML = renderAnRanking();
+      else if (anView === 'izochron') scroll.innerHTML = renderAnIzochron();
+    } catch(e) {
+      scroll.innerHTML = `<div class="an-nodata">Błąd: ${e.message}</div>`;
+      console.error(e);
+    }
+  }, 30);
+}
+
+/* ─── CSV export ─────────────────────────────────────────────────────────── */
+function exportAnalizyCSV() {
+  if (!stations || stations.length === 0) return;
+  const horizon = document.getElementById('an-horizon').value;
+  const wariant = document.getElementById('an-variant').value;
+  const mnoznik = AN_MNOZNIK[horizon][wariant];
+  const modal   = AN_MODAL[wariant];
+  const { od, hubs } = anBuildMatrix();
+
+  let csv = 'Źródło;Cel;Czas_min;Potok_ogólny_tys;Potok_kolejowy_tys\n';
+  hubs.forEach(src => {
+    hubs.forEach(dst => {
+      if (src.id === dst.id) return;
+      const pair = od[src.id]?.[dst.id];
+      if (!pair) return;
+      const vol = Math.round(pair.vol * mnoznik);
+      const volK = Math.round(vol * modal.kolej / 100);
+      csv += `${src.name};${dst.name};${Math.round(pair.timeMin)};${vol};${volK}\n`;
+    });
+  });
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `macierz_OD_${horizon}_${wariant}.csv`;
+  a.click();
+}
+
+/* ─── Inicjalizacja ──────────────────────────────────────────────────────── */
+function anPopulateHubSelect() {
+  const sel = document.getElementById('an-hub-select');
+  if (!sel || !stations || stations.length === 0) return;
+  sel.innerHTML = '<option value="">— wybierz stację —</option>';
+  const sorted = [...stations].sort((a,b) => {
+    const pa = anPop(a.name), pb = anPop(b.name);
+    if (pa !== pb) return pb - pa;
+    return a.name.localeCompare(b.name);
+  });
+  sorted.forEach(st => {
+    const opt = document.createElement('option');
+    opt.value = st.id;
+    const pop = anPop(st.name);
+    opt.textContent = st.name + (pop ? ` (${pop}k)` : '');
+    sel.appendChild(opt);
+  });
+}
+
+// Hook: render when tab becomes visible, populate hub select after graph loads
+document.addEventListener('DOMContentLoaded', () => {
+  const origST = window.switchTab;
+  window.switchTab = function(tab) {
+    origST(tab);
+    if (tab === 'analizy') {
+      anPopulateHubSelect();
+      setTimeout(() => {
+        const scroll = document.getElementById('analizy-scroll');
+        if (scroll && scroll.innerHTML.trim() === '') renderAnalizy();
+      }, 50);
+    }
+  };
+  // Also hook into buildGraph completion
+  const origBG = window.buildGraph;
+  if (origBG) {
+    window.buildGraph = function(data) {
+      origBG(data);
+      anPopulateHubSelect();
+    };
+  }
+});
+</script>
+
+
 
 <!-- Sidebar overlay -->
 <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
