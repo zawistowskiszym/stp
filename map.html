@@ -789,6 +789,7 @@
     .dwell-item { display:flex; align-items:center; gap:8px; padding:7px 14px;
       border-bottom:1px solid var(--border); }
     .dwell-item:last-child { border-bottom:none; }
+    .dwell-item.dwell-passthrough { opacity:.45; }
     .dwell-name { flex:1; font-size:12px; color:var(--text-dim);
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .dwell-input { width:52px; padding:4px 6px; background:var(--bg);
@@ -1579,6 +1580,9 @@ function findRoute() {
   currentRouteResult = { ...res, totalKm };
   document.getElementById('save-btn').disabled = false;
   rd.classList.add('show');
+  // Refresh dwell panel if open (it shows only route stations)
+  const dp = document.getElementById('dwell-panel');
+  if (dp && dp.classList.contains('visible')) renderDwellList();
 }
 
 function clearRoute() {
@@ -1599,6 +1603,7 @@ function clearRoute() {
   document.getElementById('train-date').value='';
   currentRouteResult=null;
   activeTrainId=null;
+  customDwellTimes={};
   highlightActiveCard();
   highlight();
 }
@@ -1711,6 +1716,7 @@ function saveRoute() {
     via: viaStations.filter(Boolean).map(s => s.id),
     passThroughList: [...passThroughSet],
     manualOverrides: {...manualOverrides},
+    dwellTimes: {...customDwellTimes},
     path: currentRouteResult.path.map(p => p.id),
     totalMinutes: Math.round(currentRouteResult.total),
     totalKm: currentRouteResult.totalKm,
@@ -1785,6 +1791,7 @@ function loadTrain(id) {
   // Restore overrides
   passThroughSet = new Set(train.passThroughList || []);
   manualOverrides = train.manualOverrides || {};
+  customDwellTimes = train.dwellTimes ? {...train.dwellTimes} : {};
 
   document.getElementById('find-btn').disabled = false;
   highlightActiveCard();
@@ -1903,18 +1910,31 @@ function importTrains(e) {
 }
 
 // ── DWELL TIME EDITOR ────────────────────────────────────────────────────────
-const DWELL_STORAGE_KEY = 'kk_dwell_times_v1';
-let customDwellTimes = {}; // stationId → minutes
+// Per-train dwell times: stored inside each train object as train.dwellTimes = {stationId: minutes}
+// Active dwell times for the train currently being edited:
+let customDwellTimes = {}; // stationId → minutes  (loaded from active train, NOT global)
 
 function loadDwellTimes() {
+  // No-op: dwell times now live in the train object, loaded via loadTrain()
+  // Keep for backwards compat — migrates any old global storage on first run
   try {
-    const raw = localStorage.getItem(DWELL_STORAGE_KEY);
-    customDwellTimes = raw ? JSON.parse(raw) : {};
-  } catch(e) { customDwellTimes = {}; }
+    const raw = localStorage.getItem('kk_dwell_times_v1');
+    if (raw) {
+      // migrate: store as a "global default" base — only used if no train is active
+      customDwellTimes = JSON.parse(raw);
+      localStorage.removeItem('kk_dwell_times_v1');
+    }
+  } catch(e) {}
 }
 
 function saveDwellTimes() {
-  localStorage.setItem(DWELL_STORAGE_KEY, JSON.stringify(customDwellTimes));
+  // Persist into the active train object in savedTrains
+  if (!activeTrainId) return;
+  const idx = savedTrains.findIndex(t => t.id === activeTrainId);
+  if (idx !== -1) {
+    savedTrains[idx].dwellTimes = { ...customDwellTimes };
+    persistTrains();
+  }
 }
 
 function getDwellTime(st) {
@@ -1931,23 +1951,61 @@ function toggleDwellPanel() {
 
 function renderDwellList() {
   const list = document.getElementById('dwell-list');
-  if (!stations.length) { list.innerHTML = '<div style="padding:12px 14px;font-size:12px;color:var(--text-faint)">Wczytaj GeoJSON najpierw.</div>'; return; }
-  const sorted = [...stations].sort((a,b) => {
-    // Main stations first, then alphabetical
-    const aMain = a.props?.railway === 'station' ? 0 : 1;
-    const bMain = b.props?.railway === 'station' ? 0 : 1;
-    return aMain - bMain || a.name.localeCompare(b.name, 'pl');
-  });
-  list.innerHTML = sorted.map(st => {
+  if (!stations.length) {
+    list.innerHTML = '<div style="padding:12px 14px;font-size:12px;color:var(--text-faint)">Wczytaj GeoJSON najpierw.</div>';
+    return;
+  }
+
+  // Header: show which train we're editing (or warn if none)
+  const headerEl = document.getElementById('dwell-train-label');
+  if (headerEl) {
+    if (activeTrainId) {
+      const t = savedTrains.find(t => t.id === activeTrainId);
+      headerEl.textContent = t ? `Pociąg ${t.number}${t.name ? ' · ' + t.name : ''}` : '';
+      headerEl.style.color = 'var(--amber)';
+    } else {
+      headerEl.textContent = 'Brak aktywnego pociągu — zaplanuj trasę';
+      headerEl.style.color = 'var(--text-faint)';
+    }
+  }
+
+  // Show only stations on the current route path (if route exists), otherwise all stations
+  let stationsToShow;
+  if (currentRouteResult && currentRouteResult.path && currentRouteResult.path.length > 0) {
+    const pathIds = new Set(currentRouteResult.path.map(p => p.id));
+    // Get intermediate stops only (not origin/dest) — in route order
+    stationsToShow = currentRouteResult.path
+      .slice(1, -1)
+      .map(p => stations.find(s => s.id === p.id))
+      .filter(Boolean);
+  } else {
+    // No active route: show all stations sorted
+    stationsToShow = [...stations].sort((a, b) => {
+      const aMain = a.props?.railway === 'station' ? 0 : 1;
+      const bMain = b.props?.railway === 'station' ? 0 : 1;
+      return aMain - bMain || a.name.localeCompare(b.name, 'pl');
+    });
+  }
+
+  if (!stationsToShow.length) {
+    list.innerHTML = '<div style="padding:12px 14px;font-size:12px;color:var(--text-faint)">Brak stacji pośrednich na trasie.</div>';
+    return;
+  }
+
+  list.innerHTML = stationsToShow.map(st => {
     const defaultVal = st.props?.railway === 'halt' ? DWELL_HALT : DWELL_MAIN;
     const val = customDwellTimes[st.id] !== undefined ? customDwellTimes[st.id] : defaultVal;
     const isCustom = customDwellTimes[st.id] !== undefined;
+    const isPT = passThroughSet.has(st.id);
     const typeLabel = st.props?.railway === 'station' ? '●' : '○';
-    return `<div class="dwell-item">
-      <span class="dwell-name" title="${st.name}" style="${isCustom?'color:var(--amber)':''}">${typeLabel} ${st.name}</span>
-      <input class="dwell-input" type="number" min="0" max="60" step="0.5"
+    return `<div class="dwell-item${isPT ? ' dwell-passthrough' : ''}">
+      <span class="dwell-name" title="${st.name}" style="${isCustom ? 'color:var(--amber)' : ''}">
+        ${typeLabel} ${st.name}${isPT ? ' <span style="font-size:9px;color:var(--text-faint)">(przejeżdża)</span>' : ''}
+      </span>
+      <input class="dwell-input" type="number" min="0" max="120" step="0.5"
         value="${val}" data-sid="${encodeURIComponent(st.id)}"
-        onchange="onDwellChange(this)" style="${isCustom?'border-color:var(--amber)':''}">
+        onchange="onDwellChange(this)"
+        ${isPT ? 'disabled style="opacity:.4"' : `style="${isCustom ? 'border-color:var(--amber)' : ''}"`}>
       <span class="dwell-unit">min</span>
     </div>`;
   }).join('');
@@ -1972,7 +2030,7 @@ function onDwellChange(input) {
 }
 
 function resetDwellTimes() {
-  if (!confirm('Zresetować wszystkie niestandardowe czasy postoju?')) return;
+  if (!confirm('Zresetować czasy postoju dla tego pociągu?')) return;
   customDwellTimes = {};
   saveDwellTimes();
   renderDwellList();
@@ -2984,8 +3042,79 @@ function applyAlternativeRoute(candidateStr) {
   try {
     const candidate = JSON.parse(candidateStr);
     closeConflictModal();
+
+    // Restore editor state from the candidate train
+    const originSt = stations.find(s => s.id === candidate.origin);
+    const destSt   = stations.find(s => s.id === candidate.dest);
+    if (!originSt || !destSt) { alert('Nie można wczytać trasy — stacje nie istnieją.'); return; }
+
+    origin = originSt;
+    dest   = destSt;
+    document.getElementById('btn-origin').textContent = originSt.name;
+    document.getElementById('btn-origin').classList.add('set');
+    document.getElementById('btn-dest').textContent = destSt.name;
+    document.getElementById('btn-dest').classList.add('set');
+
+    viaStations = (candidate.via || []).map(id => stations.find(s => s.id === id)).filter(Boolean);
+    renderViaList();
+    passThroughSet  = new Set(candidate.passThroughList || []);
+    manualOverrides = candidate.manualOverrides || {};
+    customDwellTimes = candidate.dwellTimes ? {...candidate.dwellTimes} : {};
+
+    // Restore metadata fields
+    document.getElementById('train-number').value = candidate.number === '—' ? '' : (candidate.number || '');
+    document.getElementById('train-name').value   = candidate.name || '';
+    document.getElementById('train-departure').value = candidate.departure || '';
+    document.getElementById('train-date').value   = candidate.date || '';
+
+    // Restore category & speed
+    if (candidate.category) selectCategory(candidate.category);
+    if (candidate.maxspeed) {
+      trainMaxSpeed = candidate.maxspeed;
+      const sl = document.getElementById('speed-slider');
+      const sd = document.getElementById('speed-display');
+      if (sl) sl.value = trainMaxSpeed;
+      if (sd) sd.textContent = trainMaxSpeed + ' km/h';
+    }
+
+    // Build a synthetic routeResult from the saved path so we can draw it
+    // Reconstruct path objects and total time from the candidate's stored data
+    const pathObjs = candidate.path.map(id => ({ id }));
+    let totalMin = 0, totalKm = 0;
+    for (let i = 0; i < pathObjs.length - 1; i++) {
+      const edge = graph[pathObjs[i].id]?.find(e => e.to === pathObjs[i+1].id);
+      if (edge) {
+        const spd = Math.min(parseFloat(edge.maxspeed) || 160, candidate.maxspeed || 160);
+        const st  = stations.find(s => s.id === pathObjs[i+1].id);
+        const isLast = i === pathObjs.length - 2;
+        totalMin += segmentTime(edge.dist, spd, true);
+        if (!isLast) totalMin += getDwellTime(st);
+        totalKm += edge.dist;
+      }
+    }
+
+    currentRouteResult = { path: pathObjs, total: totalMin, totalKm };
+    activeTrainId = candidate.id;
+
+    // Draw the route on the map
+    if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+    const geom = stitchGeom(pathObjs);
+    if (geom.length > 0) {
+      routeLayer = L.polyline(geom, { color:'#e8a945', weight:5, opacity:.95, lineJoin:'round', lineCap:'round' }).addTo(map);
+      map.fitBounds(routeLayer.getBounds(), { padding:[80,80] });
+    }
+
+    // Save and update UI
     commitSave(candidate);
-  } catch(e) { alert('Błąd podczas zastosowania trasy.'); }
+    document.getElementById('save-btn').disabled = false;
+
+    // Re-render the stop list in planner
+    if (origin && dest) findRoute();
+
+  } catch(e) {
+    console.error(e);
+    alert('Błąd podczas zastosowania trasy: ' + e.message);
+  }
 }
 
 // ── Solution 3: Dwell time ────────────────────────────────────────────────────
@@ -3021,9 +3150,16 @@ function findDwellSolutions(trainData, conflicts) {
 function applyDwellSolution(stIdEnc, newDwell) {
   const stId = decodeURIComponent(stIdEnc);
   customDwellTimes[stId] = newDwell;
-  saveDwellTimes();
   closeConflictModal();
   findRoute();
+  // pendingSaveData still has the train — re-trigger save with updated dwell
+  if (pendingSaveData) {
+    pendingSaveData.dwellTimes = { ...customDwellTimes };
+    commitSave(pendingSaveData);
+    pendingSaveData = null;
+  } else {
+    saveDwellTimes();
+  }
 }
 
 // ── Main modal ────────────────────────────────────────────────────────────────
@@ -3856,9 +3992,8 @@ fetch(GEOJSON_PATH)
     <div class="panel-title">Czasy Postoju</div>
     <button onclick="resetDwellTimes()" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:3px 8px;background:transparent;border:1px solid var(--border);color:var(--text-faint);border-radius:2px;cursor:pointer">Reset</button>
   </div>
-  <div class="panel-body" style="padding:8px 0;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);padding:8px 14px 4px">
-    Czas postoju per stacja (min)
-  </div>
+  <div style="padding:6px 14px 2px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint)">Czas postoju per stacja (min)</div>
+  <div id="dwell-train-label" style="padding:4px 14px 8px;font-family:'DM Mono',monospace;font-size:10px;color:var(--amber);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
   <div id="dwell-list"></div>
 </div>
 
