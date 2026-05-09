@@ -2956,7 +2956,6 @@ function checkConflicts(candidateTrain) {
   return conflicts;
 }
 
-}
 
 // Find nearest conflict-free departure (earlier or later)
 // ── Tab switcher ─────────────────────────────────────────────────────────────
@@ -4506,20 +4505,6 @@ function renderAnPotoki() {
   const totalLoad  = edgeList.reduce((s,e)=>s+e.volKolej,0);
 
   return `
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px">
-    <div class="an-card"><div class="an-card-label">Odcinki w modelu</div>
-      <div class="an-card-value">${edgeList.length}</div>
-      <div class="an-card-sub">par stacji z obliczonym ruchem</div></div>
-    <div class="an-card"><div class="an-card-label">Łączny potok kolejowy (sieć)</div>
-      <div class="an-card-value">${Math.round(totalLoad/1000)} mln</div>
-      <div class="an-card-sub">pas./rok · ${horizon} · ${wariant}</div></div>
-    <div class="an-card" style="border-color:var(--red)"><div class="an-card-label">Przeciążone odcinki (&gt;85%)</div>
-      <div class="an-card-value" style="color:var(--red)">${overloaded}</div>
-      <div class="an-card-sub">wymagają interwencji inwestycyjnej</div></div>
-    <div class="an-card" style="border-color:var(--amber)"><div class="an-card-label">Najobciążniejszy odcinek</div>
-      <div class="an-card-value" style="font-size:14px;color:var(--amber)">${edgeList[0]?.nameA||'—'} ↔ ${edgeList[0]?.nameB||'—'}</div>
-      <div class="an-card-sub">${edgeList[0]?volFmt(edgeList[0].volKolej)+' tys. pas./rok':''}</div></div>
-  </div>
   <table style="width:100%;border-collapse:collapse;max-width:1100px">
     <thead><tr style="border-bottom:2px solid var(--amber)">
       <th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px;text-align:left">#</th>
@@ -4532,7 +4517,6 @@ function renderAnPotoki() {
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
-  function volFmt(v) { return v >= 1000 ? (v/1000).toFixed(1)+'k' : v; }
 }
 
 /* ─── Widok: Ranking węzłów ─────────────────────────────────────────────── */
