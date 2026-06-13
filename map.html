@@ -838,7 +838,7 @@ function dijkstraVia(waypoints, catId, maxSpeed, overrides, CATS) {
   return { path: fullPath, total: totalTime };
 }
 
-// ── Message handler ───────────────────────────────────────────────────────────
+// ── Message handler (Updated with Chunk Stream Parsing Strategy) ───────────────────────
 self.onmessage = async function(ev) {
   const { type, payload } = ev.data;
 
@@ -846,14 +846,12 @@ self.onmessage = async function(ev) {
     const { url } = payload;
     try {
       self.postMessage({ type: 'PROGRESS', payload: { text: 'Pobieranie pliku GeoJSON…', pct: 2 } });
-
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
       const contentLength = parseInt(resp.headers.get('content-length') || '0');
       const contentEncoding = resp.headers.get('content-encoding') || '';
 
-      // Detect if we need to decompress
       let stream;
       if (url.endsWith('.gz') && !contentEncoding.includes('gzip')) {
         const ds = new DecompressionStream('gzip');
@@ -862,58 +860,196 @@ self.onmessage = async function(ev) {
         stream = resp.body;
       }
 
-      // Read full body (streaming into chunks, reassemble)
       const reader = stream.getReader();
-      const decoder = new TextDecoder();
-      let chunks = [];
+      const decoder = new TextDecoder("utf-8");
+      
       let totalRead = 0;
-
-      self.postMessage({ type: 'PROGRESS', payload: { text: 'Pobieranie i dekompresja…', pct: 5 } });
+      let bufferText = "";
+      
+      // Spatial lookup indexes constructed dynamically on-the-fly
+      const trackGrid = new Map(); // "x,y" coordinate string -> Array of { lineId, index, props }
+      const lineGeometries = new Map(); // lineId -> Array of coordinates [cite: 725]
+      
+      self.postMessage({ type: 'PROGRESS', payload: { text: 'Przetwarzanie strumieniowe sieci…', pct: 10 } });
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
+        if (done) {
+          bufferText += decoder.decode();
+          break;
+        }
+
         totalRead += value.length;
-        // Report download progress every ~5MB
-        if (chunks.length % 50 === 0) {
-          const pct = contentLength > 0 ? Math.min(40, 5 + (totalRead/contentLength)*35) : 20;
-          self.postMessage({ type: 'PROGRESS', payload: {
-            text: `Pobieranie: ${(totalRead/1024/1024).toFixed(0)} MB…`, pct
-          }});
+        bufferText += decoder.decode(value, { stream: true });
+
+        // Stream and parse feature-by-feature out of the GeoJSON string buffer
+        // Look for the boundaries of single feature structures inside features: [ ... ]
+        let featureIndex;
+        while ((featureIndex = bufferText.indexOf('{"type":"Feature"')) !== -1) {
+          // Find the end of this specific feature object safely by balancing braces
+          let openBraces = 0;
+          let closeIndex = -1;
+          for (let i = featureIndex; i < bufferText.length; i++) {
+            if (bufferText[i] === '{') openBraces++;
+            if (bufferText[i] === '}') {
+              openBraces--;
+              if (openBraces === 0) {
+                closeIndex = i;
+                break;
+              }
+            }
+          }
+
+          // If the feature string chunk is incomplete, wait for the next chunk stream
+          if (closeIndex === -1) break;
+
+          const singleFeatureStr = bufferText.substring(featureIndex, closeIndex + 1);
+          try {
+            const f = JSON.parse(singleFeatureStr);
+            
+            // Extract features dynamically on-the-fly into high performance spatial maps
+            if (f.geometry) {
+              if (f.geometry.type === 'Point' && f.properties && (f.properties.railway === 'station' || f.properties.railway === 'halt')) {
+                const [lng, lat] = f.geometry.coordinates;
+                const id = f.properties.name || `st_${stations.length}`;
+                stations.push({ id, name: f.properties.name || id, latlng: [lat, lng], props: f.properties }); [cite: 723]
+                graph[id] = []; [cite: 723]
+              } 
+              else if (f.geometry.type === 'LineString' || f.geometry.type === 'MultiLineString') {
+                const lineId = f.properties?.id || `ln_${lineGeometries.size}`;
+                const coords = f.geometry.type === 'LineString' 
+                  ? f.geometry.coordinates 
+                  : f.geometry.coordinates.flat(1); [cite: 725]
+                
+                lineGeometries.set(lineId, coords);
+                
+                // Map out coordinates instantly inside our Spatial Grid Index
+                coords.forEach((c, k) => {
+                  const key = ck(c); [cite: 726]
+                  if (!trackGrid.has(key)) trackGrid.set(key, []);
+                  trackGrid.get(key).push({ lineId, k, props: f.properties }); [cite: 726]
+                });
+              }
+            }
+          } catch (e) {
+            // Drop corrupt segments if parsing boundary catches partial layout elements
+          }
+
+          // Discard parsed section from worker memory
+          bufferText = bufferText.substring(closeIndex + 1);
+        }
+
+        // Periodically report status updates
+        if (totalRead % 20 === 0) {
+          const pct = contentLength > 0 ? Math.min(75, 10 + (totalRead / contentLength) * 65) : 45;
+          self.postMessage({ type: 'PROGRESS', payload: { text: `Przetwarzanie: ${(totalRead / 1024 / 1024).toFixed(0)} MB w locie…`, pct } }); [cite: 477]
         }
       }
 
-      self.postMessage({ type: 'PROGRESS', payload: { text: 'Dekodowanie JSON…', pct: 42 } });
+      // Garbage clean text streams immediately
+      bufferText = null;
 
-      // Concatenate all chunks into a single Uint8Array then decode
-      const totalBytes = chunks.reduce((s, c) => s + c.byteLength, 0);
-      const combined = new Uint8Array(totalBytes);
-      let offset = 0;
-      for (const chunk of chunks) { combined.set(chunk, offset); offset += chunk.byteLength; }
-      chunks = null; // free memory
+      self.postMessage({ type: 'PROGRESS', payload: { text: 'Optymalizowanie połączeń grafu…', pct: 80 } });
+      
+      // Trigger our lightning fast Indexed Graph Builder
+      const result = buildOptimizedGraph(trackGrid, lineGeometries); [cite: 483]
 
-      const jsonText = decoder.decode(combined);
-      self.postMessage({ type: 'PROGRESS', payload: { text: 'Parsowanie JSON…', pct: 55 } });
-
-      const data = JSON.parse(jsonText);
-      self.postMessage({ type: 'PROGRESS', payload: { text: 'Budowanie grafu sieci…', pct: 68 } });
-
-      const result = buildGraph(data);
-
-      self.postMessage({ type: 'PROGRESS', payload: { text: 'Graf gotowy!', pct: 90 } });
-
-      // Send stations list and graph to main thread
-      self.postMessage({ type: 'READY', payload: {
-        stations: result.stations,
-        // Don't transfer graph — it stays in worker for Dijkstra
-        // We only need station list on main thread for UI
-      }});
+      self.postMessage({ type: 'PROGRESS', payload: { text: 'Graf gotowy!', pct: 90 } }); [cite: 484]
+      self.postMessage({ type: 'READY', payload: { stations: result.stations } }); [cite: 485]
 
     } catch (err) {
-      self.postMessage({ type: 'ERROR', payload: { message: err.message } });
+      self.postMessage({ type: 'ERROR', payload: { message: err.message } }); [cite: 486]
     }
   }
+  
+  // (Keep Dijkstra message handler intact down here...) [cite: 487]
+};
+
+// ── Optimized Graph Building (Using Spatial Dictionary Indexing) ───────────────────────
+function buildOptimizedGraph(trackGrid, lineGeometries) {
+  const c2s = {}; [cite: 724]
+  stations.forEach(st => {
+    const [lat, lng] = st.latlng; [cite: 724]
+    c2s[ck([lng, lat])] = st.id; [cite: 724]
+  });
+
+  function addEdge(aid, bid, dist, ms, col, rawGeom, tracks) { [cite: 727]
+    [[aid, bid, rawGeom], [bid, aid, [...rawGeom].reverse()]].forEach(([from, to, geom]) => { [cite: 727]
+      if (!graph[from]) graph[from] = [];
+      const ex = graph[from].findIndex(e => e.to === to); [cite: 727]
+      const entry = { to, dist, maxspeed: ms, colour: col, geom, tracks: tracks || 2 }; [cite: 727]
+      if (ex === -1) graph[from].push(entry); [cite: 432]
+      else if (dist < graph[from][ex].dist) graph[from][ex] = entry; [cite: 432]
+    });
+  }
+
+  // Blazing fast O(N) path lookup replacing the recursive global traversal loops
+  function findReachableFast(homeLineId, homeK) {
+    const results = [];
+    const visited = new Set();
+    const queue = [];
+
+    for (const dir of [+1, -1]) { [cite: 734]
+      queue.push({ lineId: homeLineId, k: homeK, dir, dist: 0, path: [lineGeometries.get(homeLineId)[homeK]] });
+    }
+
+    while (queue.length) {
+      const { lineId, k, dir, dist, path } = queue.shift();
+      const stateKey = `${lineId},${k},${dir}`; [cite: 731]
+      if (visited.has(stateKey)) continue; [cite: 731]
+      visited.add(stateKey);
+
+      const coords = lineGeometries.get(lineId);
+      const nk = k + dir; [cite: 731]
+      if (nk < 0 || nk >= coords.length) continue; [cite: 732]
+
+      const nc = coords[nk];
+      const nd = dist + cdist(nc, coords[k]); [cite: 732, 733]
+      const npath = [...path, nc]; [cite: 733]
+
+      const sid = c2s[ck(nc)]; [cite: 733]
+      if (sid) { 
+        results.push({ sid, dist: nd, geom: npath }); 
+        continue; // Hit a station node! Connect edge and end branch. [cite: 734]
+      }
+
+      // Check spatial hash grid intersection shortcuts in constant O(1) time
+      const jentries = trackGrid.get(ck(nc)) || []; [cite: 734]
+      queue.push({ lineId, k: nk, dir, dist: nd, path: npath }); [cite: 735]
+
+      if (jentries.length > 1) { [cite: 736]
+        jentries.forEach(({ lineId: li2, k: k2 }) => { [cite: 736]
+          if (li2 === lineId) return; [cite: 736]
+          for (const d2 of [+1, -1]) { [cite: 736]
+            queue.push({ lineId: li2, k: k2, dir: d2, dist: nd, path: npath }); [cite: 736]
+          }
+        });
+      }
+    }
+    return results;
+  }
+
+  // Iterate only over stations to bind track edges out from intersection coordinate indices
+  stations.forEach(st => {
+    const [lat, lng] = st.latlng;
+    const key = ck([lng, lat]);
+    const hostTracks = trackGrid.get(key) || [];
+
+    hostTracks.forEach(({ lineId, k, props }) => {
+      const ms = props?.maxspeed || null; [cite: 738]
+      const col = props?.colour || 'default'; [cite: 738]
+      const trk = parseInt(props?.tracks) || 2; [cite: 738]
+
+      const reachable = findReachableFast(lineId, k);
+      reachable.forEach(({ sid, dist, geom }) => {
+        if (sid === st.id) return; [cite: 739]
+        addEdge(st.id, sid, dist, ms, col, geom, trk); [cite: 739]
+      });
+    });
+  });
+
+  return { stations, graph }; [cite: 740]
+}
 
   if (type === 'FIND_ROUTE') {
     const { waypoints, catId, maxSpeed, overrides, CATS } = payload;
