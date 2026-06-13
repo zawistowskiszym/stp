@@ -1083,7 +1083,7 @@ function switchTab(tab) {
 }
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const GEOJSON_PATH = 'railway.geojson';
+const GEOJSON_PATH = 'railway.geojson.gz';
 const LINE_COLORS = {
   red:'#d94f3d', blue:'#4a8fd4', purple:'#9b72cf',
   yellow:'#e8a945', green:'#3daa6e', orange:'#e8783d',
@@ -3944,9 +3944,13 @@ function shouldStop(st) {
   if (manualOverrides[st.id] === false) return false;
   return trainCategory.stops(st);
 }
-
-fetch(GEOJSON_PATH)
-  .then(r=>{if(!r.ok)throw new Error();return r.json()})
+fetch('railway.geojson.gz')
+  .then(r=>{if(!r.ok)throw new Error();return r.blob()})
+  .then(blob=>{
+    const ds = new DecompressionStream('gzip');
+    const stream = blob.stream().pipeThrough(ds);
+    return new Response(stream).json();
+  })
   .then(data=>{
     document.getElementById('scale-val').textContent=`1 jedn. = ${KM_PER_UNIT} km`;
     buildGraph(data);
