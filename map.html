@@ -3944,9 +3944,9 @@ function shouldStop(st) {
   if (manualOverrides[st.id] === false) return false;
   return trainCategory.stops(st);
 }
-fetch('railway.geojson.gz')
-  .then(r=>{if(!r.ok)throw new Error();return r.blob()})
-  .then(blob=>{
+fetch('https://pub-52f481f7c00546199fa76d90b08e1fb8.r2.dev/railway.geojson.gz')
+  .then(r => { if(!r.ok) throw new Error(); return r.blob() })
+  .then(blob => {
     const ds = new DecompressionStream('gzip');
     const stream = blob.stream().pipeThrough(ds);
     return new Response(stream).json();
