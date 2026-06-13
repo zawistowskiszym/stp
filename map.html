@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Planer Tras Kolejowych</title>
 
-  <!-- MapLibre GL JS — WebGL renderer, handles massive GeoJSON efficiently -->
   <link href="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.css" rel="stylesheet" />
   <script src="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.js"></script>
 
@@ -13,485 +12,327 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; } [cite: 1, 2]
 
     :root {
-      --bg:        #0e1117;
-      --surface:   #161b27;
-      --surface2:  #1e2535;
-      --border:    #2a3347;
-      --border2:   #3a4560;
-      --amber:     #e8a945;
-      --amber-dim: #a87830;
-      --red:       #d94f3d;
-      --green:     #3daa6e;
-      --blue:      #4a8fd4;
-      --text:      #e8e4da;
-      --text-dim:  #8896aa;
-      --text-faint:#4a5568;
+      --bg:        #0e1117; [cite: 2]
+      --surface:   #161b27; [cite: 2]
+      --surface2:  #1e2535; [cite: 2]
+      --border:    #2a3347; [cite: 2]
+      --border2:   #3a4560; [cite: 2]
+      --amber:     #e8a945; [cite: 2]
+      --amber-dim: #a87830; [cite: 3]
+      --red:       #d94f3d; [cite: 3]
+      --green:     #3daa6e; [cite: 3]
+      --blue:      #4a8fd4; [cite: 3]
+      --text:      #e8e4da; [cite: 3]
+      --text-dim:  #8896aa; [cite: 3]
+      --text-faint:#4a5568; [cite: 3]
     }
 
     html, body {
-      height: 100%; width: 100%;
-      font-family: 'DM Sans', sans-serif;
-      background: var(--bg); color: var(--text);
-      overflow: hidden;
-    }
+      height: 100%; width: 100%; [cite: 3, 4]
+      font-family: 'DM Sans', sans-serif; [cite: 4]
+      background: var(--bg); color: var(--text); [cite: 4]
+      overflow: hidden; [cite: 4]
+    } [cite: 5]
 
     /* ── Header ── */
     #header {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-      height: 58px;
-      display: flex; align-items: center; gap: 0;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      box-shadow: 0 2px 24px #00000060;
-    }
+      position: fixed; [cite: 5]
+      top: 0; left: 0; right: 0; z-index: 1000; height: 58px; [cite: 5]
+      display: flex; align-items: center; gap: 0; [cite: 6]
+      background: var(--surface); [cite: 6]
+      border-bottom: 1px solid var(--border); [cite: 6]
+      box-shadow: 0 2px 24px #00000060; [cite: 6]
+    } [cite: 7]
 
     .header-accent {
-      width: 4px; height: 100%;
-      background: linear-gradient(180deg, var(--amber) 0%, var(--amber-dim) 100%);
-      flex-shrink: 0;
-    }
+      width: 4px; height: 100%; [cite: 7]
+      background: linear-gradient(180deg, var(--amber) 0%, var(--amber-dim) 100%); [cite: 7]
+      flex-shrink: 0; [cite: 7]
+    } [cite: 8]
 
     .header-inner {
-      display: flex; align-items: center; gap: 18px;
-      padding: 0 20px; flex: 1; min-width: 0;
-    }
+      display: flex; align-items: center; gap: 18px; padding: 0 20px; [cite: 8]
+      flex: 1; min-width: 0; [cite: 8]
+    } [cite: 9]
 
     .logo-mark {
-      width: 30px; height: 30px;
-      background: var(--amber);
-      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-      flex-shrink: 0;
-    }
+      width: 30px; height: 30px; background: var(--amber); [cite: 8, 9]
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); [cite: 9]
+      flex-shrink: 0; [cite: 9]
+    } [cite: 10]
 
     .logo-text {
-      font-family: 'Playfair Display', serif;
-      font-size: 17px;
-      color: var(--text);
-      letter-spacing: 0.4px;
-      line-height: 1;
-      white-space: nowrap;
-    }
+      font-family: 'Playfair Display', serif; font-size: 17px; [cite: 10]
+      color: var(--text); letter-spacing: 0.4px; line-height: 1; [cite: 10]
+      white-space: nowrap; [cite: 10]
+    } [cite: 11]
 
     .logo-text small {
-      display: block;
-      font-family: 'DM Mono', monospace;
-      font-size: 8px;
-      color: var(--text-dim);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-top: 3px;
-      font-weight: 400;
+      display: block; font-family: 'DM Mono', monospace; [cite: 11]
+      font-size: 8px; color: var(--text-dim); [cite: 11]
+      letter-spacing: 2px; text-transform: uppercase; margin-top: 3px; [cite: 11]
+      font-weight: 400; [cite: 12]
     }
 
     .hdiv {
-      width: 1px; height: 26px;
-      background: var(--border2);
-      flex-shrink: 0;
-    }
+      width: 1px; height: 26px; background: var(--border2); [cite: 12]
+      flex-shrink: 0; [cite: 12]
+    } [cite: 13]
 
     #load-status {
-      display: flex; align-items: center; gap: 8px;
-      font-family: 'DM Mono', monospace;
-      font-size: 10px; color: var(--amber);
-      letter-spacing: 1px;
-      white-space: nowrap;
-    }
+      display: flex; align-items: center; gap: 8px; [cite: 12, 13]
+      font-family: 'DM Mono', monospace; font-size: 10px; [cite: 13]
+      color: var(--amber); letter-spacing: 1px; white-space: nowrap; [cite: 13]
+    } [cite: 14]
 
     .status-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: currentColor;
-      box-shadow: 0 0 8px currentColor;
-      flex-shrink: 0;
-    }
+      width: 6px; height: 6px; border-radius: 50%; [cite: 14]
+      background: currentColor; box-shadow: 0 0 8px currentColor; [cite: 14]
+      flex-shrink: 0; [cite: 14]
+    } [cite: 15]
 
-    .status-dot.green { color: var(--green); }
-    .status-dot.amber { color: var(--amber); animation: blink 1.2s infinite; }
-    .status-dot.red   { color: var(--red); }
+    .status-dot.green { color: var(--green); } [cite: 14, 15]
+    .status-dot.amber { color: var(--amber); animation: blink 1.2s infinite; } [cite: 15]
+    .status-dot.red   { color: var(--red); } [cite: 15, 16]
 
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} } [cite: 16]
 
     /* ── Map ── */
     #map {
-      position: fixed;
-      top: 58px; bottom: 0; left: 0; right: 0;
-    }
+      position: fixed; top: 58px; bottom: 0; left: 0; right: 0; [cite: 16, 17]
+    } [cite: 18]
 
     /* ── Progress bar ── */
     #progress-wrap {
-      position: fixed; top: 58px; left: 0; right: 0; z-index: 2000;
-      height: 3px; background: var(--border);
-    }
+      position: fixed; top: 58px; left: 0; right: 0; z-index: 2000; [cite: 17, 18]
+      height: 3px; background: var(--border); [cite: 18]
+    } [cite: 19]
     #progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--amber-dim), var(--amber));
-      width: 0%;
-      transition: width 0.3s ease;
-    }
+      height: 100%; background: linear-gradient(90deg, var(--amber-dim), var(--amber)); [cite: 18]
+      width: 0%; transition: width 0.3s ease; [cite: 18, 19]
+    } [cite: 20]
 
     /* ── Loading overlay ── */
     #loading-overlay {
-      position: fixed; top: 58px; bottom: 0; left: 0; right: 0;
-      z-index: 1500;
-      background: var(--bg);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 24px;
-    }
+      position: fixed; top: 58px; bottom: 0; left: 0; right: 0; [cite: 19, 20]
+      z-index: 1500; background: var(--bg); [cite: 20]
+      display: flex; flex-direction: column; align-items: center; justify-content: center; [cite: 20]
+      gap: 24px; [cite: 20]
+    } [cite: 21]
 
-    #loading-overlay.hidden { display: none; }
+    #loading-overlay.hidden { display: none; } [cite: 21]
 
     .load-icon {
-      width: 56px; height: 56px;
-      border: 3px solid var(--border);
-      border-top-color: var(--amber);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
+      width: 56px; height: 56px; border: 3px solid var(--border); [cite: 21]
+      border-top-color: var(--amber); border-radius: 50%; [cite: 21]
+      animation: spin 1s linear infinite; [cite: 22]
+    } [cite: 23]
 
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes spin { to { transform: rotate(360deg); } } [cite: 22, 23]
 
     .load-title {
-      font-family: 'DM Mono', monospace;
-      font-size: 13px; letter-spacing: 3px;
-      text-transform: uppercase; color: var(--amber);
-    }
+      font-family: 'DM Mono', monospace; font-size: 13px; [cite: 23]
+      letter-spacing: 3px; text-transform: uppercase; color: var(--amber); [cite: 23]
+    } [cite: 24]
 
     .load-sub {
-      font-size: 12px; color: var(--text-dim);
-      text-align: center; line-height: 1.8;
-      max-width: 360px;
-    }
+      font-size: 12px; color: var(--text-dim); text-align: center; [cite: 24]
+      line-height: 1.8; max-width: 360px; [cite: 24]
+    } [cite: 25]
 
     .load-progress-text {
-      font-family: 'DM Mono', monospace;
-      font-size: 11px; color: var(--text-faint);
-      letter-spacing: 1.5px;
-    }
+      font-family: 'DM Mono', monospace; font-size: 11px; [cite: 24, 25]
+      color: var(--text-faint); letter-spacing: 1.5px; [cite: 25]
+    } [cite: 26]
 
     /* ── Panels ── */
     .panel {
-      position: absolute;
-      z-index: 900;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      box-shadow: 0 8px 40px #00000080, inset 0 1px 0 #ffffff06;
-      overflow: hidden;
-    }
+      position: absolute; z-index: 900; background: var(--surface); [cite: 25, 26]
+      border: 1px solid var(--border); border-radius: 2px; [cite: 26]
+      box-shadow: 0 8px 40px #00000080, inset 0 1px 0 #ffffff06; overflow: hidden; [cite: 26]
+    } [cite: 27]
 
     .panel-header {
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface2);
-    }
+      padding: 12px 16px; border-bottom: 1px solid var(--border); [cite: 27]
+      background: var(--surface2); [cite: 27]
+    } [cite: 28]
 
     .panel-title {
-      font-family: 'DM Mono', monospace;
-      font-size: 9px; letter-spacing: 3px;
-      text-transform: uppercase; color: var(--amber);
-      display: flex; align-items: center; gap: 8px;
-    }
+      font-family: 'DM Mono', monospace; font-size: 9px; [cite: 27, 28]
+      letter-spacing: 3px; text-transform: uppercase; color: var(--amber); [cite: 28]
+      display: flex; align-items: center; gap: 8px; [cite: 28]
+    } [cite: 29]
 
     .panel-title::before {
-      content: '';
-      width: 3px; height: 11px;
-      background: var(--amber); border-radius: 1px;
-      flex-shrink: 0;
+      content: ''; width: 3px; height: 11px; background: var(--amber); [cite: 28, 29]
+      border-radius: 1px; flex-shrink: 0; [cite: 29]
     }
-
-    .panel-body { padding: 14px 16px; }
+    .panel-body { padding: 14px 16px; } [cite: 29, 30]
 
     /* ── Planner ── */
-    #planner { top: 78px; left: 18px; width: 264px; }
+    #planner { top: 78px; left: 18px; width: 264px; } [cite: 30]
 
     .field-label {
-      font-family: 'DM Mono', monospace;
-      font-size: 8px; letter-spacing: 2px;
-      text-transform: uppercase; color: var(--text-faint);
-      margin-bottom: 5px;
-      display: flex; align-items: center; gap: 6px;
-    }
+      font-family: 'DM Mono', monospace; font-size: 8px; [cite: 31]
+      letter-spacing: 2px; text-transform: uppercase; color: var(--text-faint); [cite: 31]
+      margin-bottom: 5px; display: flex; align-items: center; gap: 6px; [cite: 31, 32]
+    } [cite: 33]
 
-    .field-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .field-dot.orig { background: var(--green); box-shadow: 0 0 5px var(--green); }
-    .field-dot.dest { background: var(--red);   box-shadow: 0 0 5px var(--red); }
-    .field-dot.via  { background: var(--blue);  box-shadow: 0 0 5px var(--blue); }
+    .field-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; } [cite: 32]
+    .field-dot.orig { background: var(--green); box-shadow: 0 0 5px var(--green); } [cite: 32, 33]
+    .field-dot.dest { background: var(--red);   box-shadow: 0 0 5px var(--red); } [cite: 33]
+    .field-dot.via  { background: var(--blue);  box-shadow: 0 0 5px var(--blue); } [cite: 33, 34]
 
     .station-btn {
-      width: 100%; padding: 9px 11px;
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: 2px; text-align: left;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 12px; color: var(--text-dim);
-      cursor: pointer; transition: all 0.18s;
-    }
+      width: 100%; padding: 9px 11px; background: var(--bg); [cite: 34]
+      border: 1px solid var(--border); border-radius: 2px; text-align: left; [cite: 34, 35]
+      font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--text-dim); [cite: 35]
+      cursor: pointer; transition: all 0.18s; [cite: 35]
+    } [cite: 36]
 
-    .station-btn:hover { border-color: var(--border2); color: var(--text); background: var(--surface2); }
+    .station-btn:hover { border-color: var(--border2); color: var(--text); background: var(--surface2); } [cite: 36]
 
     .station-btn.selecting {
-      border-color: var(--amber); color: var(--amber);
-      background: #e8a94508;
-      animation: blink-border 1s infinite;
-    }
+      border-color: var(--amber); color: var(--amber); background: #e8a94508; [cite: 36]
+      animation: blink-border 1s infinite; [cite: 37]
+    } [cite: 38]
 
-    .station-btn.set.orig { border-color: var(--green); color: var(--green); background: #3daa6e0a; }
-    .station-btn.set.dest { border-color: var(--red);   color: var(--red);   background: #d94f3d0a; }
-    .station-btn.set.via  { border-color: var(--blue);  color: var(--blue);  background: #4a8fd40a; }
+    .station-btn.set.orig { border-color: var(--green); color: var(--green); background: #3daa6e0a; } [cite: 37]
+    .station-btn.set.dest { border-color: var(--red);   color: var(--red);   background: #d94f3d0a; } [cite: 37, 38]
+    .station-btn.set.via  { border-color: var(--blue);  color: var(--blue);  background: #4a8fd40a; } [cite: 38]
 
     @keyframes blink-border {
-      0%,100% { border-color: var(--amber); }
-      50%      { border-color: var(--amber-dim); }
+      0%,100% { border-color: var(--amber); } [cite: 38, 39]
+      50%      { border-color: var(--amber-dim); } [cite: 39]
     }
 
-    .field-group { margin-bottom: 10px; }
+    .field-group { margin-bottom: 10px; } [cite: 39]
 
     .connector-line {
-      width: 1px; height: 8px;
-      background: var(--border2);
-      margin: 3px 0 3px 16px;
-    }
+      width: 1px; height: 8px; background: var(--border2); [cite: 39, 40]
+      margin: 3px 0 3px 16px; [cite: 40]
+    } [cite: 41]
 
     /* Via list */
-    .via-item {
-      display: flex; align-items: center; gap: 6px;
-      margin-bottom: 4px;
-    }
-
-    .via-item .station-btn { flex: 1; font-size: 11px; padding: 7px 10px; }
+    .via-item { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; } [cite: 40, 41]
+    .via-item .station-btn { flex: 1; font-size: 11px; padding: 7px 10px; } [cite: 41]
 
     .via-remove {
-      width: 22px; height: 22px; border-radius: 2px;
-      background: transparent; border: 1px solid var(--border);
-      color: var(--text-faint); cursor: pointer; font-size: 13px;
-      line-height: 1; display: flex; align-items: center; justify-content: center;
-      transition: all .2s; flex-shrink: 0;
-    }
+      width: 22px; height: 22px; border-radius: 2px; background: transparent; [cite: 41, 42]
+      border: 1px solid var(--border); color: var(--text-faint); cursor: pointer; [cite: 42]
+      font-size: 13px; line-height: 1; display: flex; align-items: center; justify-content: center; [cite: 42]
+      transition: all .2s; flex-shrink: 0; [cite: 43]
+    } [cite: 44]
 
-    .via-remove:hover { border-color: var(--red); color: var(--red); }
+    .via-remove:hover { border-color: var(--red); color: var(--red); } [cite: 43]
 
     #add-via-btn {
-      width: 100%; padding: 5px;
-      background: transparent; color: var(--text-faint);
-      border: 1px dashed var(--border); border-radius: 2px;
-      font-family: 'DM Mono', monospace; font-size: 9px;
-      letter-spacing: 1.5px; text-transform: uppercase;
-      cursor: pointer; transition: all .2s; margin: 2px 0 8px;
-    }
+      width: 100%; padding: 5px; background: transparent; color: var(--text-faint); [cite: 43, 44]
+      border: 1px dashed var(--border); border-radius: 2px; font-family: 'DM Mono', monospace; [cite: 44]
+      font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; [cite: 44]
+      cursor: pointer; transition: all .2s; margin: 2px 0 8px; [cite: 45]
+    } [cite: 46]
 
-    #add-via-btn:hover { border-color: var(--amber); color: var(--amber); }
+    #add-via-btn:hover { border-color: var(--amber); color: var(--amber); } [cite: 45, 46]
 
     #find-btn {
-      width: 100%; padding: 10px;
-      background: var(--amber); color: #0e1117;
-      border: none; border-radius: 2px;
-      font-family: 'DM Mono', monospace; font-size: 10px;
-      letter-spacing: 2.5px; text-transform: uppercase; font-weight: 500;
-      cursor: pointer; transition: all .2s; margin-top: 4px;
-    }
+      width: 100%; padding: 10px; background: var(--amber); color: #0e1117; [cite: 46]
+      border: none; border-radius: 2px; font-family: 'DM Mono', monospace; [cite: 46]
+      font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 500; [cite: 47]
+      cursor: pointer; transition: all .2s; margin-top: 4px; [cite: 47]
+    } [cite: 48]
 
-    #find-btn:hover:not(:disabled) { background: #f0b955; transform: translateY(-1px); box-shadow: 0 4px 16px #e8a94540; }
-    #find-btn:disabled { background: var(--surface2); color: var(--text-faint); cursor: not-allowed; }
+    #find-btn:hover:not(:disabled) { background: #f0b955; transform: translateY(-1px); box-shadow: 0 4px 16px #e8a94540; } [cite: 47, 48]
+    #find-btn:disabled { background: var(--surface2); color: var(--text-faint); cursor: not-allowed; } [cite: 48]
 
     #clear-btn {
-      width: 100%; padding: 6px; margin-top: 6px;
-      background: transparent; color: var(--text-faint);
-      border: 1px solid var(--border); border-radius: 2px;
-      font-family: 'DM Mono', monospace; font-size: 9px;
-      letter-spacing: 1.5px; text-transform: uppercase;
-      cursor: pointer; transition: all .2s;
-    }
+      width: 100%; padding: 6px; margin-top: 6px; background: transparent; [cite: 49]
+      color: var(--text-faint); border: 1px solid var(--border); border-radius: 2px; [cite: 49]
+      font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1.5px; [cite: 50]
+      text-transform: uppercase; cursor: pointer; transition: all .2s; [cite: 50]
+    } [cite: 51]
 
-    #clear-btn:hover { border-color: var(--red); color: var(--red); }
+    #clear-btn:hover { border-color: var(--red); color: var(--red); } [cite: 50, 51]
 
     /* ── Train category panel ── */
-    #train-panel {
-      position: absolute; bottom: 18px; left: 18px;
-      width: 264px; z-index: 900;
-    }
-
-    #category-grid {
-      display: grid; grid-template-columns: 1fr; gap: 4px;
-    }
-
+    #train-panel { position: absolute; bottom: 18px; left: 18px; width: 264px; z-index: 900; } [cite: 51, 52]
+    #category-grid { display: grid; grid-template-columns: 1fr; gap: 4px; } [cite: 52]
     .cat-btn {
-      padding: 6px 8px; border-radius: 2px;
-      border: 1px solid var(--border);
-      background: var(--bg); color: var(--text-dim);
-      font-family: 'DM Mono', monospace; font-size: 9px;
-      letter-spacing: 1px; text-transform: uppercase;
-      cursor: pointer; transition: all .18s; text-align: left;
-    }
+      padding: 6px 8px; border-radius: 2px; border: 1px solid var(--border); [cite: 52, 53]
+      background: var(--bg); color: var(--text-dim); font-family: 'DM Mono', monospace; [cite: 53]
+      font-size: 9px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; [cite: 53]
+      transition: all .18s; text-align: left; [cite: 54]
+    } [cite: 55]
 
-    #speed-wrap {
-      display: flex; align-items: center; gap: 8px; margin-top: 10px;
-    }
-
-    #speed-slider { flex: 1; accent-color: var(--amber); cursor: pointer; }
-
+    #speed-wrap { display: flex; align-items: center; gap: 8px; margin-top: 10px; } [cite: 54, 55]
+    #speed-slider { flex: 1; accent-color: var(--amber); cursor: pointer; } [cite: 55]
     #speed-display {
-      font-family: 'DM Mono', monospace; font-size: 12px;
-      color: var(--amber); width: 52px; text-align: right; flex-shrink: 0;
-    }
-
+      font-family: 'DM Mono', monospace; font-size: 12px; color: var(--amber); [cite: 55]
+      width: 52px; text-align: right; flex-shrink: 0; [cite: 56]
+    } [cite: 57]
     #stop-rule-desc {
-      font-size: 10px; color: var(--text-dim); line-height: 1.6;
-      padding: 7px; background: var(--bg); border: 1px solid var(--border);
-      border-radius: 2px; margin-top: 8px;
-    }
+      font-size: 10px; color: var(--text-dim); line-height: 1.6; padding: 7px; [cite: 56, 57]
+      background: var(--bg); border: 1px solid var(--border); border-radius: 2px; margin-top: 8px; [cite: 57]
+    } [cite: 58]
 
     /* ── Results panel ── */
     #results {
-      top: 78px; right: 18px; width: 292px;
-      display: none; max-height: calc(100vh - 180px);
-      overflow-y: auto;
-    }
-
-    #results.show { display: block; }
-
+      top: 78px; right: 18px; width: 292px; [cite: 57, 58]
+      display: none; max-height: calc(100vh - 180px); overflow-y: auto; [cite: 58]
+    } [cite: 59]
+    #results.show { display: block; } [cite: 58, 59]
     #results::-webkit-scrollbar { width: 3px; }
-    #results::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+    #results::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; } [cite: 59]
 
-    .result-summary {
-      display: grid; grid-template-columns: 1fr 1fr 1fr;
-      gap: 7px; margin-bottom: 14px;
-    }
+    .result-summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; margin-bottom: 14px; } [cite: 59, 60]
+    .result-stat { background: var(--bg); border: 1px solid var(--border); border-radius: 2px; padding: 9px 7px; text-align: center; } [cite: 60, 61]
+    .result-stat .val { font-family: 'Playfair Display', serif; font-size: 16px; color: var(--amber); line-height: 1; margin-bottom: 3px; } [cite: 61, 62]
+    .result-stat .lbl { font-family: 'DM Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-faint); } [cite: 62, 63]
 
-    .result-stat {
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: 2px; padding: 9px 7px; text-align: center;
-    }
-
-    .result-stat .val {
-      font-family: 'Playfair Display', serif;
-      font-size: 16px; color: var(--amber);
-      line-height: 1; margin-bottom: 3px;
-    }
-
-    .result-stat .lbl {
-      font-family: 'DM Mono', monospace; font-size: 8px;
-      text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-faint);
-    }
-
-    .stop-list { list-style: none; }
-
-    .stop-item {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 8px 0; border-bottom: 1px solid var(--border);
-    }
-
+    .stop-list { list-style: none; } [cite: 63]
+    .stop-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); } [cite: 63, 64]
     .stop-item:last-child { border-bottom: none; }
-
-    .stop-item.passing-through { opacity: .55; }
-
-    .stop-track {
-      display: flex; flex-direction: column;
-      align-items: center; flex-shrink: 0; padding-top: 2px;
-    }
-
-    .stop-dot {
-      width: 9px; height: 9px; border-radius: 50%;
-      border: 2px solid var(--border2);
-      background: var(--surface); flex-shrink: 0;
-    }
-
-    .stop-dot.orig { background: var(--green); border-color: var(--green); box-shadow: 0 0 6px #3daa6e60; }
-    .stop-dot.dest { background: var(--red);   border-color: var(--red);   box-shadow: 0 0 6px #d94f3d60; }
-
-    .stop-line-seg {
-      width: 2px; flex: 1; min-height: 8px;
-      background: var(--border); margin-top: 2px;
-    }
-
-    .stop-info { flex: 1; min-width: 0; }
-
-    .stop-name {
-      font-size: 12px; font-weight: 500; color: var(--text);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-
-    .stop-time {
-      font-family: 'DM Mono', monospace; font-size: 9px;
-      color: var(--text-faint); margin-top: 2px;
-    }
-
-    .reversal-badge {
-      font-family: 'DM Mono', monospace; font-size: 8px;
-      color: var(--amber); background: #e8a94520;
-      border: 1px solid var(--amber); border-radius: 2px;
-      padding: 1px 5px; letter-spacing: 1px;
-      display: inline-block; margin-top: 3px;
-    }
-
-    .pt-toggle {
-      font-family: 'DM Mono', monospace; font-size: 8px;
-      letter-spacing: 1px; text-transform: uppercase;
-      padding: 2px 7px; border-radius: 2px; cursor: pointer;
-      border: 1px solid var(--border); transition: all .15s;
-      margin-top: 3px;
-    }
-
-    .pt-toggle.stopping {
-      background: #3daa6e18; color: var(--green); border-color: #3daa6e50;
-    }
-
-    .pt-toggle.passing {
-      background: #4a556820; color: var(--text-faint); border-color: var(--border);
-    }
-
-    .pt-toggle:hover { border-color: var(--amber); color: var(--amber); }
-
-    .no-route {
-      font-family: 'DM Mono', monospace; font-size: 11px;
-      color: var(--red); text-align: center; padding: 14px 0;
-      letter-spacing: .5px; line-height: 1.6;
-    }
+    .stop-item.passing-through { opacity: .55; } [cite: 64]
+    .stop-track { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; padding-top: 2px; } [cite: 64, 65]
+    .stop-dot { width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--border2); background: var(--surface); flex-shrink: 0; } [cite: 65, 66]
+    .stop-dot.orig { background: var(--green); border-color: var(--green); box-shadow: 0 0 6px #3daa6e60; } [cite: 66, 67]
+    .stop-dot.dest { background: var(--red);   border-color: var(--red);   box-shadow: 0 0 6px #d94f3d60; } [cite: 67]
+    .stop-line-seg { width: 2px; flex: 1; min-height: 8px; background: var(--border); margin-top: 2px; } [cite: 67, 68]
+    .stop-info { flex: 1; min-width: 0; } [cite: 68]
+    .stop-name { font-size: 12px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } [cite: 68, 69]
+    .stop-time { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text-faint); margin-top: 2px; } [cite: 69, 70]
+    .reversal-badge { font-family: 'DM Mono', monospace; font-size: 8px; color: var(--amber); background: #e8a94520; border: 1px solid var(--amber); border-radius: 2px; padding: 1px 5px; letter-spacing: 1px; display: inline-block; margin-top: 3px; } [cite: 70, 71]
+    .pt-toggle { font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 7px; border-radius: 2px; cursor: pointer; border: 1px solid var(--border); transition: all .15s; margin-top: 3px; } [cite: 71, 72]
+    .pt-toggle.stopping { background: #3daa6e18; color: var(--green); border-color: #3daa6e50; } [cite: 73]
+    .pt-toggle.passing { background: #4a556820; color: var(--text-faint); border-color: var(--border); } [cite: 73]
+    .pt-toggle:hover { border-color: var(--amber); color: var(--amber); } [cite: 74]
+    .no-route { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--red); text-align: center; padding: 14px 0; letter-spacing: .5px; line-height: 1.6; } [cite: 74, 75]
 
     /* ── Scale pill ── */
-    #scale-info {
-      position: absolute; bottom: 18px; right: 18px; z-index: 900;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 2px; padding: 5px 12px;
-      font-family: 'DM Mono', monospace; font-size: 9px;
-      color: var(--text-faint); letter-spacing: 1px;
-    }
-
-    #scale-info span { color: var(--amber); }
+    #scale-info { position: absolute; bottom: 18px; right: 18px; z-index: 900; background: var(--surface); border: 1px solid var(--border); border-radius: 2px; padding: 5px 12px; font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text-faint); letter-spacing: 1px; } [cite: 75, 76]
+    #scale-info span { color: var(--amber); } [cite: 77]
 
     /* ── Select hint ── */
-    #select-hint {
-      position: absolute; top: 78px; left: 50%; transform: translateX(-50%);
-      z-index: 950; pointer-events: none;
-      background: var(--amber); color: #0e1117;
-      font-family: 'DM Mono', monospace; font-size: 10px;
-      letter-spacing: 2px; text-transform: uppercase;
-      padding: 7px 18px; border-radius: 2px;
-      box-shadow: 0 4px 16px #e8a94550;
-      display: none;
-    }
+    #select-hint { position: absolute; top: 78px; left: 50%; transform: translateX(-50%); z-index: 950; pointer-events: none; background: var(--amber); color: #0e1117; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; padding: 7px 18px; border-radius: 2px; box-shadow: 0 4px 16px #e8a94550; display: none; } [cite: 78, 79, 80]
 
     /* ── MapLibre overrides ── */
-    .maplibregl-canvas { outline: none; }
-    .maplibregl-ctrl-attrib { opacity: .4; font-size: 9px; }
-    .maplibregl-ctrl-group { background: var(--surface) !important; border: 1px solid var(--border) !important; }
-    .maplibregl-ctrl-group button { background: var(--surface) !important; }
-    .maplibregl-ctrl button .maplibregl-ctrl-icon { filter: invert(0.6); }
+    .maplibregl-canvas { outline: none; } [cite: 80, 81]
+    .maplibregl-ctrl-attrib { opacity: .4; font-size: 9px; } [cite: 81]
+    .maplibregl-ctrl-group { background: var(--surface) !important; border: 1px solid var(--border) !important; } [cite: 81]
+    .maplibregl-ctrl-group button { background: var(--surface) !important; } [cite: 82]
+    .maplibregl-ctrl button .maplibregl-ctrl-icon { filter: invert(0.6); } [cite: 82]
 
-    /* collapsible train panel arrow */
-    #tp-arrow { font-size: 9px; color: var(--amber); margin-left: auto; }
-    #tp-body { overflow: hidden; transition: max-height .3s ease; max-height: 600px; }
-    #tp-body.collapsed { max-height: 0; }
-
+    #tp-arrow { font-size: 9px; color: var(--amber); margin-left: auto; } [cite: 83]
+    #tp-body { overflow: hidden; transition: max-height .3s ease; max-height: 600px; } [cite: 83, 84]
+    #tp-body.collapsed { max-height: 0; } [cite: 84, 85]
   </style>
 </head>
 
 <body>
 
-<!-- ── Header ── -->
 <div id="header">
   <div class="header-accent"></div>
   <div class="header-inner">
@@ -508,12 +349,10 @@
   </div>
 </div>
 
-<!-- ── Progress bar ── -->
 <div id="progress-wrap">
   <div id="progress-bar"></div>
 </div>
 
-<!-- ── Loading overlay ── -->
 <div id="loading-overlay">
   <div class="load-icon"></div>
   <div class="load-title">Wczytywanie sieci kolejowej</div>
@@ -524,13 +363,10 @@
   <div class="load-progress-text" id="load-progress-text">Inicjalizacja…</div>
 </div>
 
-<!-- ── Map ── -->
 <div id="map"></div>
 
-<!-- ── Select hint ── -->
 <div id="select-hint">Wybierz stację na mapie</div>
 
-<!-- ── Planner panel ── -->
 <div class="panel" id="planner">
   <div class="panel-header">
     <div class="panel-title">Planer Trasy</div>
@@ -555,7 +391,6 @@
   </div>
 </div>
 
-<!-- ── Results panel ── -->
 <div class="panel" id="results">
   <div class="panel-header">
     <div class="panel-title">Wynik trasy</div>
@@ -565,7 +400,6 @@
   </div>
 </div>
 
-<!-- ── Train parameters panel ── -->
 <div class="panel" id="train-panel">
   <div class="panel-header" style="cursor:pointer;user-select:none" onclick="toggleTP()">
     <div class="panel-title" style="justify-content:space-between">
@@ -591,304 +425,234 @@
   </div>
 </div>
 
-<!-- ── Scale info ── -->
 <div id="scale-info">Skala: <span id="scale-val">…</span></div>
 
-
-<!-- ══════════════════════════════════════════════════════════
-     INLINE WEB WORKER — streaming GeoJSON parse + graph build
-     ══════════════════════════════════════════════════════════ -->
 <script id="worker-src" type="text/plain">
-// ── Web Worker: parses GeoJSON, builds graph, runs Dijkstra ─────────────────
-//
-// Strategy for 755 MB GeoJSON:
-//   1. Fetch with streaming
-//   2. Decompress gzip on-the-fly (DecompressionStream)
-//   3. Incrementally buffer text, find JSON arrays, parse feature by feature
-//      using a hand-rolled boundary scanner (avoids holding full string in RAM)
-//   4. Build adjacency graph from coordinates
-//   5. Expose Dijkstra to main thread via postMessage
+const KM_PER_UNIT   = 134; [cite: 88]
+const ACCEL         = 108.0; // km/h/min [cite: 89]
+const DECEL         = 151.0; [cite: 89]
+const DWELL_HALT    = 1.0; [cite: 89]
+const DWELL_MAIN    = 2.5; [cite: 89]
+const REVERSAL_PEN  = 30;     // minutes [cite: 90]
 
-// ── Constants ────────────────────────────────────────────────────────────────
-const KM_PER_UNIT   = 134;
-const ACCEL         = 108.0;  // km/h/min
-const DECEL         = 151.0;
-const DWELL_HALT    = 1.0;
-const DWELL_MAIN    = 2.5;
-const REVERSAL_PEN  = 30;     // minutes
-
-// ── State ────────────────────────────────────────────────────────────────────
-let stations = [];
-let graph    = {};  // id → [{to, dist, maxspeed, colour, geom, tracks}]
-let lineColors = {
-  red:'#d94f3d', blue:'#4a8fd4', purple:'#9b72cf',
-  yellow:'#e8a945', green:'#3daa6e', orange:'#e8783d',
-  brown:'#a07850', cyan:'#3daabb', default:'#5a6a80'
-};
+let stations = []; [cite: 90]
+let graph    = {}; [cite: 90]
 
 function cdist(a, b) {
-  const dx = a[0]-b[0], dy = a[1]-b[1];
-  return Math.sqrt(dx*dx + dy*dy) * KM_PER_UNIT;
+  const dx = a[0]-b[0], dy = a[1]-b[1]; [cite: 92]
+  return Math.sqrt(dx*dx + dy*dy) * KM_PER_UNIT; [cite: 92]
 }
 
 function ck(c) {
-  return `${Math.round(c[0]*1e7)},${Math.round(c[1]*1e7)}`;
+  return `${Math.round(c[0]*1e7)},${Math.round(c[1]*1e7)}`; [cite: 93]
 }
 
 function segmentTime(distKm, maxspeedKmh, willStop) {
-  if (distKm <= 0) return 0;
-  const v = maxspeedKmh;
-  if (!willStop) return (distKm / v) * 60;
-  const tAccel = v / ACCEL;
-  const tDecel = v / DECEL;
-  const dAccel = (v/2) * (tAccel/60);
-  const dDecel = (v/2) * (tDecel/60);
-  const dFull  = dAccel + dDecel;
+  if (distKm <= 0) return 0; [cite: 93]
+  const v = maxspeedKmh; [cite: 94]
+  if (!willStop) return (distKm / v) * 60; [cite: 94]
+  const tAccel = v / ACCEL; [cite: 94]
+  const tDecel = v / DECEL; [cite: 95]
+  const dAccel = (v/2) * (tAccel/60); [cite: 95]
+  const dDecel = (v/2) * (tDecel/60); [cite: 95]
+  const dFull  = dAccel + dDecel; [cite: 96]
   if (distKm >= dFull) {
-    return tAccel + ((distKm - dFull) / v) * 60 + tDecel;
+    return tAccel + ((distKm - dFull) / v) * 60 + tDecel; [cite: 96]
   } else {
-    const vPeak = Math.sqrt(distKm * 2 * 60 * ACCEL * DECEL / (ACCEL + DECEL));
-    return vPeak / ACCEL + vPeak / DECEL;
+    const vPeak = Math.sqrt(distKm * 2 * 60 * ACCEL * DECEL / (ACCEL + DECEL)); [cite: 97]
+    return vPeak / ACCEL + vPeak / DECEL; [cite: 98]
   }
 }
 
-// ── Graph building ───────────────────────────────────────────────────────────
-function buildGraph(data) {
-  const lines = data.features.filter(f => f.geometry &&
-    (f.geometry.type === 'LineString' || f.geometry.type === 'MultiLineString'));
-  const pts = data.features.filter(f => f.geometry &&
-    f.geometry.type === 'Point' && f.properties &&
-    (f.properties.railway === 'station' || f.properties.railway === 'halt'));
-
-  pts.forEach((f, i) => {
-    const [lng, lat] = f.geometry.coordinates;
-    const id = f.properties.name || `st_${i}`;
-    stations.push({ id, name: f.properties.name || id, latlng: [lat, lng], props: f.properties });
-    graph[id] = [];
-  });
-
-  const c2s = {};
-  stations.forEach(st => {
-    const [lat, lng] = st.latlng;
-    c2s[ck([lng, lat])] = st.id;
-  });
-
-  const lineCoords = lines.map(line =>
-    line.geometry.type === 'LineString'
-      ? line.geometry.coordinates
-      : line.geometry.coordinates.flat()
-  );
-
-  // Build junction map
-  const jmap = {};
-  lineCoords.forEach((coords, li) => {
-    coords.forEach((c, k) => {
-      const key = ck(c);
-      if (!jmap[key]) jmap[key] = [];
-      jmap[key].push({ li, k });
-    });
-  });
-
-  function addEdge(aid, bid, dist, ms, col, rawGeom, tracks) {
-    [[aid, bid, rawGeom], [bid, aid, [...rawGeom].reverse()]].forEach(([from, to, geom]) => {
-      const ex = graph[from]?.findIndex(e => e.to === to);
-      if (ex === undefined) return;
-      const entry = { to, dist, maxspeed: ms, colour: col, geom, tracks: tracks || 2 };
-      if (ex === -1) graph[from].push(entry);
-      else if (dist < graph[from][ex].dist) graph[from][ex] = entry;
-    });
-  }
-
-  function findReachable(homeLi, homeK) {
-    const results = [];
-    const visited = new Set();
-    const queue = [];
-    for (const dir of [+1, -1]) {
-      queue.push({ li: homeLi, k: homeK, dir, dist: 0, path: [lineCoords[homeLi][homeK]] });
-    }
-    while (queue.length) {
-      const { li, k, dir, dist, path } = queue.shift();
-      const stateKey = `${li},${k},${dir}`;
-      if (visited.has(stateKey)) continue;
-      visited.add(stateKey);
-      const coords = lineCoords[li];
-      const nk = k + dir;
-      if (nk < 0 || nk >= coords.length) continue;
-      const nc = coords[nk];
-      const nd = dist + cdist(nc, coords[k]);
-      const npath = [...path, nc];
-      const sid = c2s[ck(nc)];
-      if (sid) { results.push({ sid, dist: nd, geom: npath }); continue; }
-      const jentries = jmap[ck(nc)] || [];
-      queue.push({ li, k: nk, dir, dist: nd, path: npath });
-      if (jentries.length > 1) {
-        jentries.forEach(({ li: li2, k: k2 }) => {
-          if (li2 === li) return;
-          for (const d2 of [+1, -1]) {
-            queue.push({ li: li2, k: k2, dir: d2, dist: nd, path: npath });
-          }
-        });
-      }
-    }
-    return results;
-  }
-
-  stations.forEach(st => {
-    const [lat, lng] = st.latlng;
-    const key = ck([lng, lat]);
-    lineCoords.forEach((coords, li) => {
-      coords.forEach((c, k) => {
-        if (ck(c) !== key) return;
-        const ms  = lines[li].properties?.maxspeed || null;
-        const col = lines[li].properties?.colour || 'default';
-        const trk = parseInt(lines[li].properties?.tracks) || 2;
-        const reachable = findReachable(li, k);
-        reachable.forEach(({ sid, dist, geom }) => {
-          if (sid === st.id) return;
-          addEdge(st.id, sid, dist, ms, col, geom, trk);
-        });
-      });
-    });
-  });
-
-  return { stations, graph };
-}
-
-// ── Dijkstra ─────────────────────────────────────────────────────────────────
 function edgeDepartureBearing(edge, fromId) {
-  const g = edge.geom;
-  if (!g || g.length < 2) return null;
-  const st = stations.find(s => s.id === fromId);
-  if (!st) return null;
-  const fll = st.latlng;
-  const d2s = (g[0][0]-fll[1])**2 + (g[0][1]-fll[0])**2;
-  const d2e = (g[g.length-1][0]-fll[1])**2 + (g[g.length-1][1]-fll[0])**2;
-  const ori = d2e < d2s ? [...g].reverse() : g;
+  const g = edge.geom; [cite: 114]
+  if (!g || g.length < 2) return null; [cite: 115]
+  const st = stations.find(s => s.id === fromId); [cite: 115]
+  if (!st) return null; [cite: 115]
+  const fll = st.latlng; [cite: 116]
+  const d2s = (g[0][0]-fll[1])**2 + (g[0][1]-fll[0])**2; [cite: 116]
+  const d2e = (g[g.length-1][0]-fll[1])**2 + (g[g.length-1][1]-fll[0])**2; [cite: 116]
+  const ori = d2e < d2s ? [...g].reverse() : g; [cite: 117]
   for (let i = 0; i < ori.length-1; i++) {
-    const dx = ori[i+1][0]-ori[i][0], dy = ori[i+1][1]-ori[i][1];
-    if (Math.abs(dx)+Math.abs(dy) > 1e-10) return [dx, dy];
+    const dx = ori[i+1][0]-ori[i][0], dy = ori[i+1][1]-ori[i][1]; [cite: 118]
+    if (Math.abs(dx)+Math.abs(dy) > 1e-10) return [dx, dy]; [cite: 119]
   }
-  return null;
+  return null; [cite: 119]
 }
 
 function isReversal(b1, b2) {
-  if (!b1 || !b2) return false;
-  const dot = b1[0]*b2[0]+b1[1]*b2[1];
-  const m1 = Math.sqrt(b1[0]**2+b1[1]**2), m2 = Math.sqrt(b2[0]**2+b2[1]**2);
-  if (m1 < 1e-12 || m2 < 1e-12) return false;
-  return (dot/(m1*m2)) < -0.5;
+  if (!b1 || !b2) return false; [cite: 120]
+  const dot = b1[0]*b2[0]+b1[1]*b2[1]; [cite: 120]
+  const m1 = Math.sqrt(b1[0]**2+b1[1]**2), m2 = Math.sqrt(b2[0]**2+b2[1]**2); [cite: 121]
+  if (m1 < 1e-12 || m2 < 1e-12) return false; [cite: 121]
+  return (dot/(m1*m2)) < -0.5; [cite: 122]
 }
 
 function shouldStopAt(st, catId, overrides, CATS) {
-  if (!st) return true;
-  if (overrides[st.id] === true)  return true;
-  if (overrides[st.id] === false) return false;
-  const cat = CATS.find(c => c.id === catId);
-  return cat ? cat.stops(st) : true;
+  if (!st) return true; [cite: 122]
+  if (overrides[st.id] === true)  return true; [cite: 123]
+  if (overrides[st.id] === false) return false; [cite: 123]
+  const cat = CATS.find(c => c.id === catId); [cite: 123]
+  return cat ? cat.stops(st) : true; [cite: 124]
 }
 
 function dijkstra(s, e, catId, maxSpeed, overrides, CATS) {
-  const dist = {}, prev = {}, prevEdge = {}, vis = new Set();
-  Object.keys(graph).forEach(id => dist[id] = Infinity);
-  dist[s] = 0;
-  const pq = [[0, s]];
+  const dist = {}, prev = {}, prevEdge = {}, vis = new Set(); [cite: 124]
+  Object.keys(graph).forEach(id => dist[id] = Infinity); [cite: 125]
+  dist[s] = 0; [cite: 125]
+  const pq = [[0, s]]; [cite: 125]
   while (pq.length) {
-    pq.sort((a,b) => a[0]-b[0]);
-    const [d, u] = pq.shift();
-    if (vis.has(u)) continue; vis.add(u); if (u === e) break;
+    pq.sort((a,b) => a[0]-b[0]); [cite: 125]
+    const [d, u] = pq.shift(); [cite: 126]
+    if (vis.has(u)) continue; vis.add(u); [cite: 126]
+    if (u === e) break; [cite: 126]
     for (const edge of (graph[u] || [])) {
-      const spd = Math.min(parseFloat(edge.maxspeed)||160, maxSpeed);
-      const toSt = stations.find(x => x.id === edge.to);
-      const stops = (edge.to !== e && edge.to !== s)
-        ? shouldStopAt(toSt, catId, overrides, CATS) : true;
-      const tm = segmentTime(edge.dist, spd, stops);
-      let dw = 0;
+      const spd = Math.min(parseFloat(edge.maxspeed)||160, maxSpeed); [cite: 127]
+      const toSt = stations.find(x => x.id === edge.to); [cite: 128]
+      const stops = (edge.to !== e && edge.to !== s) ? shouldStopAt(toSt, catId, overrides, CATS) : true; [cite: 128, 129]
+      const tm = segmentTime(edge.dist, spd, stops); [cite: 129]
+      let dw = 0; [cite: 129]
       if (edge.to !== e && edge.to !== s) {
-        dw = stops ? (toSt?.props?.railway === 'halt' ? DWELL_HALT : DWELL_MAIN) : 0;
+        dw = stops ? (toSt?.props?.railway === 'halt' ? DWELL_HALT : DWELL_MAIN) : 0; [cite: 130, 131]
       }
-      let rev = 0;
-      const pe = prevEdge[u];
+      let rev = 0; const pe = prevEdge[u]; [cite: 131]
       if (pe) {
-        const ib = edgeDepartureBearing(pe, prev[u]);
-        const ob = edgeDepartureBearing(edge, u);
-        if (isReversal(ib, ob)) rev = REVERSAL_PEN;
+        const ib = edgeDepartureBearing(pe, prev[u]); [cite: 132]
+        const ob = edgeDepartureBearing(edge, u); [cite: 132]
+        if (isReversal(ib, ob)) rev = REVERSAL_PEN; [cite: 132]
       }
-      const c = d + tm + dw + rev;
+      const c = d + tm + dw + rev; [cite: 133]
       if (c < dist[edge.to]) {
-        dist[edge.to] = c; prev[edge.to] = u; prevEdge[edge.to] = edge;
-        pq.push([c, edge.to]);
+        dist[edge.to] = c; [cite: 133]
+        prev[edge.to] = u; prevEdge[edge.to] = edge; [cite: 134]
+        pq.push([c, edge.to]); [cite: 134]
       }
     }
   }
-  if (dist[e] === Infinity) return null;
-  const path = []; let cur = e;
-  while (cur) { path.unshift({ id: cur, edge: prevEdge[cur] }); cur = prev[cur]; }
-  return { path, total: dist[e] };
+  if (dist[e] === Infinity) return null; [cite: 134]
+  const path = []; let cur = e; [cite: 135]
+  while (cur) {
+    path.unshift({ id: cur, edge: prevEdge[cur] }); [cite: 135]
+    cur = prev[cur]; [cite: 135]
+  }
+  return { path, total: dist[e] }; [cite: 136]
 }
 
 function dijkstraVia(waypoints, catId, maxSpeed, overrides, CATS) {
-  if (waypoints.length < 2) return null;
-  let fullPath = [], totalTime = 0;
+  if (waypoints.length < 2) return null; [cite: 136]
+  let fullPath = [], totalTime = 0; [cite: 137]
   for (let i = 0; i < waypoints.length-1; i++) {
-    const res = dijkstra(waypoints[i], waypoints[i+1], catId, maxSpeed, overrides, CATS);
-    if (!res) return null;
-    totalTime += res.total;
-    fullPath = i === 0 ? [...res.path] : [...fullPath, ...res.path.slice(1)];
+    const res = dijkstra(waypoints[i], waypoints[i+1], catId, maxSpeed, overrides, CATS); [cite: 137]
+    if (!res) return null; [cite: 138]
+    totalTime += res.total; [cite: 138]
+    fullPath = i === 0 ? [...res.path] : [...fullPath, ...res.path.slice(1)]; [cite: 138]
   }
-  return { path: fullPath, total: totalTime };
+  return { path: fullPath, total: totalTime }; [cite: 139]
 }
 
-// ── Message handler (Updated with Chunk Stream Parsing Strategy) ───────────────────────
+function stitchGeom(path) {
+  let coords = []; [cite: 164]
+  for (let i = 0; i < path.length; i++) {
+    const edge = path[i].edge; [cite: 165]
+    if (!edge) continue; [cite: 165]
+    let g = edge.geom; [cite: 165]
+    if (!g || g.length === 0) continue; [cite: 165]
+    const prevSt = stations.find(s => s.id === path[i-1].id); [cite: 166]
+    if (prevSt) {
+      const fll = prevSt.latlng; [cite: 166]
+      const d2s = (g[0][0]-fll[1])**2 + (g[0][1]-fll[0])**2; [cite: 167]
+      const d2e = (g[g.length-1][0]-fll[1])**2 + (g[g.length-1][1]-fll[0])**2; [cite: 167]
+      if (d2e < d2s) g = [...g].reverse(); [cite: 168]
+    }
+    if (coords.length > 0) {
+      coords = coords.concat(g.slice(1)); [cite: 169]
+    } else {
+      coords = coords.concat(g); [cite: 169]
+    }
+  }
+  return coords; [cite: 170]
+}
+
+function buildStopData(path, catId, maxSpeed, overrides, CATS) {
+  const arr = []; [cite: 170]
+  let elapsed = 0; [cite: 170]
+  const startSt = stations.find(s => s.id === path[0].id); [cite: 171]
+  arr.push({ id: path[0].id, name: startSt?.name||path[0].id, time: 0, stopping: true, isReversal: false }); [cite: 171]
+  for (let i = 1; i < path.length; i++) {
+    const item = path[i]; [cite: 172]
+    const prevItem = path[i-1]; [cite: 172]
+    const edge = item.edge; [cite: 172]
+    const st = stations.find(s => s.id === item.id); [cite: 173]
+    const spd = Math.min(parseFloat(edge.maxspeed)||160, maxSpeed); [cite: 173]
+    const isLast = (i === path.length - 1); [cite: 174]
+    const stops = isLast ? true : shouldStopAt(st, catId, overrides, CATS); [cite: 174]
+    const tm = segmentTime(edge.dist, spd, stops); [cite: 175]
+    elapsed += tm; [cite: 175]
+    let rev = false; [cite: 175]
+    if (i < path.length - 1) {
+      const nextEdge = path[i+1].edge; [cite: 176]
+      if (nextEdge) {
+        const ib = edgeDepartureBearing(edge, prevItem.id); [cite: 176]
+        const ob = edgeDepartureBearing(nextEdge, item.id); [cite: 177]
+        if (isReversal(ib, ob)) { elapsed += REVERSAL_PEN; rev = true; } [cite: 177]
+      }
+    }
+    arr.push({ id: item.id, name: st?.name||item.id, time: elapsed, stopping: stops, isReversal: rev }); [cite: 178]
+    if (i < path.length - 1 && stops) {
+      elapsed += (st?.props?.railway === 'halt' ? DWELL_HALT : DWELL_MAIN); [cite: 179]
+    }
+  }
+  return arr; [cite: 180]
+}
+
+// ── Streaming Parser & Graph Processing Logic ───────────────────────────────
 self.onmessage = async function(ev) {
-  const { type, payload } = ev.data;
+  const { type, payload } = ev.data; [cite: 139]
 
   if (type === 'LOAD') {
-    const { url } = payload;
+    const { url } = payload; [cite: 140]
     try {
-      self.postMessage({ type: 'PROGRESS', payload: { text: 'Pobieranie pliku GeoJSON…', pct: 2 } });
-      const resp = await fetch(url);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      self.postMessage({ type: 'PROGRESS', payload: { text: 'Pobieranie pliku GeoJSON…', pct: 2 } }); [cite: 141]
+      const resp = await fetch(url); [cite: 141]
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`); [cite: 142]
 
-      const contentLength = parseInt(resp.headers.get('content-length') || '0');
-      const contentEncoding = resp.headers.get('content-encoding') || '';
+      const contentLength = parseInt(resp.headers.get('content-length') || '0'); [cite: 142]
+      const contentEncoding = resp.headers.get('content-encoding') || ''; [cite: 142]
 
-      let stream;
+      let stream; [cite: 143]
       if (url.endsWith('.gz') && !contentEncoding.includes('gzip')) {
-        const ds = new DecompressionStream('gzip');
-        stream = resp.body.pipeThrough(ds);
+        const ds = new DecompressionStream('gzip'); [cite: 143]
+        stream = resp.body.pipeThrough(ds); [cite: 144]
       } else {
-        stream = resp.body;
+        stream = resp.body; [cite: 144]
       }
 
-      const reader = stream.getReader();
-      const decoder = new TextDecoder("utf-8");
+      const reader = stream.getReader(); [cite: 144]
+      const decoder = new TextDecoder("utf-8"); [cite: 145]
       
       let totalRead = 0;
       let bufferText = "";
       
-      // Spatial lookup indexes constructed dynamically on-the-fly
-      const trackGrid = new Map(); // "x,y" coordinate string -> Array of { lineId, index, props }
-      const lineGeometries = new Map(); // lineId -> Array of coordinates [cite: 725]
+      const trackGrid = new Map(); 
+      const lineGeometries = new Map(); 
       
-      self.postMessage({ type: 'PROGRESS', payload: { text: 'Przetwarzanie strumieniowe sieci…', pct: 10 } });
+      self.postMessage({ type: 'PROGRESS', payload: { text: 'Strumieniowanie i parsowanie sieci…', pct: 10 } });
 
       while (true) {
-        const { done, value } = await reader.read();
+        const { done, value } = await reader.read(); [cite: 147]
         if (done) {
           bufferText += decoder.decode();
           break;
         }
 
-        totalRead += value.length;
+        totalRead += value.length; [cite: 147]
         bufferText += decoder.decode(value, { stream: true });
 
-        // Stream and parse feature-by-feature out of the GeoJSON string buffer
-        // Look for the boundaries of single feature structures inside features: [ ... ]
         let featureIndex;
         while ((featureIndex = bufferText.indexOf('{"type":"Feature"')) !== -1) {
-          // Find the end of this specific feature object safely by balancing braces
           let openBraces = 0;
           let closeIndex = -1;
+          
           for (let i = featureIndex; i < bufferText.length; i++) {
             if (bufferText[i] === '{') openBraces++;
             if (bufferText[i] === '}') {
@@ -900,128 +664,130 @@ self.onmessage = async function(ev) {
             }
           }
 
-          // If the feature string chunk is incomplete, wait for the next chunk stream
           if (closeIndex === -1) break;
 
           const singleFeatureStr = bufferText.substring(featureIndex, closeIndex + 1);
           try {
             const f = JSON.parse(singleFeatureStr);
             
-            // Extract features dynamically on-the-fly into high performance spatial maps
             if (f.geometry) {
               if (f.geometry.type === 'Point' && f.properties && (f.properties.railway === 'station' || f.properties.railway === 'halt')) {
                 const [lng, lat] = f.geometry.coordinates;
                 const id = f.properties.name || `st_${stations.length}`;
-                stations.push({ id, name: f.properties.name || id, latlng: [lat, lng], props: f.properties }); [cite: 723]
-                graph[id] = []; [cite: 723]
+                stations.push({ id, name: f.properties.name || id, latlng: [lat, lng], props: f.properties });
+                graph[id] = [];
               } 
               else if (f.geometry.type === 'LineString' || f.geometry.type === 'MultiLineString') {
                 const lineId = f.properties?.id || `ln_${lineGeometries.size}`;
                 const coords = f.geometry.type === 'LineString' 
                   ? f.geometry.coordinates 
-                  : f.geometry.coordinates.flat(1); [cite: 725]
+                  : f.geometry.coordinates.flat(1);
                 
                 lineGeometries.set(lineId, coords);
                 
-                // Map out coordinates instantly inside our Spatial Grid Index
                 coords.forEach((c, k) => {
-                  const key = ck(c); [cite: 726]
+                  const key = ck(c);
                   if (!trackGrid.has(key)) trackGrid.set(key, []);
-                  trackGrid.get(key).push({ lineId, k, props: f.properties }); [cite: 726]
+                  trackGrid.get(key).push({ lineId, k, props: f.properties });
                 });
               }
             }
-          } catch (e) {
-            // Drop corrupt segments if parsing boundary catches partial layout elements
-          }
+          } catch (e) {}
 
-          // Discard parsed section from worker memory
           bufferText = bufferText.substring(closeIndex + 1);
         }
 
-        // Periodically report status updates
-        if (totalRead % 20 === 0) {
+        if (totalRead % 15 === 0) {
           const pct = contentLength > 0 ? Math.min(75, 10 + (totalRead / contentLength) * 65) : 45;
-          self.postMessage({ type: 'PROGRESS', payload: { text: `Przetwarzanie: ${(totalRead / 1024 / 1024).toFixed(0)} MB w locie…`, pct } }); [cite: 477]
+          self.postMessage({ type: 'PROGRESS', payload: { text: `Pobieranie: ${(totalRead / 1024 / 1024).toFixed(0)} MB w locie…`, pct } });
         }
       }
 
-      // Garbage clean text streams immediately
-      bufferText = null;
+      bufferText = null; 
 
-      self.postMessage({ type: 'PROGRESS', payload: { text: 'Optymalizowanie połączeń grafu…', pct: 80 } });
+      self.postMessage({ type: 'PROGRESS', payload: { text: 'Optymalizacja połączeń grafu…', pct: 80 } });
       
-      // Trigger our lightning fast Indexed Graph Builder
-      const result = buildOptimizedGraph(trackGrid, lineGeometries); [cite: 483]
+      buildOptimizedGraph(trackGrid, lineGeometries);
 
-      self.postMessage({ type: 'PROGRESS', payload: { text: 'Graf gotowy!', pct: 90 } }); [cite: 484]
-      self.postMessage({ type: 'READY', payload: { stations: result.stations } }); [cite: 485]
+      self.postMessage({ type: 'PROGRESS', payload: { text: 'Graf gotowy!', pct: 90 } }); [cite: 156]
+      self.postMessage({ type: 'READY', payload: { stations: stations } }); [cite: 157]
 
     } catch (err) {
-      self.postMessage({ type: 'ERROR', payload: { message: err.message } }); [cite: 486]
+      self.postMessage({ type: 'ERROR', payload: { message: err.message } }); [cite: 158]
     }
   }
   
-  // (Keep Dijkstra message handler intact down here...) [cite: 487]
+  if (type === 'FIND_ROUTE') {
+    const { waypoints, catId, maxSpeed, overrides, CATS } = payload; [cite: 159]
+    try {
+      const res = dijkstraVia(waypoints, catId, maxSpeed, overrides, CATS); [cite: 160]
+      if (!res) {
+        self.postMessage({ type: 'ROUTE_RESULT', payload: null }); [cite: 160]
+        return;
+      }
+      const geom = stitchGeom(res.path); [cite: 161]
+      const stopData = buildStopData(res.path, catId, maxSpeed, overrides, CATS); [cite: 162]
+      self.postMessage({ type: 'ROUTE_RESULT', payload: { path: res.path, total: res.total, geom, stopData } }); [cite: 163]
+    } catch(e) {
+      self.postMessage({ type: 'ROUTE_RESULT', payload: null }); [cite: 181]
+    }
+  }
 };
 
-// ── Optimized Graph Building (Using Spatial Dictionary Indexing) ───────────────────────
 function buildOptimizedGraph(trackGrid, lineGeometries) {
-  const c2s = {}; [cite: 724]
+  const c2s = {};
   stations.forEach(st => {
-    const [lat, lng] = st.latlng; [cite: 724]
-    c2s[ck([lng, lat])] = st.id; [cite: 724]
+    const [lat, lng] = st.latlng;
+    c2s[ck([lng, lat])] = st.id;
   });
 
-  function addEdge(aid, bid, dist, ms, col, rawGeom, tracks) { [cite: 727]
-    [[aid, bid, rawGeom], [bid, aid, [...rawGeom].reverse()]].forEach(([from, to, geom]) => { [cite: 727]
+  function addEdge(aid, bid, dist, ms, col, rawGeom, tracks) {
+    [[aid, bid, rawGeom], [bid, aid, [...rawGeom].reverse()]].forEach(([from, to, geom]) => {
       if (!graph[from]) graph[from] = [];
-      const ex = graph[from].findIndex(e => e.to === to); [cite: 727]
-      const entry = { to, dist, maxspeed: ms, colour: col, geom, tracks: tracks || 2 }; [cite: 727]
-      if (ex === -1) graph[from].push(entry); [cite: 432]
-      else if (dist < graph[from][ex].dist) graph[from][ex] = entry; [cite: 432]
+      const ex = graph[from].findIndex(e => e.to === to);
+      const entry = { to, dist, maxspeed: ms, colour: col, geom, tracks: tracks || 2 };
+      if (ex === -1) graph[from].push(entry);
+      else if (dist < graph[from][ex].dist) graph[from][ex] = entry;
     });
   }
 
-  // Blazing fast O(N) path lookup replacing the recursive global traversal loops
   function findReachableFast(homeLineId, homeK) {
     const results = [];
     const visited = new Set();
     const queue = [];
 
-    for (const dir of [+1, -1]) { [cite: 734]
+    for (const dir of [+1, -1]) {
       queue.push({ lineId: homeLineId, k: homeK, dir, dist: 0, path: [lineGeometries.get(homeLineId)[homeK]] });
     }
 
     while (queue.length) {
       const { lineId, k, dir, dist, path } = queue.shift();
-      const stateKey = `${lineId},${k},${dir}`; [cite: 731]
-      if (visited.has(stateKey)) continue; [cite: 731]
+      const stateKey = `${lineId},${k},${dir}`;
+      if (visited.has(stateKey)) continue;
       visited.add(stateKey);
 
       const coords = lineGeometries.get(lineId);
-      const nk = k + dir; [cite: 731]
-      if (nk < 0 || nk >= coords.length) continue; [cite: 732]
+      const nk = k + dir;
+      if (nk < 0 || nk >= coords.length) continue;
 
       const nc = coords[nk];
-      const nd = dist + cdist(nc, coords[k]); [cite: 732, 733]
-      const npath = [...path, nc]; [cite: 733]
+      const nd = dist + cdist(nc, coords[k]);
+      const npath = [...path, nc];
 
-      const sid = c2s[ck(nc)]; [cite: 733]
+      const sid = c2s[ck(nc)];
       if (sid) { 
         results.push({ sid, dist: nd, geom: npath }); 
-        continue; // Hit a station node! Connect edge and end branch. [cite: 734]
+        continue; 
       }
 
-      // Check spatial hash grid intersection shortcuts in constant O(1) time
-      const jentries = trackGrid.get(ck(nc)) || []; [cite: 734]
-      queue.push({ lineId, k: nk, dir, dist: nd, path: npath }); [cite: 735]
+      const jentries = trackGrid.get(ck(nc)) || [];
+      queue.push({ lineId, k: nk, dir, dist: nd, path: npath });
 
-      if (jentries.length > 1) { [cite: 736]
-        jentries.forEach(({ lineId: li2, k: k2 }) => { [cite: 736]
-          if (li2 === lineId) return; [cite: 736]
-          for (const d2 of [+1, -1]) { [cite: 736]
-            queue.push({ lineId: li2, k: k2, dir: d2, dist: nd, path: npath }); [cite: 736]
+      if (jentries.length > 1) {
+        jentries.forEach(({ lineId: li2, k: k2 }) => {
+          if (li2 === lineId) return;
+          for (const d2 of [+1, -1]) {
+            queue.push({ lineId: li2, k: k2, dir: d2, dist: nd, path: npath });
           }
         });
       }
@@ -1029,735 +795,441 @@ function buildOptimizedGraph(trackGrid, lineGeometries) {
     return results;
   }
 
-  // Iterate only over stations to bind track edges out from intersection coordinate indices
   stations.forEach(st => {
     const [lat, lng] = st.latlng;
     const key = ck([lng, lat]);
     const hostTracks = trackGrid.get(key) || [];
 
     hostTracks.forEach(({ lineId, k, props }) => {
-      const ms = props?.maxspeed || null; [cite: 738]
-      const col = props?.colour || 'default'; [cite: 738]
-      const trk = parseInt(props?.tracks) || 2; [cite: 738]
+      const ms = props?.maxspeed || null;
+      const col = props?.colour || 'default';
+      const trk = parseInt(props?.tracks) || 2;
 
       const reachable = findReachableFast(lineId, k);
       reachable.forEach(({ sid, dist, geom }) => {
-        if (sid === st.id) return; [cite: 739]
-        addEdge(st.id, sid, dist, ms, col, geom, trk); [cite: 739]
+        if (sid === st.id) return;
+        addEdge(st.id, sid, dist, ms, col, geom, trk);
       });
     });
-  });
-
-  return { stations, graph }; [cite: 740]
-}
-
-  if (type === 'FIND_ROUTE') {
-    const { waypoints, catId, maxSpeed, overrides, CATS } = payload;
-    try {
-      const res = dijkstraVia(waypoints, catId, maxSpeed, overrides, CATS);
-      if (!res) {
-        self.postMessage({ type: 'ROUTE_RESULT', payload: null });
-        return;
-      }
-      // Build geometry for route polyline
-      const geom = stitchGeom(res.path);
-      // Compute per-stop timing
-      const stopData = buildStopData(res.path, catId, maxSpeed, overrides, CATS);
-      self.postMessage({ type: 'ROUTE_RESULT', payload: {
-        path: res.path,
-        total: res.total,
-        geomLatLngs: geom,
-        stopData,
-        totalKm: res.path.slice(0,-1).reduce((s,p,i) => {
-          const e = graph[p.id]?.find(x=>x.to===res.path[i+1]?.id);
-          return s + (e ? e.dist : 0);
-        }, 0)
-      }});
-    } catch(err) {
-      self.postMessage({ type: 'ROUTE_ERROR', payload: { message: err.message } });
-    }
-  }
-};
-
-function stitchGeom(path) {
-  const coords = [];
-  for (let i = 0; i < path.length-1; i++) {
-    const edge = graph[path[i].id]?.find(e => e.to === path[i+1].id);
-    if (!edge?.geom || edge.geom.length < 2) {
-      const st = stations.find(s => s.id === path[i].id);
-      if (st) coords.push([st.latlng[1], st.latlng[0]]); // [lng,lat]
-      continue;
-    }
-    const g = edge.geom;
-    const fromSt = stations.find(s => s.id === path[i].id);
-    let ori = g;
-    if (fromSt) {
-      const fll = fromSt.latlng;
-      const d2s = (g[0][0]-fll[1])**2 + (g[0][1]-fll[0])**2;
-      const d2e = (g[g.length-1][0]-fll[1])**2 + (g[g.length-1][1]-fll[0])**2;
-      if (d2e < d2s) ori = [...g].reverse();
-    }
-    // geom is [lng,lat], keep as-is for MapLibre
-    const skip = coords.length > 0 ? 1 : 0;
-    ori.slice(skip).forEach(c => coords.push(c));
-  }
-  const lastSt = stations.find(s => s.id === path[path.length-1].id);
-  if (lastSt) coords.push([lastSt.latlng[1], lastSt.latlng[0]]);
-  return coords; // [[lng,lat], ...]
-}
-
-function buildStopData(path, catId, maxSpeed, overrides, CATS) {
-  let elapsed = 0;
-  return path.map((p, i) => {
-    const st = stations.find(s => s.id === p.id);
-    const isF = i === 0, isL = i === path.length-1;
-    const stops = (isF || isL) ? true : shouldStopAt(st, catId, overrides, CATS);
-    let reversalHere = false;
-
-    if (!isF) {
-      const pr = path[i-1];
-      const edge = graph[pr.id]?.find(e => e.to === p.id);
-      if (edge) {
-        const spd = Math.min(parseFloat(edge.maxspeed)||160, maxSpeed);
-        elapsed += segmentTime(edge.dist, spd, stops);
-        if (!isL && stops) {
-          elapsed += st?.props?.railway === 'halt' ? DWELL_HALT : DWELL_MAIN;
-        }
-      }
-    }
-
-    if (!isF && !isL && i+1 < path.length) {
-      const inEdge  = graph[path[i-1].id]?.find(e => e.to === p.id);
-      const outEdge = graph[p.id]?.find(e => e.to === path[i+1].id);
-      if (inEdge && outEdge) {
-        const ib = edgeDepartureBearing(inEdge, path[i-1].id);
-        const ob = edgeDepartureBearing(outEdge, p.id);
-        if (isReversal(ib, ob)) { reversalHere = true; elapsed += REVERSAL_PEN; }
-      }
-    }
-
-    const dw = (!isF && !isL && stops) ? (st?.props?.railway === 'halt' ? DWELL_HALT : DWELL_MAIN) : 0;
-    return {
-      id: p.id,
-      name: st?.name || p.id,
-      isFirst: isF, isLast: isL,
-      stops, elapsed, dw, reversalHere,
-      isHalt: st?.props?.railway === 'halt',
-      isOverride: overrides[p.id] !== undefined,
-    };
   });
 }
 </script>
 
-
-<!-- ══════════════════════════════════════════════════════════
-     MAIN THREAD SCRIPT
-     ══════════════════════════════════════════════════════════ -->
 <script>
-// ── Train categories ─────────────────────────────────────────────────────────
-const TRAIN_CATEGORIES = [
-  { id:'vv',   label:'VV',   name:'Velovia',          speed:350, color:'#c8a028',
-    stops: st => st.props.station==='main' && st.props.interchange==='yes' },
-  { id:'ice',  label:'ICE',  name:'Intercity Express', speed:300, color:'#d94f3d',
-    stops: st => st.props.station==='main' },
-  { id:'spr',  label:'SPR',  name:'Sprinter',          speed:250, color:'#e8783d',
-    stops: st => st.props.railway==='station' && (st.props.station==='main'||st.props.interchange==='yes') },
-  { id:'ic',   label:'IC',   name:'Intercity',         speed:200, color:'#9b72cf',
-    stops: st => st.props.railway==='station' },
-  { id:'re',   label:'RE',   name:'Regio Express',     speed:160, color:'#4a8fd4',
-    stops: st => st.props.railway==='station'||st.props.interchange==='yes' },
-  { id:'rg',   label:'RG',   name:'Regio',             speed:120, color:'#3daa6e',
-    stops: () => true },
+const GEOJSON_URL = 'map.geojson'; [cite: 184]
+
+const TRAIN_CATEGORIES = [ [cite: 185]
+  { id: 'vv',  name: 'Velovia (VV)',  color: '#e8a945', stops: s => s.props?.station === 'main' && s.props?.interchange === 'yes' }, [cite: 185, 186]
+  { id: 'ice', name: 'InterCityExpress (ICE)', color: '#d94f3d', stops: s => s.props?.station === 'main' }, [cite: 186, 187]
+  { id: 'spr', name: 'SuperRegio (SPR)', color: '#9b72cf', stops: s => s.props?.station === 'main' || s.props?.interchange === 'yes' }, [cite: 187, 188]
+  { id: 'ic',  name: 'InterCity (IC)',  color: '#4a8fd4', stops: s => s.props?.railway === 'station' }, [cite: 188, 189]
+  { id: 're',  name: 'RegioExpress (RE)', color: '#3daa6e', stops: s => s.props?.railway === 'station' || s.props?.interchange === 'yes' }, [cite: 189, 190]
+  { id: 'rg',  name: 'Regio (RG)',     color: '#8896aa', stops: s => true } [cite: 190, 191]
 ];
 
-// Serialisable category descriptors (functions replaced with lambda strings)
-const CATS_SERIAL = TRAIN_CATEGORIES.map(c => ({
-  id: c.id, label: c.label, name: c.name, speed: c.speed, color: c.color,
-  stopsCode: c.stops.toString()
-}));
+let currentCategory = 'ic'; [cite: 191]
+let trainMaxSpeed   = 160; [cite: 192]
+let manualOverrides = {}; [cite: 192]
 
-// Reconstruct stops predicates in worker context — passed as serialised
-// We just pass the catId and worker has its own CATS array reconstructed below
+let origin = null, dest = null; [cite: 192, 193]
+let vias = []; [cite: 193]
+let selectingMode = null; // 'origin' | 'destination' | 'via' [cite: 193, 194]
+let selectingViaIndex = null; [cite: 194]
 
-// ── State ────────────────────────────────────────────────────────────────────
-const GEOJSON_URL = 'https://pub-52f481f7c00546199fa76d90b08e1fb8.r2.dev/railway.geojson.gz';
-const KM_PER_UNIT = 134;
+let stationsData = []; [cite: 194]
 
-let stations    = [];
-let origin      = null;
-let dest        = null;
-let selecting   = null;
-let viaStations = [];
-let manualOverrides = {};
-let trainCategory   = TRAIN_CATEGORIES[3]; // IC default
-let trainMaxSpeed   = trainCategory.speed;
-let worker      = null;
-let map         = null;
-let geojsonData = null; // keep for MapLibre source
-
-// ── Create inline Web Worker ─────────────────────────────────────────────────
-function createWorker() {
-  // Build worker source: inject serialised CATS, then the worker code
-  const catCode = `
-const CATS = [
-  ${TRAIN_CATEGORIES.map(c => `
-  { id: '${c.id}', label: '${c.label}', name: '${c.name}', speed: ${c.speed}, color: '${c.color}',
-    stops: ${c.stops.toString()} }`).join(',\n')}
-];
-`;
-  const workerSrc = document.getElementById('worker-src').textContent;
-  // Replace placeholder CATS reference — worker already has CATS from catCode
-  const fullSrc = catCode + '\n' + workerSrc.replace("let CATS;", "");
-  const blob = new Blob([fullSrc], { type: 'application/javascript' });
-  return new Worker(URL.createObjectURL(blob));
-}
-
-// ── MapLibre GL initialisation ────────────────────────────────────────────────
-function initMap() {
-  map = new maplibregl.Map({
-    container: 'map',
-    style: {
-      version: 8,
-      glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
-      sources: {},
-      layers: [{
-        id: 'background',
-        type: 'background',
-        paint: { 'background-color': '#0d1117' }
-      }]
-    },
-    center: [20, 52],
-    zoom: 5,
-    attributionControl: false,
-  });
-
-  map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'bottom-right');
-  map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
-
-  map.on('load', () => {
-    // Reserve layer slots (added once data arrives)
-    map.addSource('railway', { type: 'geojson', data: { type:'FeatureCollection', features:[] } });
-    map.addSource('route',   { type: 'geojson', data: { type:'FeatureCollection', features:[] } });
-
-    // Lines layer
-    map.addLayer({
-      id: 'rail-lines',
-      type: 'line',
-      source: 'railway',
-      filter: ['in', '$type', 'LineString'],
-      paint: {
-        'line-color': [
-          'match', ['get','colour'],
-          'red',    '#c04434',
-          'blue',   '#3a7fc4',
-          'purple', '#8b62bf',
-          'yellow', '#d89935',
-          'green',  '#2d9a5e',
-          'orange', '#d86820',
-          /* default */ '#3a4a60'
-        ],
-        'line-width': ['interpolate',['linear'],['zoom'], 4,1.2, 8,2.5, 12,4],
-        'line-opacity': .9,
-      },
-    });
-
-    // Station halts
-    map.addLayer({
-      id: 'halts',
-      type: 'circle',
-      source: 'railway',
-      filter: ['==', ['get','railway'], 'halt'],
-      paint: {
-        'circle-radius': ['interpolate',['linear'],['zoom'], 6,1.5, 10,3.5],
-        'circle-color': '#c8c4ba',
-        'circle-stroke-width': 1,
-        'circle-stroke-color': '#c8c4ba',
-      },
-    });
-
-    // Stations
-    map.addLayer({
-      id: 'stations',
-      type: 'circle',
-      source: 'railway',
-      filter: ['==', ['get','railway'], 'station'],
-      paint: {
-        'circle-radius': [
-          'interpolate', ['linear'], ['zoom'],
-          5, ['case', ['==', ['get','station'], 'main'], 3, 2],
-          12, ['case', ['==', ['get','station'], 'main'], 8, 5]
-        ],
-        'circle-color': '#e8e4da',
-        'circle-stroke-width': ['interpolate',['linear'],['zoom'], 6,1, 12,2],
-        'circle-stroke-color': '#e8e4da',
-      },
-    });
-
-    // Station labels
-    map.addLayer({
-      id: 'station-labels',
-      type: 'symbol',
-      source: 'railway',
-      filter: ['==', ['get','railway'], 'station'],
-      minzoom: 8,
-      layout: {
-        'text-field': ['get','name'],
-        'text-font': ['Open Sans Regular'],
-        'text-size': ['interpolate',['linear'],['zoom'], 8,9, 13,13],
-        'text-offset': [0, 1.2],
-        'text-anchor': 'top',
-        'text-optional': true,
-        'text-allow-overlap': false,
-      },
-      paint: {
-        'text-color': '#c8c4ba',
-        'text-halo-color': '#0d1117',
-        'text-halo-width': 1.5,
-      }
-    });
-
-    // Route highlight layer
-    map.addLayer({
-      id: 'route-line',
-      type: 'line',
-      source: 'route',
-      paint: {
-        'line-color': '#e8a945',
-        'line-width': 5,
-        'line-opacity': .95,
-        'line-cap': 'round',
-        'line-join': 'round',
-      },
-    });
-
-    // Highlighted stations (selected)
-    map.addSource('selected', { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
-    map.addLayer({
-      id: 'selected-stations',
-      type: 'circle',
-      source: 'selected',
-      paint: {
-        'circle-radius': 10,
-        'circle-color': ['get','color'],
-        'circle-stroke-width': 2,
-        'circle-stroke-color': '#ffffff',
-      }
-    });
-
-    // Click handler
-    map.on('click', 'stations', onStationClick);
-    map.on('click', 'halts',    onStationClick);
-    map.on('mouseenter', 'stations', () => {
-      if (selecting) map.getCanvas().style.cursor = 'crosshair';
-      else map.getCanvas().style.cursor = 'pointer';
-    });
-    map.on('mouseleave', 'stations', () => { map.getCanvas().style.cursor = ''; });
-    map.on('mouseenter', 'halts', () => {
-      if (selecting) map.getCanvas().style.cursor = 'crosshair';
-      else map.getCanvas().style.cursor = 'pointer';
-    });
-    map.on('mouseleave', 'halts', () => { map.getCanvas().style.cursor = ''; });
-
-    // Now start the worker load
-    startWorkerLoad();
-  });
-}
-
-// ── Worker communication ──────────────────────────────────────────────────────
-function startWorkerLoad() {
-  worker = createWorker();
-
-  worker.onmessage = function(ev) {
-    const { type, payload } = ev.data;
-
-    if (type === 'PROGRESS') {
-      document.getElementById('load-progress-text').textContent = payload.text;
-      setProgress(payload.pct);
-    }
-
-    if (type === 'READY') {
-      stations = payload.stations;
-      setProgress(95);
-      document.getElementById('load-progress-text').textContent = 'Renderowanie mapy…';
-      // Now load geojson into MapLibre for rendering
-      loadGeojsonToMap();
-    }
-
-    if (type === 'ERROR') {
-      document.getElementById('loading-overlay').classList.remove('hidden');
-      document.getElementById('load-progress-text').textContent = 'Błąd: ' + payload.message;
-      document.getElementById('status-dot').className = 'status-dot red';
-      document.getElementById('status-text').textContent = 'Błąd wczytywania';
-    }
-
-    if (type === 'ROUTE_RESULT') {
-      if (!payload) {
-        document.getElementById('results-content').innerHTML =
-          '<div class="no-route">BRAK TRASY<br><span style="font-size:9px;color:#4a5568">Sprawdź stacje lub dodaj pośrednie</span></div>';
-        document.getElementById('results').classList.add('show');
-        return;
-      }
-      renderRouteResult(payload);
-    }
-
-    if (type === 'ROUTE_ERROR') {
-      document.getElementById('results-content').innerHTML =
-        `<div class="no-route">Błąd algorytmu: ${payload.message}</div>`;
-    }
-  };
-
-  worker.postMessage({ type: 'LOAD', payload: { url: GEOJSON_URL } });
-}
-
-function loadGeojsonToMap() {
-  // Stream-fetch again for MapLibre (or reuse if we stored it)
-  // MapLibre has its own internal tile system; for massive files we stream-fetch
-  // and load as GeoJSON source. MapLibre WebGL handles rendering efficiently.
-  fetch(GEOJSON_URL)
-    .then(r => {
-      if (!r.ok) throw new Error();
-      const url2 = GEOJSON_URL;
-      const encoding = r.headers.get('content-encoding');
-      let stream = r.body;
-      if (url2.endsWith('.gz') && !encoding?.includes('gzip')) {
-        const ds = new DecompressionStream('gzip');
-        stream = r.body.pipeThrough(ds);
-      }
-      return new Response(stream).json();
-    })
-    .then(data => {
-      geojsonData = data;
-      if (map && map.getSource('railway')) {
-        map.getSource('railway').setData(data);
-      }
-      setProgress(100);
-      document.getElementById('loading-overlay').classList.add('hidden');
-      document.getElementById('status-dot').className = 'status-dot green';
-      document.getElementById('status-text').textContent =
-        `Sieć wczytana · ${stations.length} stacji`;
-      document.getElementById('scale-val').textContent = `1 jedn. = ${KM_PER_UNIT} km`;
-
-      // Fit bounds
-      try {
-        const coords = data.features
-          .filter(f => f.geometry?.type === 'Point')
-          .map(f => f.geometry.coordinates);
-        if (coords.length) {
-          const lngs = coords.map(c=>c[0]), lats = coords.map(c=>c[1]);
-          const bounds = [[Math.min(...lngs), Math.min(...lats)],
-                          [Math.max(...lngs), Math.max(...lats)]];
-          map.fitBounds(bounds, { padding: 60, duration: 1000 });
-        }
-      } catch(e) {}
-
-      initTrainPanel();
-    })
-    .catch(() => {
-      document.getElementById('status-dot').className = 'status-dot red';
-      document.getElementById('status-text').textContent = 'Błąd renderowania';
-    });
-}
-
-function setProgress(pct) {
-  document.getElementById('progress-bar').style.width = pct + '%';
-}
-
-// ── Station click ─────────────────────────────────────────────────────────────
-function onStationClick(e) {
-  if (!selecting) return;
-  const props = e.features[0].properties;
-  const name  = props.name || '';
-  if (!name) return;
-  const st = stations.find(s => s.id === name);
-  if (!st) return;
-
-  const el = document.getElementById(`btn-${selecting === 'origin' ? 'origin' : selecting === 'destination' ? 'dest' : `via-${selecting.split('_')[1]}`}`);
-
-  if (selecting === 'origin') {
-    origin = st;
-    const b = document.getElementById('btn-origin');
-    b.textContent = st.name;
-    b.className = 'station-btn set orig';
-  } else if (selecting === 'destination') {
-    dest = st;
-    const b = document.getElementById('btn-dest');
-    b.textContent = st.name;
-    b.className = 'station-btn set dest';
-  } else if (selecting.startsWith('via_')) {
-    const idx = parseInt(selecting.split('_')[1]);
-    viaStations[idx] = st;
-    const b = document.getElementById(`via-btn-${idx}`);
-    if (b) { b.textContent = st.name; b.className = 'station-btn set via'; }
-  }
-
-  selecting = null;
-  map.getCanvas().style.cursor = '';
-  document.getElementById('select-hint').style.display = 'none';
-  document.getElementById('find-btn').disabled = !(origin && dest);
-  updateSelectedLayer();
-}
-
-function updateSelectedLayer() {
-  if (!map || !map.getSource('selected')) return;
-  const features = [];
-  const add = (st, color) => {
-    if (!st) return;
-    features.push({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: [st.latlng[1], st.latlng[0]] },
-      properties: { color }
-    });
-  };
-  add(origin, '#3daa6e');
-  add(dest,   '#d94f3d');
-  viaStations.filter(Boolean).forEach(st => add(st, '#4a8fd4'));
-  map.getSource('selected').setData({ type:'FeatureCollection', features });
-}
-
-// ── Selecting mode ────────────────────────────────────────────────────────────
-function startSelecting(mode) {
-  selecting = mode;
-  map.getCanvas().style.cursor = 'crosshair';
-  document.getElementById('select-hint').style.display = 'block';
-
-  // Reset button styles
-  const ids = {
-    origin:      'btn-origin',
-    destination: 'btn-dest',
-  };
-  let btnId = ids[mode];
-  if (!btnId && mode.startsWith('via_')) {
-    btnId = `via-btn-${mode.split('_')[1]}`;
-  }
-  const btn = document.getElementById(btnId);
-  if (btn) btn.className = 'station-btn selecting';
-}
-
-// ── Via stations ──────────────────────────────────────────────────────────────
-let viaCount = 0;
-
-function addVia() {
-  const idx = viaStations.length;
-  viaStations.push(null);
-  viaCount++;
-  const list = document.getElementById('via-list');
-  const item = document.createElement('div');
-  item.className = 'via-item';
-  item.id = `via-item-${idx}`;
-  item.innerHTML = `
-    <button class="station-btn" id="via-btn-${idx}" onclick="startSelecting('via_${idx}')">Via: kliknij stację…</button>
-    <button class="via-remove" onclick="removeVia(${idx})">×</button>`;
-  list.appendChild(item);
-}
-
-function removeVia(idx) {
-  viaStations.splice(idx, 1);
-  renderViaList();
-  updateSelectedLayer();
-}
-
-function renderViaList() {
-  const list = document.getElementById('via-list');
-  list.innerHTML = '';
-  viaStations.forEach((st, idx) => {
-    const item = document.createElement('div');
-    item.className = 'via-item';
-    item.id = `via-item-${idx}`;
-    item.innerHTML = `
-      <button class="${'station-btn' + (st ? ' set via' : '')}" id="via-btn-${idx}"
-        onclick="startSelecting('via_${idx}')">${st ? st.name : 'Via: kliknij stację…'}</button>
-      <button class="via-remove" onclick="removeVia(${idx})">×</button>`;
-    list.appendChild(item);
-  });
-}
-
-// ── Route finding ─────────────────────────────────────────────────────────────
-function findRoute() {
-  if (!origin || !dest) return;
-  const waypoints = [origin.id, ...viaStations.filter(Boolean).map(s=>s.id), dest.id];
-  // Send to worker (has graph in memory)
-  worker.postMessage({
-    type: 'FIND_ROUTE',
-    payload: {
-      waypoints, catId: trainCategory.id,
-      maxSpeed: trainMaxSpeed, overrides: manualOverrides,
-      CATS: CATS_SERIAL
-    }
-  });
-  document.getElementById('results-content').innerHTML =
-    '<div style="font-family:\'DM Mono\',monospace;font-size:10px;letter-spacing:2px;color:var(--text-faint);padding:16px 0;text-align:center">OBLICZANIE…</div>';
-  document.getElementById('results').classList.add('show');
-}
-
-function fmt(m) {
-  if (m < 60) return Math.round(m) + ' min';
-  const h = Math.floor(m/60), mn = Math.round(m%60);
-  return mn > 0 ? h+'h '+mn+'min' : h+'h';
-}
-
-function renderRouteResult(data) {
-  const { geomLatLngs, stopData, total, totalKm } = data;
-
-  // Draw route on MapLibre
-  if (map && map.getSource('route')) {
-    map.getSource('route').setData({
-      type: 'FeatureCollection',
-      features: [{
-        type: 'Feature',
-        geometry: { type:'LineString', coordinates: geomLatLngs },
-        properties: {}
-      }]
-    });
-    // Fit bounds to route
-    if (geomLatLngs.length > 1) {
-      const lngs = geomLatLngs.map(c=>c[0]), lats = geomLatLngs.map(c=>c[1]);
-      map.fitBounds([
-        [Math.min(...lngs), Math.min(...lats)],
-        [Math.max(...lngs), Math.max(...lats)]
-      ], { padding: 80, duration: 600 });
-    }
-  }
-
-  const stopHtml = stopData.map((p, i) => {
-    const { name, isFirst, isLast, stops, elapsed, dw, reversalHere, isHalt, isOverride } = p;
-    const isPT = !stops && !isFirst && !isLast;
-    const dotClass = isFirst ? ' orig' : isLast ? ' dest' : '';
-    const trackSeg = !isLast ? '<div class="stop-line-seg"></div>' : '';
-    const ts = isFirst ? 'Odjazd' : '+' + fmt(elapsed);
-    const dwLabel = isPT ? 'przejazd bez zatrzymania' :
-                    (isFirst||isLast) ? '' : `postój ${dw} min`;
-    const revBadge = reversalHere ?
-      '<span class="reversal-badge">↩ ZMIANA KIERUNKU +30 min</span>' : '';
-    const toggle = (!isFirst && !isLast) ? `
-      <button class="pt-toggle ${isPT?'passing':'stopping'} pt-toggle-btn"
-        data-sid="${encodeURIComponent(p.id)}"
-        ${isOverride ? 'style="outline:1px solid var(--amber)"' : ''}>
-        ${isPT?'Przejeżdża':'Zatrzymuje'}${isOverride?' *':''}
-      </button>` : '';
-
-    return `<li class="stop-item${isPT?' passing-through':''}">
-      <div class="stop-track">
-        <div class="stop-dot${dotClass}"></div>${trackSeg}
-      </div>
-      <div class="stop-info">
-        <div class="stop-name">${name}</div>
-        <div class="stop-time">${ts}${dwLabel?' · '+dwLabel:''}</div>
-        ${revBadge}
-        ${toggle}
-      </div>
-    </li>`;
-  }).join('');
-
-  const stopsCount = stopData.filter((p,i) => i>0 && i<stopData.length-1 && p.stops).length;
-
-  document.getElementById('results-content').innerHTML = `
-    <div class="result-summary">
-      <div class="result-stat"><div class="val">${fmt(total)}</div><div class="lbl">Czas</div></div>
-      <div class="result-stat"><div class="val">${Math.round(totalKm)}</div><div class="lbl">km</div></div>
-      <div class="result-stat"><div class="val">${stopsCount}</div><div class="lbl">Postojów</div></div>
-    </div>
-    <ul class="stop-list">${stopHtml}</ul>`;
-}
-
-// Event delegation for pass-through toggles
-document.addEventListener('click', function(e) {
-  const btn = e.target.closest('.pt-toggle-btn');
-  if (!btn) return;
-  const stId = decodeURIComponent(btn.dataset.sid);
-  if (manualOverrides[stId] !== undefined) delete manualOverrides[stId];
-  else {
-    // Current state: stops? Then override to pass. Pass? Override to stop.
-    const currently = btn.classList.contains('stopping');
-    manualOverrides[stId] = !currently;
-  }
-  findRoute();
+// Init MapLibre
+const map = new maplibregl.Map({
+  container: 'map',
+  style: {
+    version: 8,
+    sources: {},
+    layers: [
+      { id: 'bg', type: 'background', paint: { 'background-color': '#0e1117' } } [cite: 197]
+    ]
+  },
+  center: [19.5, 52.0], [cite: 198]
+  zoom: 6.2, [cite: 198]
+  minZoom: 5, maxZoom: 15 [cite: 198]
 });
 
-// ── Clear route ───────────────────────────────────────────────────────────────
-function clearRoute() {
-  origin = null; dest = null; selecting = null;
-  viaStations = []; manualOverrides = {};
-  document.getElementById('btn-origin').textContent = 'Kliknij stację na mapie…';
-  document.getElementById('btn-origin').className = 'station-btn';
-  document.getElementById('btn-dest').textContent = 'Kliknij stację na mapie…';
-  document.getElementById('btn-dest').className = 'station-btn';
-  document.getElementById('via-list').innerHTML = '';
-  document.getElementById('find-btn').disabled = true;
-  document.getElementById('results').classList.remove('show');
-  document.getElementById('select-hint').style.display = 'none';
-  map.getCanvas().style.cursor = '';
-  if (map.getSource('route')) {
-    map.getSource('route').setData({ type:'FeatureCollection', features:[] });
+map.addControl(new maplibregl.NavigationControl(), 'bottom-right'); [cite: 200]
+
+// Worker bootstrap
+const workerBlob = new Blob([document.getElementById('worker-src').textContent], { type: 'text/plain' }); [cite: 201]
+const worker = new Worker(URL.createObjectURL(workerBlob)); [cite: 202]
+
+map.on('load', () => {
+  map.addSource('network', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }); [cite: 204]
+  
+  map.addLayer({
+    id: 'tracks-case', type: 'line', source: 'network', [cite: 205]
+    filter: ['==', ['geometry-type'], 'LineString'], [cite: 205]
+    paint: { 'line-color': '#161b27', 'line-width': ['match', ['get', 'tracks'], 1, 2.5, 4.5] } [cite: 205, 206]
+  });
+  
+  map.addLayer({
+    id: 'tracks', type: 'line', source: 'network', [cite: 206]
+    filter: ['==', ['geometry-type'], 'LineString'], [cite: 207]
+    paint: {
+      'line-color': ['match', ['get', 'colour'],
+        'red', '#d94f3d', 'blue', '#4a8fd4', 'purple', '#9b72cf',
+        'yellow', '#e8a945', 'green', '#3daa6e', 'orange', '#e8783d',
+        'brown', '#a07850', 'cyan', '#3daabb', '#404b5e'
+      ],
+      'line-width': ['match', ['get', 'tracks'], 1, 1.0, 2.0], [cite: 208]
+      'line-dasharray': ['match', ['get', 'tracks'], 0, ['literal', [2, 2]], ['literal', [1, 0]]] [cite: 209]
+    }
+  });
+
+  map.addLayer({
+    id: 'route-line-case', type: 'line', source: 'network', [cite: 210]
+    filter: ['==', ['get', 'id'], 'ROUTE'], [cite: 211]
+    paint: { 'line-color': '#0e1117', 'line-width': 7, 'line-opacity': 0.9 } [cite: 211]
+  });
+  map.addLayer({
+    id: 'route-line', type: 'line', source: 'network', [cite: 212]
+    filter: ['==', ['get', 'id'], 'ROUTE'], [cite: 212]
+    paint: {
+      'line-color': ['match', ['get', 'colour'],
+        'red', '#d94f3d', 'blue', '#4a8fd4', 'purple', '#9b72cf',
+        'yellow', '#e8a945', 'green', '#3daa6e', 'orange', '#e8783d',
+        'brown', '#a07850', 'cyan', '#3daabb', '#e8a945'
+      ],
+      'line-width': 4
+    }
+  });
+
+  map.addLayer({
+    id: 'stations', type: 'circle', source: 'network', [cite: 214]
+    filter: ['==', ['geometry-type'], 'Point'], [cite: 215]
+    paint: {
+      'circle-color': ['match', ['get', 'railway'], 'main', '#e8a945', '#8896aa'], [cite: 215]
+      'circle-radius': ['match', ['get', 'railway'], 'main', 4, 2.5], [cite: 216]
+      'circle-stroke-color': '#0e1117', 'circle-stroke-width': 1.5 [cite: 216]
+    }
+  });
+
+  map.addLayer({
+    id: 'station-labels', type: 'symbol', source: 'network', [cite: 217]
+    filter: ['==', ['geometry-type'], 'Point'], [cite: 217]
+    minzoom: 8, [cite: 218]
+    layout: {
+      'text-field': ['get', 'name'], 'text-font': ['literal', ['DM Sans Regular']], [cite: 218]
+      'text-size': 11, 'text-offset': [0, 0.8], 'text-anchor': 'top' [cite: 219]
+    },
+    paint: { 'text-color': '#e8e4da', 'text-halo-color': '#0e1117', 'text-halo-width': 1.5 } [cite: 219, 220]
+  });
+
+  worker.postMessage({ type: 'LOAD', payload: { url: GEOJSON_URL } }); [cite: 221]
+});
+
+// Worker channel communication receiver
+worker.onmessage = function(e) {
+  const { type, payload } = e.data; [cite: 222]
+
+  if (type === 'PROGRESS') {
+    document.getElementById('progress-bar').style.width = payload.pct + '%'; [cite: 223]
+    document.getElementById('load-progress-text').textContent = payload.text + ` (${Math.round(payload.pct)}%)`; [cite: 223, 224]
+    document.getElementById('status-text').textContent = payload.text; [cite: 224]
   }
-  if (map.getSource('selected')) {
-    map.getSource('selected').setData({ type:'FeatureCollection', features:[] });
+  else if (type === 'READY') {
+    document.getElementById('progress-wrap').style.display = 'none'; [cite: 225]
+    document.getElementById('loading-overlay').classList.add('hidden'); [cite: 225]
+    document.getElementById('status-dot').className = 'status-dot green'; [cite: 226]
+    document.getElementById('status-text').textContent = 'Sieć załadowana'; [cite: 226]
+
+    stationsData = payload.stations; [cite: 227]
+    updateMapGeoJSON(stationsData, []); [cite: 227]
+    buildCategoryUI(); [cite: 227]
   }
+  else if (type === 'ROUTE_RESULT') {
+    renderRoute(payload); [cite: 228]
+  }
+  else if (type === 'ERROR') {
+    document.getElementById('status-dot').className = 'status-dot red'; [cite: 228, 229]
+    document.getElementById('status-text').textContent = 'Błąd: ' + payload.message; [cite: 229]
+    document.getElementById('load-progress-text').textContent = 'Błąd krytyczny!'; [cite: 229]
+    alert('Wystąpił błąd ładowania danych worker-a:\n' + payload.message); [cite: 230]
+  }
+};
+
+function updateMapGeoJSON(stations, routeSegments) {
+  // Directly fetch features dynamically onto layer structure without hanging
+  fetch(GEOJSON_URL)
+    .then(r => r.json())
+    .then(data => {
+      const lineFeatures = data.features.filter(f => f.geometry && (f.geometry.type === 'LineString' || f.geometry.type === 'MultiLineString')); [cite: 232]
+      const ptsFeatures = stations.map(s => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [s.latlng[1], s.latlng[0]] },
+        properties: { id: s.id, name: s.name, railway: s.props?.railway || 'station' }
+      }));
+      map.getSource('network').setData({
+        type: 'FeatureCollection',
+        features: [...lineFeatures, ...ptsFeatures, ...routeSegments]
+      });
+    }).catch(() => {
+      const ptsFeatures = stations.map(s => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [s.latlng[1], s.latlng[0]] },
+        properties: { id: s.id, name: s.name, railway: s.props?.railway || 'station' }
+      }));
+      map.getSource('network').setData({ type: 'FeatureCollection', features: [...ptsFeatures, ...routeSegments] });
+    });
 }
 
-// ── Train panel ───────────────────────────────────────────────────────────────
-function initTrainPanel() {
-  const grid = document.getElementById('category-grid');
+function buildCategoryUI() {
+  const grid = document.getElementById('category-grid'); [cite: 234]
+  grid.innerHTML = ''; [cite: 234]
   TRAIN_CATEGORIES.forEach(cat => {
-    const btn = document.createElement('button');
-    btn.id = `cat-btn-${cat.id}`;
-    btn.className = 'cat-btn';
-    btn.textContent = `${cat.label} · ${cat.name}`;
-    btn.onclick = () => selectCategory(cat.id);
-    grid.appendChild(btn);
+    const btn = document.createElement('button'); [cite: 235]
+    btn.className = 'cat-btn'; [cite: 235]
+    btn.id = `cat-btn-${cat.id}`; [cite: 235]
+    btn.textContent = cat.name; [cite: 235, 236]
+    btn.onclick = () => selectCategory(cat.id); [cite: 236]
+    grid.appendChild(btn); [cite: 236]
   });
-  selectCategory(trainCategory.id);
+  selectCategory(currentCategory); [cite: 237]
 }
 
 function selectCategory(id) {
-  trainCategory = TRAIN_CATEGORIES.find(c => c.id === id);
-  trainMaxSpeed = trainCategory.speed;
-  document.getElementById('speed-slider').value = trainMaxSpeed;
-  document.getElementById('speed-display').textContent = trainMaxSpeed + ' km/h';
-  document.getElementById('stop-rule-desc').textContent = getCatDesc(id);
+  currentCategory = id; [cite: 237]
+  document.getElementById('stop-rule-desc').textContent = getCatDesc(id); [cite: 238]
   TRAIN_CATEGORIES.forEach(cat => {
-    const btn = document.getElementById(`cat-btn-${cat.id}`);
-    if (!btn) return;
+    const btn = document.getElementById(`cat-btn-${cat.id}`); [cite: 238, 239]
+    if (!btn) return; [cite: 239]
     if (cat.id === id) {
-      btn.style.borderColor = cat.color;
-      btn.style.color = cat.color;
-      btn.style.background = cat.color + '18';
+      btn.style.borderColor = cat.color; [cite: 239]
+      btn.style.color = cat.color; [cite: 239]
+      btn.style.background = cat.color + '18'; [cite: 240]
     } else {
-      btn.style.borderColor = 'var(--border)';
-      btn.style.color = 'var(--text-dim)';
-      btn.style.background = 'var(--bg)';
+      btn.style.borderColor = 'var(--border)'; [cite: 240]
+      btn.style.color = 'var(--text-dim)'; [cite: 240]
+      btn.style.background = 'var(--bg)'; [cite: 241]
     }
   });
-  manualOverrides = {};
-  if (origin && dest) findRoute();
+  manualOverrides = {}; [cite: 241]
+  if (origin && dest) findRoute(); [cite: 241, 242]
 }
 
 function getCatDesc(id) {
   const d = {
-    vv:  'Tylko największe węzły (station=main & interchange=yes).',
-    ice: 'Stacje główne (station=main).',
-    spr: 'Stacje węzłowe i główne.',
-    ic:  'Wszystkie stacje (railway=station).',
-    re:  'Stacje i przystanki węzłowe.',
-    rg:  'Wszystkie stacje i przystanki.',
+    vv:  'Tylko największe węzły (station=main & interchange=yes).', [cite: 243]
+    ice: 'Stacje główne (station=main).', [cite: 243]
+    spr: 'Stacje węzłowe i główne.', [cite: 244]
+    ic:  'Wszystkie stacje (railway=station).', [cite: 244]
+    re:  'Stacje i przystanki węzłowe.', [cite: 245]
+    rg:  'Wszystkie stacje i przystanki.', [cite: 245]
   };
-  return d[id] || '';
+  return d[id] || ''; [cite: 246]
 }
 
 function onSpeedChange(val) {
-  trainMaxSpeed = parseInt(val);
-  document.getElementById('speed-display').textContent = trainMaxSpeed + ' km/h';
-  if (origin && dest) findRoute();
+  trainMaxSpeed = parseInt(val); [cite: 246]
+  document.getElementById('speed-display').textContent = trainMaxSpeed + ' km/h'; [cite: 247]
+  if (origin && dest) findRoute(); [cite: 247]
+}
+
+function startSelecting(mode, viaIndex = null) {
+  selectingMode = mode; [cite: 248]
+  selectingViaIndex = viaIndex; [cite: 248]
+  document.getElementById('select-hint').style.display = 'block'; [cite: 249]
+  
+  if (mode === 'origin') document.getElementById('btn-origin').className = 'station-btn selecting'; [cite: 249, 250]
+  else if (mode === 'destination') document.getElementById('btn-dest').className = 'station-btn selecting'; [cite: 250]
+  else if (mode === 'via') {
+    document.getElementById(`btn-via-${viaIndex}`).className = 'station-btn selecting'; [cite: 251]
+  }
+}
+
+map.on('click', 'stations', (e) => {
+  if (!selectingMode) return; [cite: 252]
+  const feat = e.features[0]; [cite: 252]
+  const id = feat.properties.id; [cite: 252]
+  const name = feat.properties.name; [cite: 252]
+
+  document.getElementById('select-hint').style.display = 'none'; [cite: 253]
+
+  if (selectingMode === 'origin') {
+    origin = id; [cite: 253]
+    const b = document.getElementById('btn-origin'); [cite: 254]
+    b.textContent = name; b.className = 'station-btn set orig'; [cite: 254]
+  } 
+  else if (selectingMode === 'destination') {
+    dest = id; [cite: 254]
+    const b = document.getElementById('btn-dest'); [cite: 255]
+    b.textContent = name; b.className = 'station-btn set dest'; [cite: 255]
+  } 
+  else if (selectingMode === 'via') {
+    vias[selectingViaIndex] = id; [cite: 256]
+    const b = document.getElementById(`btn-via-${selectingViaIndex}`); [cite: 256]
+    b.textContent = name; b.className = 'station-btn set via'; [cite: 257]
+  }
+
+  selectingMode = null; [cite: 257]
+  validatePlanner(); [cite: 257]
+});
+
+map.on('mouseenter', 'stations', () => { if(selectingMode) map.getCanvas().style.cursor = 'pointer'; }); [cite: 258]
+map.on('mouseleave', 'stations', () => { map.getCanvas().style.cursor = ''; }); [cite: 259]
+
+function addVia() {
+  const idx = vias.length; [cite: 259]
+  vias.push(null); [cite: 259]
+  
+  const container = document.getElementById('via-list'); [cite: 260]
+  const item = document.createElement('div'); [cite: 260]
+  item.className = 'via-item'; [cite: 260]
+  item.id = `via-item-${idx}`; [cite: 261]
+  
+  item.innerHTML = `
+    <button class="station-btn" id="btn-via-${idx}" onclick="startSelecting('via', ${idx})">Wybierz stację pośrednią…</button>
+    <button class="via-remove" onclick="removeVia(${idx})">×</button>
+  `;
+  container.appendChild(item); [cite: 262]
+  validatePlanner(); [cite: 262]
+}
+
+function removeVia(idx) {
+  vias[idx] = undefined; [cite: 263]
+  document.getElementById(`via-item-${idx}`).remove(); [cite: 263]
+  validatePlanner(); [cite: 264]
+  if (origin && dest) findRoute(); [cite: 264]
+}
+
+function validatePlanner() {
+  const activeVias = vias.filter(v => v !== null && v !== undefined); [cite: 265]
+  const valid = origin && dest; [cite: 265]
+  document.getElementById('find-btn').disabled = !valid; [cite: 266]
+}
+
+function findRoute() {
+  if (!origin || !dest) return; [cite: 266]
+  const waypoints = [origin, ...vias.filter(v => v !== null && v !== undefined), dest]; [cite: 267]
+  
+  document.getElementById('status-dot').className = 'status-dot amber'; [cite: 267, 268]
+  document.getElementById('status-text').textContent = 'Szukanie trasy…'; [cite: 268]
+  
+  // Cast simple custom mappings over serializable structures to workers
+  const serializedCats = TRAIN_CATEGORIES.map(c => ({ id: c.id }));
+  worker.postMessage({
+    type: 'FIND_ROUTE',
+    payload: { waypoints, catId: currentCategory, maxSpeed: trainMaxSpeed, overrides: manualOverrides, CATS: serializedCats }
+  });
+}
+
+function renderRoute(res) {
+  const container = document.getElementById('results-content'); [cite: 270]
+  const panel = document.getElementById('results'); [cite: 270]
+  
+  if (!res) {
+    document.getElementById('status-dot').className = 'status-dot red'; [cite: 271]
+    document.getElementById('status-text').textContent = 'Brak połączenia'; [cite: 271]
+    container.innerHTML = `<div class="no-route">Nie znaleziono połączenia kolejowego dla wybranych parametrów lub wybranej kategorii pociągu.</div>`; [cite: 272]
+    panel.classList.add('show'); [cite: 272]
+    return; [cite: 273]
+  }
+
+  document.getElementById('status-dot').className = 'status-dot green'; [cite: 273]
+  document.getElementById('status-text').textContent = 'Trasa znaleziona'; [cite: 273]
+
+  const totalMin = res.total; [cite: 274]
+  const h = Math.floor(totalMin / 60); [cite: 274]
+  const m = Math.round(totalMin % 60); [cite: 274]
+  const timeStr = h > 0 ? `${h}h ${m}m` : `${m}min`; [cite: 275]
+
+  let totalDist = 0; [cite: 275]
+  let stopCount = 0; [cite: 275]
+  res.path.forEach(p => { if (p.edge) totalDist += p.edge.dist; }); [cite: 276]
+  res.stopData.forEach(s => { if (s.stopping) stopCount++; }); [cite: 277]
+
+  let html = `
+    <div class="result-summary">
+      <div class="result-stat"><div class="val">${timeStr}</div><div class="lbl">Czas</div></div>
+      <div class="result-stat"><div class="val">${totalDist.toFixed(0)}</div><div class="lbl">Dystans km</div></div>
+      <div class="result-stat"><div class="val">${stopCount}</div><div class="lbl">Stacje</div></div>
+    </div>
+    <ul class="stop-list">
+  `;
+
+  res.stopData.forEach((stop, i) => {
+    const isOrig = (i === 0); [cite: 280]
+    const isDest = (i === res.stopData.length - 1); [cite: 280]
+    let dotClass = 'stop-dot'; [cite: 281]
+    if (isOrig) dotClass += ' orig'; [cite: 281]
+    if (isDest) dotClass += ' dest'; [cite: 281]
+
+    const itemClass = stop.stopping ? 'stop-item' : 'stop-item passing-through'; [cite: 282]
+    const stopTimeStr = i === 0 ? 'odjazd 00:00' : `+${Math.round(stop.time)} min`; [cite: 283]
+
+    html += `
+      <li class="${itemClass}">
+        <div class="stop-track">
+          <div class="${dotClass}"></div>
+          ${!isDest ? '<div class="stop-line-seg"></div>' : ''}
+        </div>
+        <div class="stop-info">
+          <div class="stop-name">${stop.name}</div>
+          <div class="stop-time">${stopTimeStr}</div>
+          ${stop.isReversal ? '<div class="reversal-badge">Zmiana czoła</div>' : ''}
+          ${(!isOrig && !isDest) ? `
+            <button class="pt-toggle ${stop.stopping ? 'stopping' : 'passing'}" onclick="toggleOverride('${stop.id}')">
+              ${stop.stopping ? 'Zatrzymanie' : 'Przelot'}
+            </button>
+          ` : ''}
+        </div>
+      </li>
+    `;
+  });
+
+  html += '</ul>'; [cite: 287]
+  container.innerHTML = html; [cite: 287]
+  panel.classList.add('show'); [cite: 287]
+
+  // Render high-gloss polyline onto visual layer map context
+  const routeGeom = {
+    type: 'Feature',
+    geometry: { type: 'LineString', coordinates: res.geom },
+    properties: { id: 'ROUTE', colour: 'yellow' }
+  };
+  updateMapGeoJSON(stationsData, [routeGeom]); [cite: 289]
+}
+
+function toggleOverride(sid) {
+  if (manualOverrides[sid] === undefined) {
+    const stop = stationsData.find(s => s.id === sid); [cite: 291]
+    const normalRule = TRAIN_CATEGORIES.find(c => c.id === currentCategory).stops(stop); [cite: 291, 292]
+    manualOverrides[sid] = !normalRule; [cite: 292]
+  } else {
+    delete manualOverrides[sid]; [cite: 293]
+  }
+  findRoute(); [cite: 293]
+}
+
+function clearRoute() {
+  origin = null; dest = null; vias = []; selectingMode = null; manualOverrides = {}; [cite: 294]
+  document.getElementById('via-list').innerHTML = ''; [cite: 294]
+  document.getElementById('btn-origin').textContent = 'Kliknij stację na mapie…'; [cite: 295]
+  document.getElementById('btn-origin').className = 'station-btn'; [cite: 295]
+  document.getElementById('btn-dest').textContent = 'Kliknij stację na mapie…'; [cite: 296]
+  document.getElementById('btn-dest').className = 'station-btn'; [cite: 296]
+  document.getElementById('results').classList.remove('show'); [cite: 296]
+  document.getElementById('status-text').textContent = 'Sieć załadowana'; [cite: 297]
+  validatePlanner(); [cite: 297]
+  updateMapGeoJSON(stationsData, []); [cite: 297]
 }
 
 function toggleTP() {
-  const body  = document.getElementById('tp-body');
-  const arrow = document.getElementById('tp-arrow');
-  const collapsed = body.classList.toggle('collapsed');
-  arrow.textContent = collapsed ? '▼' : '▲';
+  const body = document.getElementById('tp-body'); [cite: 298]
+  const arrow = document.getElementById('tp-arrow'); [cite: 298]
+  body.classList.toggle('collapsed'); [cite: 299]
+  arrow.textContent = body.classList.contains('collapsed') ? '▼' : '▲'; [cite: 299]
 }
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
-initMap();
+map.on('zoom', () => {
+  document.getElementById('scale-val').textContent = `1:${Math.round(10000000 / Math.pow(2, map.getZoom() - 6))}`; [cite: 301]
+});
 </script>
 
 </body>
